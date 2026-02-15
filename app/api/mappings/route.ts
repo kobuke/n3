@@ -21,17 +21,18 @@ export async function POST(request: Request) {
         .upsert({
             shopify_product_id,
             crossmint_template_id,
-            updated_by: 'staff'
+            updated_by: null
         }, { onConflict: 'shopify_product_id' })
         .select()
 
     if (error) {
+        console.error('[Mappings] Upsert error:', error)
         return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     // Audit Log
     await supabase.from('audit_logs').insert({
-        user_id: 'staff',
+        user_id: null,
         action: 'UPDATE_MAPPING',
         details: { shopify_product_id, crossmint_template_id }
     })
