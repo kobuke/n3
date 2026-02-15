@@ -32,11 +32,11 @@ export default function LoginPage() {
           });
 
           if (res.ok) {
-            toast.success("Wallet connected!");
+            toast.success("ウォレットが接続されました");
             router.push("/mypage");
           } else {
             const data = await res.json();
-            toast.error(data.error || "Login failed");
+            toast.error(data.error || "ログインに失敗しました");
           }
         } catch (e) {
           console.error(e);
@@ -64,14 +64,14 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Failed to send code");
+        toast.error(data.error || "コード送信に失敗しました");
         return;
       }
 
       setOtpSent(true);
-      toast.success("Verification code sent to your email.");
+      toast.success("認証コードをメールに送信しました");
     } catch {
-      toast.error("Network error. Please try again.");
+      toast.error("ネットワークエラー。もう一度お試しください。");
     } finally {
       setLoading(false);
     }
@@ -92,14 +92,14 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Invalid code");
+        toast.error(data.error || "無効なコードです");
         return;
       }
 
-      toast.success("Verified!");
+      toast.success("認証成功！");
       router.push("/mypage");
     } catch {
-      toast.error("Network error. Please try again.");
+      toast.error("ネットワークエラー。もう一度お試しください。");
     } finally {
       setLoading(false);
     }
@@ -125,7 +125,7 @@ export default function LoginPage() {
               Nanjo NFT Wallet
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Okinawa Resort Digital Ticket
+              沖縄リゾート デジタルチケット
             </p>
           </div>
         </div>
@@ -134,12 +134,12 @@ export default function LoginPage() {
         <Card className="w-full shadow-lg border-border/50 transition-all duration-300">
           <CardHeader className="pb-2 pt-6 px-6">
             <h2 className="text-lg font-semibold text-foreground">
-              {otpSent ? "Verify Email" : "Sign In"}
+              {otpSent ? "メール認証" : "ログイン"}
             </h2>
             <p className="text-sm text-muted-foreground">
               {otpSent
-                ? `Enter the 6-digit code sent to ${email}`
-                : "Choose how you would like to access your wallet"
+                ? `${email} に送信された6桁のコードを入力してください`
+                : "ウォレットへのアクセス方法を選択してください"
               }
             </p>
           </CardHeader>
@@ -159,7 +159,7 @@ export default function LoginPage() {
                   required
                 />
                 <Button type="submit" disabled={loading || otpCode.length < 6} className="h-10 text-sm font-medium w-full">
-                  {loading ? "Verifying..." : "Verify & Login"}
+                  {loading ? "認証中..." : "認証してログイン"}
                 </Button>
                 <button
                   type="button"
@@ -167,7 +167,7 @@ export default function LoginPage() {
                   className="flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground mt-2"
                 >
                   <ArrowLeft className="w-3 h-3" />
-                  Use a different email
+                  別のメールアドレスを使用
                 </button>
               </form>
             ) : (
@@ -177,8 +177,8 @@ export default function LoginPage() {
                 {/* Email Login Section */}
                 <div className="flex flex-col gap-3">
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs font-medium text-foreground">Email Login (Crossmint)</span>
-                    <p className="text-[10px] text-muted-foreground">For users who received NFTs via email</p>
+                    <span className="text-xs font-medium text-foreground">メールでログイン</span>
+                    <p className="text-[10px] text-muted-foreground">メールでNFTを受け取った方向け</p>
                   </div>
                   <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3">
                     <div className="relative">
@@ -193,7 +193,7 @@ export default function LoginPage() {
                       />
                     </div>
                     <Button type="submit" disabled={loading || !email} className="h-10 w-full" variant="secondary">
-                      {loading ? "Sending..." : "Continue with Email"}
+                      {loading ? "送信中..." : "メールで続行"}
                     </Button>
                   </form>
                 </div>
@@ -203,15 +203,15 @@ export default function LoginPage() {
                     <span className="w-full border-t border-border/50" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Or</span>
+                    <span className="bg-background px-2 text-muted-foreground">または</span>
                   </div>
                 </div>
 
                 {/* Wallet Connection Section */}
                 <div className="flex flex-col gap-3">
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs font-medium text-foreground">Wallet Connection</span>
-                    <p className="text-[10px] text-muted-foreground">For MetaMask, Rainbow, etc.</p>
+                    <span className="text-xs font-medium text-foreground">ウォレット接続</span>
+                    <p className="text-[10px] text-muted-foreground">MetaMask、Rainbow など</p>
                   </div>
                   <Button
                     variant="outline"
@@ -219,7 +219,7 @@ export default function LoginPage() {
                     className="w-full h-10 gap-2 border-primary/20 hover:bg-primary/5 hover:text-primary"
                   >
                     <Wallet className="w-4 h-4" />
-                    Connect Wallet
+                    ウォレットを接続
                   </Button>
                 </div>
 

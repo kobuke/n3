@@ -107,7 +107,7 @@ function MyPageContent() {
         {/* Page title */}
         <div className="flex items-center justify-between mb-2">
           <div>
-            <h1 className="text-xl font-bold text-foreground">My Tickets</h1>
+            <h1 className="text-xl font-bold text-foreground">マイチケット</h1>
           </div>
           <Button
             variant="outline"
@@ -116,7 +116,7 @@ function MyPageContent() {
             className="gap-1.5"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            Refresh
+            更新
           </Button>
         </div>
 
@@ -130,8 +130,8 @@ function MyPageContent() {
 
         <p className="text-sm text-muted-foreground mb-4">
           {nfts.length > 0
-            ? `${nfts.length} ticket${nfts.length > 1 ? "s" : ""} found`
-            : "Loading..."}
+            ? `${nfts.length}枚のチケットが見つかりました`
+            : "読み込み中..."}
         </p>
 
         {/* Loading state */}
@@ -147,10 +147,10 @@ function MyPageContent() {
         {nftError && (
           <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center">
             <p className="text-sm text-destructive font-medium">
-              Failed to load tickets
+              チケットの読み込みに失敗しました
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Please try refreshing the page.
+              ページを更新してお試しください。
             </p>
             <Button
               variant="outline"
@@ -158,7 +158,7 @@ function MyPageContent() {
               className="mt-4"
               onClick={() => mutate()}
             >
-              Retry
+              再試行
             </Button>
           </div>
         )}
@@ -169,9 +169,9 @@ function MyPageContent() {
             <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
               <Ticket className="w-7 h-7 text-muted-foreground" />
             </div>
-            <h3 className="font-semibold text-foreground">No tickets yet</h3>
+            <h3 className="font-semibold text-foreground">チケットがありません</h3>
             <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
-              NFT tickets linked to your wallet will appear here once minted.
+              ウォレットに紐づく NFT チケットが発行されると、ここに表示されます。
             </p>
           </div>
         )}

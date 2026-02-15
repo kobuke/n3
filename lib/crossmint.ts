@@ -19,6 +19,26 @@ export async function getWalletByEmail(email: string) {
   return res.json();
 }
 
+export async function createWallet(email: string) {
+  const res = await fetch(
+    `${BASE_URL}/2025-06-09/wallets`,
+    {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify({
+        type: "evm-smart-wallet",
+        linkedUser: `email:${email}`,
+      }),
+      cache: "no-store",
+    }
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Wallet creation failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
+
 export async function getNFTs(identifier: string) {
   const res = await fetch(
     `${BASE_URL}/2025-06-09/wallets/${identifier}/nfts`,

@@ -20,20 +20,35 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Invalid OTP." }, { status: 400 });
         }
 
-        // OTP Verified -> Get Wallet Address
+        // OTP Verified -> Get Wallet
         const email = session.pendingEmail;
-        const wallet = await getWalletByEmail(email);
+        let wallet;
+        try {
+            wallet = await getWalletByEmail(email);
+        } catch (err: any) {
+            if (err.message?.includes("404")) {
+                return NextResponse.json(
+                    { error: "このメールアドレスに紐づくウォレットが見つかりません。NFTが発行されたメールアドレスでログインしてください。" },
+                    { status: 404 }
+                );
+            }
+            throw err;
+        }
+
         const walletAddress = wallet.publicKey ?? wallet.address;
 
         if (!walletAddress) {
-            return NextResponse.json({ error: "Wallet not found for this email." }, { status: 404 });
+            return NextResponse.json(
+                { error: "このメールアドレスに紐づくウォレットが見つかりません。NFTが発行されたメールアドレスでログインしてください。" },
+                { status: 404 }
+            );
         }
 
         // Set Final Authenticated Session
         await setSession({
             email,
             walletAddress,
-            authenticated: true, // Mark as real session
+            authenticated: true,
         });
 
         return NextResponse.json({ ok: true, walletAddress });
@@ -43,3 +58,4 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
+

@@ -20,14 +20,14 @@ export function AppHeader({
 
   async function handleLogout() {
     await fetch("/api/logout", { method: "POST" });
-    toast.success("Logged out");
+    toast.success("ログアウトしました");
     router.push("/");
   }
 
   async function handleCopyAddress() {
     if (walletAddress) {
       await navigator.clipboard.writeText(walletAddress);
-      toast.success("Address copied to clipboard");
+      toast.success("アドレスをコピーしました");
     }
   }
 
@@ -68,7 +68,7 @@ export function AppHeader({
               className="gap-1.5 text-muted-foreground hover:text-foreground"
             >
               <LogOut className="w-4 h-4" />
-              <span className="sr-only sm:not-sr-only">Logout</span>
+              <span className="sr-only sm:not-sr-only">ログアウト</span>
             </Button>
           )}
         </div>

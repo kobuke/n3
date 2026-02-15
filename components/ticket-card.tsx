@@ -36,8 +36,8 @@ export function TicketCard({
     <Link href={`/mypage/${nftId}`} className="block group">
       <Card
         className={`overflow-hidden transition-all duration-200 ${isUsed
-            ? "opacity-90 grayscale-[0.3] border-border/40 hover:opacity-100 hover:border-border/60 hover:shadow-sm"
-            : "shadow-md hover:shadow-lg hover:border-primary/20 hover:-translate-y-0.5 border-border/60"
+          ? "opacity-90 grayscale-[0.3] border-border/40 hover:opacity-100 hover:border-border/60 hover:shadow-sm"
+          : "shadow-md hover:shadow-lg hover:border-primary/20 hover:-translate-y-0.5 border-border/60"
           }`}
       >
         <CardContent className="p-0">
@@ -69,11 +69,11 @@ export function TicketCard({
                 <Badge
                   variant={isUsed ? "secondary" : "default"}
                   className={`flex-shrink-0 text-[10px] px-2 h-5 ${isUsed
-                      ? "bg-muted text-muted-foreground border-border"
-                      : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+                    ? "bg-muted text-muted-foreground border-border"
+                    : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
                     }`}
                 >
-                  {isUsed ? "Used" : "Ready"}
+                  {isUsed ? "使用済み" : "未使用"}
                 </Badge>
               </div>
 
@@ -92,7 +92,7 @@ export function TicketCard({
                 ) : (
                   <div className="flex items-center gap-1 text-[10px] font-medium text-primary">
                     <QrCode className="w-3 h-3" />
-                    <span>Show QR</span>
+                    <span>QR表示</span>
                   </div>
                 )}
               </div>

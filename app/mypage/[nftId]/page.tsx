@@ -92,7 +92,7 @@ export default function TicketDetailPage({
           onClick={() => router.push("/mypage")}
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to My Tickets
+          マイチケットに戻る
         </Button>
 
         {/* Ticket Header */}
@@ -140,7 +140,7 @@ export default function TicketDetailPage({
             ) : (
               <span className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5" />
-                Unused - Ready to Use
+                未使用 - 利用可能
               </span>
             )}
           </Badge>
@@ -161,7 +161,7 @@ export default function TicketDetailPage({
           <Card className="shadow-lg border-border/50">
             <CardContent className="p-6 flex flex-col items-center gap-5">
               <p className="text-sm font-medium text-foreground text-center">
-                Show this QR code to the staff
+                このQRコードをスタッフに提示してください
               </p>
 
               <div className="bg-white p-4 rounded-2xl border border-border/30 shadow-inner">
@@ -178,7 +178,7 @@ export default function TicketDetailPage({
 
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <MapPin className="w-3.5 h-3.5" />
-                Present at the venue entrance
+                会場入口で提示してください
               </div>
             </CardContent>
           </Card>
@@ -187,11 +187,11 @@ export default function TicketDetailPage({
             <CardContent className="p-6 text-center flex flex-col items-center gap-3">
               <CheckCircle2 className="w-12 h-12 text-muted-foreground" />
               <p className="font-medium text-foreground">
-                Ticket Already Used
+                チケットは使用済みです
               </p>
               {usedAt && (
                 <p className="text-sm text-muted-foreground">
-                  Used on {new Date(usedAt).toLocaleString("ja-JP")}
+                  使用日: {new Date(usedAt).toLocaleString("ja-JP")}
                 </p>
               )}
             </CardContent>
@@ -203,7 +203,7 @@ export default function TicketDetailPage({
           <div className="mt-6">
             <Separator className="mb-4" />
             <h2 className="text-sm font-semibold text-foreground mb-3">
-              Ticket Details
+              チケット詳細
             </h2>
             <div className="grid grid-cols-2 gap-3">
               {attributes.map((attr) => (
