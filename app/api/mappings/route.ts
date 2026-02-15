@@ -1,8 +1,8 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { data, error } = await supabase.from('mappings').select('*')
 
     if (error) {
@@ -13,17 +13,15 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { shopify_product_id, crossmint_template_id } = await request.json()
-
-    const { data: { user } } = await supabase.auth.getUser()
 
     const { data, error } = await supabase
         .from('mappings')
         .upsert({
             shopify_product_id,
             crossmint_template_id,
-            updated_by: user?.id
+            updated_by: 'staff'
         }, { onConflict: 'shopify_product_id' })
         .select()
 
@@ -33,7 +31,7 @@ export async function POST(request: Request) {
 
     // Audit Log
     await supabase.from('audit_logs').insert({
-        user_id: user?.id,
+        user_id: 'staff',
         action: 'UPDATE_MAPPING',
         details: { shopify_product_id, crossmint_template_id }
     })

@@ -1,11 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type') || 'mint' // 'mint' or 'audit'
 
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
     const table = type === 'audit' ? 'audit_logs' : 'mint_logs'
 
