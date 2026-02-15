@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Camera, CameraOff } from "lucide-react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { Camera, CameraOff, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from "html5-qrcode";
 
 interface QrScannerProps {
   onScan: (result: string) => void;
@@ -10,91 +11,88 @@ interface QrScannerProps {
 }
 
 export function QrScanner({ onScan, active }: QrScannerProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const scannerRef = useRef<any>(null);
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [scanning, setScanning] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Initialize on mount/active change
+  useEffect(() => {
+    setMounted(true);
+    return () => {
+      setMounted(false);
+      cleanupScanner();
+    };
+  }, []);
 
   useEffect(() => {
-    if (!active) {
-      stopCamera();
-      return;
+    if (active && mounted) {
+      startScanner();
+    } else {
+      cleanupScanner();
     }
-    startCamera();
-    return () => stopCamera();
-  }, [active]);
+  }, [active, mounted]);
 
-  async function startCamera() {
-    setCameraError(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: 640, height: 480 },
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-        setScanning(true);
-        startScanning();
-      }
-    } catch (err) {
-      setCameraError(
-        "Camera access denied. Please allow camera access to scan QR codes."
-      );
-    }
-  }
-
-  function stopCamera() {
-    setScanning(false);
+  const cleanupScanner = useCallback(() => {
     if (scannerRef.current) {
-      clearInterval(scannerRef.current);
+      try {
+        scannerRef.current.clear().catch(console.error);
+      } catch (e) {
+        console.error("Failed to clear scanner", e);
+      }
       scannerRef.current = null;
     }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
-  }
+  }, []);
 
-  function startScanning() {
-    // Use a canvas-based approach to decode QR from video frames
-    // We'll dynamically import jsQR for lightweight scanning
-    scannerRef.current = setInterval(async () => {
-      if (!videoRef.current || !canvasRef.current) return;
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext("2d");
-      if (!ctx || video.readyState !== video.HAVE_ENOUGH_DATA) return;
+  const startScanner = useCallback(() => {
+    if (!mounted) return;
 
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    // Cleanup existing instance if any
+    cleanupScanner();
 
-      // Dynamic import of jsQR
+    // Small delay to ensure DOM is ready
+    setTimeout(() => {
       try {
-        const { default: jsQR } = await import("jsqr");
-        const code = jsQR(imageData.data, imageData.width, imageData.height);
-        if (code?.data) {
-          stopCamera();
-          onScan(code.data);
-        }
-      } catch {
-        // jsQR not available, will keep retrying
+        const scanner = new Html5QrcodeScanner(
+          "qr-reader",
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0,
+            formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+            showTorchButtonIfSupported: true,
+          },
+          /* verbose= */ false
+        );
+
+        scanner.render(
+          (decodedText) => {
+            onScan(decodedText);
+            // Optional: Pause scanning after success? Usually caller handles state change.
+            // cleanupScanner(); // Don't cleanup immediately, allow caller to decide
+          },
+          (errorMessage) => {
+            // parse error, ignore
+            // console.log(errorMessage);
+          }
+        );
+
+        scannerRef.current = scanner;
+        setCameraError(null);
+      } catch (err) {
+        console.error("Scanner initialization failed", err);
+        setCameraError("Failed to start camera. Please ensure camera permissions are granted.");
       }
-    }, 300);
-  }
+    }, 100);
+  }, [cleanupScanner, onScan, mounted]);
 
   if (cameraError) {
     return (
-      <div className="rounded-2xl bg-muted/50 border border-border/50 p-8 flex flex-col items-center gap-4 text-center">
-        <CameraOff className="w-10 h-10 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground leading-relaxed">
+      <div className="rounded-2xl bg-destructive/5 border border-destructive/20 p-8 flex flex-col items-center gap-4 text-center">
+        <CameraOff className="w-10 h-10 text-destructive/50" />
+        <p className="text-sm text-destructive font-medium">
           {cameraError}
         </p>
-        <Button variant="outline" size="sm" onClick={startCamera}>
+        <Button variant="outline" size="sm" onClick={() => { setCameraError(null); startScanner(); }}>
           Retry Camera
         </Button>
       </div>
@@ -102,32 +100,30 @@ export function QrScanner({ onScan, active }: QrScannerProps) {
   }
 
   return (
-    <div className="relative rounded-2xl overflow-hidden bg-foreground/5 border border-border/50">
-      <video
-        ref={videoRef}
-        className="w-full aspect-square object-cover"
-        playsInline
-        muted
-      />
-      <canvas ref={canvasRef} className="hidden" />
+    <div className="w-full max-w-sm mx-auto overflow-hidden rounded-2xl border border-border/50 bg-black/5 relative">
+      <style jsx global>{`
+        #qr-reader {
+          border: none !important;
+        }
+        #qr-reader__scan_region {
+          background: transparent !important;
+        }
+        #qr-reader__dashboard_section_csr span, 
+        #qr-reader__dashboard_section_swaplink {
+          display: none !important;
+        }
+        #qr-reader video {
+          object-fit: cover;
+          border-radius: 1rem;
+        }
+      `}</style>
+      <div id="qr-reader" className="w-full" />
 
-      {/* Scan overlay */}
-      {scanning && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-48 h-48 border-2 border-primary/70 rounded-2xl relative">
-            <div className="absolute -top-0.5 -left-0.5 w-6 h-6 border-t-3 border-l-3 border-primary rounded-tl-lg" />
-            <div className="absolute -top-0.5 -right-0.5 w-6 h-6 border-t-3 border-r-3 border-primary rounded-tr-lg" />
-            <div className="absolute -bottom-0.5 -left-0.5 w-6 h-6 border-b-3 border-l-3 border-primary rounded-bl-lg" />
-            <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 border-b-3 border-r-3 border-primary rounded-br-lg" />
-          </div>
-        </div>
-      )}
-
-      {!scanning && (
-        <div className="absolute inset-0 flex items-center justify-center bg-muted/80">
+      {!active && (
+        <div className="absolute inset-0 flex items-center justify-center bg-muted/80 backdrop-blur-sm z-10">
           <div className="flex flex-col items-center gap-3">
-            <Camera className="w-8 h-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Starting camera...</p>
+            <Camera className="w-8 h-8 text-muted-foreground animate-pulse" />
+            <p className="text-sm text-muted-foreground font-medium">Camera Inactive</p>
           </div>
         </div>
       )}

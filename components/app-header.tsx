@@ -1,16 +1,21 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Waves, LogOut } from "lucide-react";
+import { Waves, LogOut, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 interface AppHeaderProps {
   email?: string;
+  walletAddress?: string;
   showLogout?: boolean;
 }
 
-export function AppHeader({ email, showLogout = true }: AppHeaderProps) {
+export function AppHeader({
+  email,
+  walletAddress,
+  showLogout = true,
+}: AppHeaderProps) {
   const router = useRouter();
 
   async function handleLogout() {
@@ -19,16 +24,35 @@ export function AppHeader({ email, showLogout = true }: AppHeaderProps) {
     router.push("/");
   }
 
+  async function handleCopyAddress() {
+    if (walletAddress) {
+      await navigator.clipboard.writeText(walletAddress);
+      toast.success("Address copied to clipboard");
+    }
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-md">
-      <div className="flex items-center justify-between px-4 py-3 max-w-lg mx-auto">
+      <div className="flex items-center justify-between px-4 py-3 max-w-lg mx-auto w-full">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
             <Waves className="w-4 h-4 text-primary-foreground" />
           </div>
-          <span className="font-semibold text-sm text-foreground tracking-tight">
-            Nanjo NFT Wallet
-          </span>
+          <div className="flex flex-col">
+            <span className="font-semibold text-sm text-foreground tracking-tight leading-4">
+              Nanjo NFT Wallet
+            </span>
+            {walletAddress && (
+              <button
+                onClick={handleCopyAddress}
+                className="group flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono mt-0.5 hover:text-foreground transition-colors text-left"
+                title="Copy address"
+              >
+                <span>{walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}</span>
+                <Copy className="w-2.5 h-2.5 opacity-70 group-hover:opacity-100" />
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-3">
           {email && (

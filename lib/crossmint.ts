@@ -9,7 +9,7 @@ function headers() {
 
 export async function getWalletByEmail(email: string) {
   const res = await fetch(
-    `${BASE_URL}/v1-alpha1/wallets/polygon:email:${encodeURIComponent(email)}:polygon`,
+    `${BASE_URL}/2025-06-09/wallets/email:${encodeURIComponent(email)}:evm:smart`,
     { headers: headers(), cache: "no-store" }
   );
   if (!res.ok) {
@@ -19,9 +19,9 @@ export async function getWalletByEmail(email: string) {
   return res.json();
 }
 
-export async function getNFTsForWallet(address: string) {
+export async function getNFTs(identifier: string) {
   const res = await fetch(
-    `${BASE_URL}/v1-alpha1/wallets/polygon:${address}/nfts`,
+    `${BASE_URL}/2025-06-09/wallets/${identifier}/nfts`,
     { headers: headers(), cache: "no-store" }
   );
   if (!res.ok) {
@@ -33,7 +33,7 @@ export async function getNFTsForWallet(address: string) {
 
 export async function getNFTById(collectionId: string, nftId: string) {
   const res = await fetch(
-    `${BASE_URL}/v1-alpha1/collections/${collectionId}/nfts/${nftId}`,
+    `${BASE_URL}/2022-06-09/collections/${collectionId}/nfts/${nftId}`,
     { headers: headers(), cache: "no-store" }
   );
   if (!res.ok) {
@@ -46,17 +46,15 @@ export async function getNFTById(collectionId: string, nftId: string) {
 export async function updateNFTMetadata(
   collectionId: string,
   nftId: string,
-  attributes: Array<{ trait_type: string; value: string }>
+  metadata: any
 ) {
   const res = await fetch(
-    `${BASE_URL}/v1-alpha1/collections/${collectionId}/nfts/${nftId}`,
+    `${BASE_URL}/2022-06-09/collections/${collectionId}/nfts/${nftId}`,
     {
       method: "PATCH",
       headers: headers(),
       body: JSON.stringify({
-        metadata: {
-          attributes,
-        },
+        metadata,
       }),
     }
   );

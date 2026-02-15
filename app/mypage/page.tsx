@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
-import { Ticket, RefreshCw } from "lucide-react";
+import { Ticket, RefreshCw, AlertCircle } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { TicketCard } from "@/components/ticket-card";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,7 @@ export default function MyPage() {
     isLoading: nftLoading,
     mutate,
   } = useSWR(
-    session?.authenticated ? "/api/nfts" : null,
+    session?.authenticated ? `/api/nfts?email=${session.email}` : null,
     fetcher
   );
 
@@ -64,18 +64,16 @@ export default function MyPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader email={session.email} />
+      <AppHeader
+        email={session.email}
+        walletAddress={session.walletAddress}
+      />
 
       <main className="max-w-lg mx-auto px-4 py-6">
         {/* Page title */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-2">
           <div>
             <h1 className="text-xl font-bold text-foreground">My Tickets</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {nfts.length > 0
-                ? `${nfts.length} ticket${nfts.length > 1 ? "s" : ""} found`
-                : "Loading..."}
-            </p>
           </div>
           <Button
             variant="outline"
@@ -87,6 +85,20 @@ export default function MyPage() {
             Refresh
           </Button>
         </div>
+
+        {/* Collection Warning Alert */}
+        <div className="mb-6 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 flex gap-3 text-xs text-yellow-600 dark:text-yellow-400">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <p>
+            ※このページでは、指定されたコレクション（Nanjo NFT）のチケットのみが表示されます。お客様のウォレットにあるその他のNFTは表示されません。
+          </p>
+        </div>
+
+        <p className="text-sm text-muted-foreground mb-4">
+          {nfts.length > 0
+            ? `${nfts.length} ticket${nfts.length > 1 ? "s" : ""} found`
+            : "Loading..."}
+        </p>
 
         {/* Loading state */}
         {nftLoading && (

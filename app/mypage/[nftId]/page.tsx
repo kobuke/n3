@@ -75,7 +75,9 @@ export default function TicketDetailPage({
   const usedAt = attributes.find((a) => a.trait_type === "Used_At")?.value;
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const qrValue = `${origin}/staff/scan?nftId=${nftId}`;
+  // QRコードの値には、可能であれば内部ID (UUID) を優先的に使用して、バックエンドでの検索をスムーズにする
+  const identifier = nft?.uuid || nftId;
+  const qrValue = `${origin}/staff/scan?nftId=${identifier}`;
 
   return (
     <div className="min-h-screen bg-background">
@@ -103,6 +105,7 @@ export default function TicketDetailPage({
                 fill
                 className="object-cover"
                 sizes="64px"
+                unoptimized // IPFSなどの外部ドメイン画像を許可するために追加
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
@@ -126,9 +129,8 @@ export default function TicketDetailPage({
         <div className="flex items-center gap-2 mb-6">
           <Badge
             variant={isUsed ? "secondary" : "default"}
-            className={`text-sm px-3 py-1 ${
-              isUsed ? "" : "bg-accent text-accent-foreground"
-            }`}
+            className={`text-sm px-3 py-1 ${isUsed ? "" : "bg-accent text-accent-foreground"
+              }`}
           >
             {isUsed ? (
               <span className="flex items-center gap-1.5">
@@ -144,6 +146,16 @@ export default function TicketDetailPage({
           </Badge>
         </div>
 
+        {/* Identifiers Section */}
+        <Card className="mb-6 bg-muted/30 border-none shadow-none">
+          <CardContent className="p-3 flex justify-between text-[10px] text-muted-foreground font-mono">
+            <span>Token ID: {nft?.tokenId || nftId}</span>
+            {nft?.uuid && (
+              <span className="truncate ml-4">UUID: {nft.uuid}</span>
+            )}
+          </CardContent>
+        </Card>
+
         {/* QR Code Section */}
         {!isUsed ? (
           <Card className="shadow-lg border-border/50">
@@ -152,14 +164,14 @@ export default function TicketDetailPage({
                 Show this QR code to the staff
               </p>
 
-              <div className="bg-card p-4 rounded-2xl border border-border/30 shadow-inner">
+              <div className="bg-white p-4 rounded-2xl border border-border/30 shadow-inner">
                 <QRCodeSVG
                   value={qrValue}
                   size={220}
                   level="H"
                   includeMargin
                   bgColor="transparent"
-                  fgColor="currentColor"
+                  fgColor="#000000"
                   className="text-foreground"
                 />
               </div>
