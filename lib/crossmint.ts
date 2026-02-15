@@ -125,6 +125,7 @@ export async function mintNFT(
 
   const body: any = {
     recipient,
+    sendNotificationEmail: false,
     metadata: {
       name: "Nomad Resort NFT",
       description: "Minted via Shopify Webhook",
