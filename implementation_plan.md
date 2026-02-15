@@ -31,7 +31,34 @@ This plan outlines the steps to fix potential issues in the Crossmint NFT Wallet
 ### Automated Tests
 - None planned (requires live API keys).
 
-### Manual Verification Steps
-1. **Login**: Verify email login triggers correct API call.
-2. **Scanner**: Verify `html5-qrcode` initializes camera correctly.
-3. **Staff API**: Ensure `use-ticket` endpoint correctly validates `STAFF_SECRET`.
+## Phase 2: Authentication & Security Enhancement
+
+To address the risk of unauthorized access (impersonation) via simple email/wallet address input:
+
+### 1. Email Authentication (OTP)
+- **Goal**: Verify ownership of the email address.
+- **Method**: Send a One-Time Password (OTP) to the user's email.
+- **Tech Stack**: Resend (Email API) + Redis/Vercel KV (for temporary code storage) or signed cookies.
+- **Flow**:
+  1. User enters email.
+  2. Server generates 6-digit code & sends via Resend.
+  3. User enters code.
+  4. Server validates code -> Session created.
+
+### 2. Wallet Signature (SIWE)
+- **Goal**: Verify ownership of the wallet address.
+- **Method**: Sign-In with Ethereum (SIWE).
+- **Tech Stack**: `siwe` library + NextAuth (optional) or custom implementation.
+- **Flow**:
+  1. "Connect Wallet" button clicked.
+  2. Frontend requests signature of a unique nonce message.
+  3. Server validates signature -> Session created.
+
+### 3. Manual Input Restrictions
+- **Goal**: mitigate risk of impersonation via manual address entry.
+- **Action**:
+  - Restrict "Manual Input" mode to **READ-ONLY** (hide QR codes).
+  - Show warning: "To use tickets, please login with Email or Wallet."
+
+### 4. Environment Updates
+- **Required**: `RESEND_API_KEY` (for email), `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID` (optional).

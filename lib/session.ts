@@ -3,8 +3,12 @@ import { cookies } from "next/headers";
 const SESSION_KEY = "nanjo_session";
 
 export interface SessionData {
-  email: string;
-  walletAddress: string;
+  email?: string;
+  walletAddress?: string;
+  authenticated?: boolean;
+  otp?: string;
+  pendingEmail?: string;
+  otpExpires?: number;
 }
 
 export async function getSession(): Promise<SessionData | null> {
@@ -18,9 +22,12 @@ export async function getSession(): Promise<SessionData | null> {
   }
 }
 
-export async function setSession(data: SessionData) {
+export async function setSession(data: Partial<SessionData>) {
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_KEY, JSON.stringify(data), {
+  const existing = await getSession();
+  const newData = { ...existing, ...data };
+
+  cookieStore.set(SESSION_KEY, JSON.stringify(newData), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

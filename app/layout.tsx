@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Noto_Sans_JP, Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from 'sonner'
+import { AppKitProvider } from '@/context/web3-provider';
 import './globals.css'
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -28,7 +29,9 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body className={`${inter.variable} ${notoSansJP.variable} font-sans antialiased`}>
-        {children}
+        <AppKitProvider>
+          {children}
+        </AppKitProvider>
         <Toaster position="top-center" richColors />
         <Analytics />
       </body>

@@ -1,52 +1,75 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, ArrowRight, Waves, Wallet } from "lucide-react";
+import { Mail, Waves, Wallet, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { toast } from "sonner";
-
-// Extend Window interface for Ethereum provider
-declare global {
-  interface Window {
-    ethereum?: any;
-  }
-}
+import { useAppKit, useAppKitAccount } from '@reown/appkit/react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
-  const [manualAddress, setManualAddress] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [manualMode, setManualMode] = useState(false);
-  const router = useRouter();
 
-  async function handleLogin(e: React.FormEvent) {
+  const router = useRouter();
+  const { open } = useAppKit();
+  const { address, isConnected } = useAppKitAccount();
+
+  // Handle wallet connection success
+  useEffect(() => {
+    async function loginWithWallet() {
+      if (isConnected && address) {
+        setLoading(true);
+        try {
+          const res = await fetch("/api/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ walletAddress: address }),
+          });
+
+          if (res.ok) {
+            toast.success("Wallet connected!");
+            router.push("/mypage");
+          } else {
+            const data = await res.json();
+            toast.error(data.error || "Login failed");
+          }
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setLoading(false);
+        }
+      }
+    }
+
+    loginWithWallet();
+  }, [isConnected, address, router]);
+
+  // Step 1: Send OTP
+  async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!manualMode && !email.trim()) return;
-    if (manualMode && !manualAddress.trim()) return;
+    if (!email.trim()) return;
 
     setLoading(true);
     try {
-      const payload = manualMode
-        ? { walletAddress: manualAddress.trim() }
-        : { email: email.trim() };
-
-      const res = await fetch("/api/login", {
+      const res = await fetch("/api/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ email: email.trim() }),
       });
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Login failed");
+        toast.error(data.error || "Failed to send code");
         return;
       }
 
-      toast.success("Welcome!");
-      router.push("/mypage");
+      setOtpSent(true);
+      toast.success("Verification code sent to your email.");
     } catch {
       toast.error("Network error. Please try again.");
     } finally {
@@ -54,39 +77,29 @@ export default function LoginPage() {
     }
   }
 
-  async function handleConnectWallet() {
-    if (typeof window === "undefined" || !window.ethereum) {
-      toast.error("MetaMask not detected. Try manual input.");
-      return;
-    }
+  // Step 2: Verify OTP
+  async function handleVerifyOtp(e: React.FormEvent) {
+    e.preventDefault();
+    if (!otpCode.trim()) return;
 
     setLoading(true);
     try {
-      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-      const address = accounts[0];
-
-      if (!address) {
-        throw new Error("No account found");
-      }
-
-      const res = await fetch("/api/login", {
+      const res = await fetch("/api/auth/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletAddress: address }),
+        body: JSON.stringify({ otp: otpCode.trim() }),
       });
+      const data = await res.json();
 
       if (!res.ok) {
-        const data = await res.json();
-        toast.error(data.error || "Login failed");
+        toast.error(data.error || "Invalid code");
         return;
       }
 
-      toast.success("Wallet connected!");
+      toast.success("Verified!");
       router.push("/mypage");
-
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || "Failed to connect wallet");
+    } catch {
+      toast.error("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -118,104 +131,102 @@ export default function LoginPage() {
         </div>
 
         {/* Login card */}
-        <Card className="w-full shadow-lg border-border/50">
+        <Card className="w-full shadow-lg border-border/50 transition-all duration-300">
           <CardHeader className="pb-2 pt-6 px-6">
             <h2 className="text-lg font-semibold text-foreground">
-              {manualMode ? "ウォレットアドレス入力" : "ログイン"}
+              {otpSent ? "Verify Email" : "Sign In"}
             </h2>
-            <div className="text-sm text-muted-foreground space-y-4 mt-2">
-              <p>
-                {manualMode
-                  ? "お手持ちのウォレットアドレス(0x...)を入力してください。"
-                  : "NFT受け取りに使用したメールアドレスを入力するか、ウォレットを接続してください。"
-                }
-              </p>
-
-              {!manualMode && (
-                <div className="bg-muted/50 p-3 rounded-lg text-xs text-left space-y-2 border border-border/50 leading-relaxed">
-                  <p className="font-medium text-foreground">ログイン方法の選び方:</p>
-                  <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
-                    <li>
-                      <span className="font-semibold text-foreground">メールアドレスで受け取った方:</span>
-                      <br />NFT購入時の登録メールアドレスを入力してください。
-                    </li>
-                    <li>
-                      <span className="font-semibold text-foreground">MetaMask等のウォレットで受け取った方:</span>
-                      <br />「Connect Wallet」ボタンを使用してください。
-                    </li>
-                  </ul>
-                </div>
-              )}
-            </div>
+            <p className="text-sm text-muted-foreground">
+              {otpSent
+                ? `Enter the 6-digit code sent to ${email}`
+                : "Choose how you would like to access your wallet"
+              }
+            </p>
           </CardHeader>
           <CardContent className="px-6 pb-6">
-            <form onSubmit={handleLogin} className="flex flex-col gap-4">
-              {!manualMode ? (
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    type="email"
-                    placeholder="you@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 h-10 text-base"
-                    required
-                    autoComplete="email"
-                  />
+
+            {/* OTP Verification Form */}
+            {otpSent ? (
+              <form onSubmit={handleVerifyOtp} className="flex flex-col gap-4">
+                <Input
+                  type="text"
+                  placeholder="123456"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  className="h-12 text-center text-xl tracking-widest font-mono"
+                  maxLength={6}
+                  autoFocus
+                  required
+                />
+                <Button type="submit" disabled={loading || otpCode.length < 6} className="h-10 text-sm font-medium w-full">
+                  {loading ? "Verifying..." : "Verify & Login"}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setOtpSent(false)}
+                  className="flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground mt-2"
+                >
+                  <ArrowLeft className="w-3 h-3" />
+                  Use a different email
+                </button>
+              </form>
+            ) : (
+              /* Initial Login Options */
+              <div className="flex flex-col gap-6">
+
+                {/* Email Login Section */}
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-medium text-foreground">Email Login (Crossmint)</span>
+                    <p className="text-[10px] text-muted-foreground">For users who received NFTs via email</p>
+                  </div>
+                  <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3">
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        type="email"
+                        placeholder="you@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10 h-10 text-base"
+                        required
+                      />
+                    </div>
+                    <Button type="submit" disabled={loading || !email} className="h-10 w-full" variant="secondary">
+                      {loading ? "Sending..." : "Continue with Email"}
+                    </Button>
+                  </form>
                 </div>
-              ) : (
+
                 <div className="relative">
-                  <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="0x123...abc"
-                    value={manualAddress}
-                    onChange={(e) => setManualAddress(e.target.value)}
-                    className="pl-10 h-10 text-base font-mono"
-                    required
-                  />
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-border/50" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">Or</span>
+                  </div>
                 </div>
-              )}
 
-              <Button type="submit" disabled={loading || (manualMode ? !manualAddress.trim() : !email.trim())} className="h-10 text-sm font-medium w-full">
-                {loading ? "Loading..." : (manualMode ? "View Tickets" : "Login with Email")}
-              </Button>
-            </form>
+                {/* Wallet Connection Section */}
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-medium text-foreground">Wallet Connection</span>
+                    <p className="text-[10px] text-muted-foreground">For MetaMask, Rainbow, etc.</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => open()}
+                    className="w-full h-10 gap-2 border-primary/20 hover:bg-primary/5 hover:text-primary"
+                  >
+                    <Wallet className="w-4 h-4" />
+                    Connect Wallet
+                  </Button>
+                </div>
 
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border/50" />
               </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or</span>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <Button
-                variant="outline"
-                onClick={handleConnectWallet}
-                disabled={loading}
-                className="w-full h-10 gap-2 border-primary/20 hover:bg-primary/5 hover:text-primary"
-              >
-                <Wallet className="w-4 h-4" />
-                Connect Wallet (MetaMask)
-              </Button>
-
-              <button
-                type="button"
-                onClick={() => setManualMode(!manualMode)}
-                className="text-xs text-muted-foreground hover:text-primary underline decoration-dotted underline-offset-4 transition-colors text-center"
-              >
-                {manualMode ? "Back to Email Login" : "Enter Wallet Address Manually"}
-              </button>
-            </div>
+            )}
           </CardContent>
         </Card>
-
-        <p className="text-xs text-muted-foreground text-center max-w-xs leading-relaxed">
-          Your wallet is securely linked via Crossmint or direct connection.
-        </p>
       </div>
     </main>
   );
