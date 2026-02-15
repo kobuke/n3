@@ -1,10 +1,8 @@
 "use client";
 
-import { Suspense, useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  ShieldCheck,
-  Waves,
   CheckCircle2,
   XCircle,
   AlertTriangle,
@@ -41,30 +39,19 @@ export default function StaffScanPage() {
 function StaffScanContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [state, setState] = useState<ScanState>({ mode: "scanning" });
-  const [staffSecret, setStaffSecret] = useState<string | null>(null);
-
-  useEffect(() => {
-    const secret = sessionStorage.getItem("staff_secret");
-    if (!secret) {
-      router.push("/staff");
-      return;
-    }
-    setStaffSecret(secret);
-
-    // Check if nftId is in URL (from QR link)
-    const nftIdParam = searchParams.get("nftId");
-    if (nftIdParam) {
-      setState({ mode: "confirming", nftId: nftIdParam });
-    }
-  }, [router, searchParams]);
+  const [state, setState] = useState<ScanState>(() => {
+    const nftIdParam =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("nftId")
+        : null;
+    return nftIdParam ? { mode: "confirming", nftId: nftIdParam } : { mode: "scanning" };
+  });
 
   const extractNftId = useCallback((scannedData: string): string | null => {
     try {
       const url = new URL(scannedData);
       return url.searchParams.get("nftId");
     } catch {
-      // If not a URL, try to use as raw nftId
       if (scannedData && scannedData.length > 5) {
         return scannedData;
       }
@@ -86,23 +73,20 @@ function StaffScanContent() {
   );
 
   async function handleUseTicket(nftId: string) {
-    if (!staffSecret) return;
-
     setState({ mode: "processing", nftId });
 
     try {
       const res = await fetch("/api/use-ticket", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nftId, staffSecret }),
+        body: JSON.stringify({ nftId }),
       });
 
       const data = await res.json();
 
       if (res.status === 403) {
-        sessionStorage.removeItem("staff_secret");
-        toast.error("Invalid staff secret. Please login again.");
-        router.push("/staff");
+        toast.error("認証エラー。再度ログインしてください。");
+        router.push("/staff/login");
         return;
       }
 
@@ -118,50 +102,31 @@ function StaffScanContent() {
 
       setState({ mode: "success", nftId, usedAt: data.usedAt });
     } catch {
-      setState({ mode: "error", message: "Network error. Please try again." });
+      setState({ mode: "error", message: "ネットワークエラーです。再度お試しください。" });
     }
   }
 
   function resetScanner() {
     setState({ mode: "scanning" });
-    // Remove nftId from URL
     router.replace("/staff/scan");
   }
 
-  if (!staffSecret) return null;
-
   return (
-    <div className="min-h-screen bg-background">
-      {/* Staff Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-foreground text-background">
-        <div className="flex items-center justify-between px-4 py-3 max-w-lg mx-auto">
-          <div className="flex items-center gap-2.5">
-            <ShieldCheck className="w-5 h-5" />
-            <span className="font-semibold text-sm tracking-tight">
-              Staff Scanner
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 text-xs opacity-80">
-            <Waves className="w-3.5 h-3.5" />
-            Nanjo NFT
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-lg mx-auto px-4 py-6">
+    <div className="flex flex-col">
+      <main className="max-w-lg mx-auto px-4 py-6 w-full">
         {/* Scanning Mode */}
         {state.mode === "scanning" && (
           <div className="flex flex-col gap-5">
             <div className="text-center">
-              <h1 className="text-lg font-bold text-foreground">Scan Ticket</h1>
+              <h1 className="text-lg font-bold text-foreground">チケットスキャン</h1>
               <p className="text-sm text-muted-foreground mt-1">
-                Point the camera at a customer's QR code
+                お客様のQRコードにカメラを向けてください
               </p>
             </div>
             <QrScanner onScan={handleScan} active />
             <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
               <ScanLine className="w-4 h-4" />
-              Waiting for QR code...
+              QRコードを待機中...
             </div>
           </div>
         )}
@@ -176,10 +141,10 @@ function StaffScanContent() {
                 </div>
                 <div className="text-center">
                   <h2 className="text-lg font-bold text-foreground">
-                    Confirm Ticket Use
+                    チケット使用の確認
                   </h2>
                   <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                    Mark this ticket as used? This action cannot be undone.
+                    このチケットを使用済みにしますか？この操作は取り消せません。
                   </p>
                 </div>
                 <Badge variant="outline" className="font-mono text-xs">
@@ -191,14 +156,14 @@ function StaffScanContent() {
                     className="flex-1"
                     onClick={resetScanner}
                   >
-                    Cancel
+                    キャンセル
                   </Button>
                   <Button
                     className="flex-1"
                     onClick={() => handleUseTicket(state.nftId)}
                   >
                     <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                    Use Ticket
+                    使用する
                   </Button>
                 </div>
               </CardContent>
@@ -213,7 +178,7 @@ function StaffScanContent() {
               <span className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
             </div>
             <p className="text-sm font-medium text-foreground">
-              Processing ticket...
+              処理中...
             </p>
           </div>
         )}
@@ -228,21 +193,21 @@ function StaffScanContent() {
                 </div>
                 <div className="text-center">
                   <h2 className="text-xl font-bold text-foreground">
-                    Ticket Verified
+                    使用完了
                   </h2>
                   <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-                    The ticket has been marked as used successfully.
+                    チケットが正常に使用済みになりました。
                   </p>
                 </div>
                 <div className="text-center text-xs text-muted-foreground">
-                  <p>Used at: {new Date(state.usedAt).toLocaleString("ja-JP")}</p>
+                  <p>使用日時: {new Date(state.usedAt).toLocaleString("ja-JP")}</p>
                   <p className="font-mono mt-1 opacity-60">{state.nftId}</p>
                 </div>
               </CardContent>
             </Card>
             <Button onClick={resetScanner} className="gap-2">
               <RotateCcw className="w-4 h-4" />
-              Scan Next Ticket
+              次のチケットをスキャン
             </Button>
           </div>
         )}
@@ -257,10 +222,10 @@ function StaffScanContent() {
                 </div>
                 <div className="text-center">
                   <h2 className="text-xl font-bold text-foreground">
-                    Already Used
+                    使用済み
                   </h2>
                   <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-                    This ticket has already been used and cannot be used again.
+                    このチケットは既に使用済みです。再度使用することはできません。
                   </p>
                 </div>
                 <Badge
@@ -273,7 +238,7 @@ function StaffScanContent() {
             </Card>
             <Button onClick={resetScanner} className="gap-2">
               <RotateCcw className="w-4 h-4" />
-              Scan Next Ticket
+              次のチケットをスキャン
             </Button>
           </div>
         )}
@@ -287,7 +252,7 @@ function StaffScanContent() {
                   <XCircle className="w-10 h-10 text-destructive" />
                 </div>
                 <div className="text-center">
-                  <h2 className="text-xl font-bold text-foreground">Error</h2>
+                  <h2 className="text-xl font-bold text-foreground">エラー</h2>
                   <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
                     {state.message}
                   </p>
@@ -296,7 +261,7 @@ function StaffScanContent() {
             </Card>
             <Button onClick={resetScanner} className="gap-2">
               <RotateCcw className="w-4 h-4" />
-              Try Again
+              再試行
             </Button>
           </div>
         )}

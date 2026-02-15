@@ -4,12 +4,13 @@ import { getNFTMetadata } from "@/lib/alchemy";
 
 export async function POST(req: NextRequest) {
   try {
-    const { nftId, staffSecret } = await req.json();
-
-    // Verify staff secret
+    // Verify staff auth via cookie
+    const staffSecret = req.cookies.get("nanjo_staff_secret")?.value;
     if (!staffSecret || staffSecret !== process.env.STAFF_SECRET) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
+
+    const { nftId } = await req.json();
 
     if (!nftId) {
       return NextResponse.json({ error: "nftId is required" }, { status: 400 });
