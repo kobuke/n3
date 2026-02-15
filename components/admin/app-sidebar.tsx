@@ -11,6 +11,7 @@ import {
   Hexagon,
   ScanLine,
   LogOut,
+  Shield,
 } from "lucide-react"
 
 import {
@@ -52,6 +53,11 @@ const navItems = [
     title: "監査ログ",
     href: "/staff/audit",
     icon: FileText,
+  },
+  {
+    title: "Discord連携",
+    href: "/staff/discord",
+    icon: Shield,
   },
   {
     title: "設定",
