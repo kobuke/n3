@@ -3,10 +3,11 @@
   publish = ".next"
 
 [build.environment]
-  # NEXT_PUBLIC_* variables are intentionally embedded in client bundles (false positives).
-  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_THIRDWEB_CLIENT_ID,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,NEXT_PUBLIC_COLLECTION_ID,NEXT_PUBLIC_CHAIN_NAME,NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,NEXT_PUBLIC_DISCORD_REDIRECT_URI,NEXT_PUBLIC_APP_URL,NEXT_PUBLIC_LIFF_ID"
-  # Exclude webpack cache and server build output from secrets scanning
-  SECRETS_SCAN_OMIT_PATHS = ".netlify/.next/cache,.netlify/functions-internal"
+  # These env vars produce false positives (NEXT_PUBLIC_* are intentionally in bundles;
+  # CROSSMINT_* are legacy/unused; values like "production" appear throughout code).
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_THIRDWEB_CLIENT_ID,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,NEXT_PUBLIC_COLLECTION_ID,NEXT_PUBLIC_CHAIN_NAME,NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,NEXT_PUBLIC_DISCORD_REDIRECT_URI,NEXT_PUBLIC_APP_URL,NEXT_PUBLIC_LIFF_ID,CROSSMINT_ENV,CROSSMINT_API_KEY,CROSSMINT_COLLECTION_ID,CROSSMINT_PROJECT_ID"
+  # Exclude build artifacts from secrets scanning
+  SECRETS_SCAN_OMIT_PATHS = ".netlify,.next"
 
 [context.production]
   command = "npm run build"
