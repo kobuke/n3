@@ -18,8 +18,8 @@ import { toast } from "sonner";
 
 type ScanState =
   | { mode: "scanning" }
-  | { mode: "confirming"; nftId: string }
-  | { mode: "processing"; nftId: string }
+  | { mode: "confirming"; nftId: string; walletAddress: string }
+  | { mode: "processing"; nftId: string; walletAddress: string }
   | { mode: "success"; nftId: string; usedAt: string }
   | { mode: "already_used"; nftId: string; nft?: any }
   | { mode: "error"; message: string };
@@ -40,46 +40,50 @@ function StaffScanContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [state, setState] = useState<ScanState>(() => {
-    const nftIdParam =
-      typeof window !== "undefined"
-        ? new URLSearchParams(window.location.search).get("nftId")
-        : null;
-    return nftIdParam ? { mode: "confirming", nftId: nftIdParam } : { mode: "scanning" };
+    const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+    const nftIdParam = searchParams?.get("nftId");
+    const walletAddressParam = searchParams?.get("walletAddress");
+    return nftIdParam && walletAddressParam
+      ? { mode: "confirming", nftId: nftIdParam, walletAddress: walletAddressParam }
+      : { mode: "scanning" };
   });
 
-  const extractNftId = useCallback((scannedData: string): string | null => {
+  const extractParams = useCallback((scannedData: string): { nftId: string; walletAddress: string } | null => {
     try {
       const url = new URL(scannedData);
-      return url.searchParams.get("nftId");
-    } catch {
-      if (scannedData && scannedData.length > 5) {
-        return scannedData;
+      const nftId = url.searchParams.get("nftId");
+      const walletAddress = url.searchParams.get("walletAddress");
+      if (nftId && walletAddress) {
+        return { nftId, walletAddress };
       }
+      return null;
+    } catch {
+      // Legacy fallback or just raw string (won't work if backend requires walletAddress)
       return null;
     }
   }, []);
 
   const handleScan = useCallback(
     (result: string) => {
-      const nftId = extractNftId(result);
-      if (nftId) {
-        setState({ mode: "confirming", nftId });
+      const params = extractParams(result);
+      if (params) {
+        setState({ mode: "confirming", nftId: params.nftId, walletAddress: params.walletAddress });
       } else {
-        toast.error("Invalid QR code");
+        toast.error("Invalid QR code formatting");
         setState({ mode: "scanning" });
       }
     },
-    [extractNftId]
+    [extractParams]
   );
 
-  async function handleUseTicket(nftId: string) {
-    setState({ mode: "processing", nftId });
+  async function handleUseTicket(nftId: string, walletAddress: string) {
+    setState({ mode: "processing", nftId, walletAddress });
 
     try {
       const res = await fetch("/api/use-ticket", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nftId }),
+        body: JSON.stringify({ nftId, walletAddress }),
       });
 
       const data = await res.json();
@@ -160,7 +164,7 @@ function StaffScanContent() {
                   </Button>
                   <Button
                     className="flex-1"
-                    onClick={() => handleUseTicket(state.nftId)}
+                    onClick={() => handleUseTicket(state.nftId, state.walletAddress)}
                   >
                     <CheckCircle2 className="w-4 h-4 mr-1.5" />
                     使用する

@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getNFTsForOwner } from "@/lib/alchemy";
+import { getNFTsForWallet } from "@/lib/thirdweb";
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const email = searchParams.get("email");
     const contractAddress = process.env.NEXT_PUBLIC_COLLECTION_ID;
-    const collectionId = process.env.CROSSMINT_COLLECTION_ID;
 
-    if (!contractAddress || !collectionId) {
+    if (!contractAddress) {
       return NextResponse.json(
         { error: "Configuration missing" },
         { status: 500 }
@@ -17,41 +16,36 @@ export async function GET(req: NextRequest) {
 
     if (!email) {
       return NextResponse.json(
-        { error: "Email/Address is required" },
+        { error: "Email is required" },
         { status: 400 }
       );
     }
 
-    // 1. Get Session from Cookie to retrieve wallet address
-    // Since we are already authenticated, the session should have the wallet address
-    // (This part is handled by the calling page usually having session, but here we can rely on what we stored)
-    // For now, let's just resolve the wallet address using Crossmint helper if we only have email, 
-    // OR we can trust the previous flow stored it in session.
-    // However, the `getNFTsForOwner` function in Alchemy expects a wallet address, NOT an email.
+    // 1. Get Session state to retrieve wallet address
+    // The client typically passes email or relies on session.
+    // We should ideally fetch walletAddress from the DB based on the email.
+    const { createAdminClient } = await import("@/lib/supabase/server");
+    const supabase = createAdminClient();
 
-    // We will use a helper to get the wallet address from the email via Crossmint API, 
-    // BUT to avoid redundant calls, we should check if the client passed the wallet address directly or if we can get it from session.
-    // In this specific architecture, `getNFTsForOwner` (aliased from `getNFTsByAlchemy`) takes an `ownerAddress`.
-    // The previous error "owner should be a valid address" confirms we passed an email to a function expecting an 0x... address.
-
-    // Let's resolve the wallet address. Ideally, this should be in the session.
-    // We'll quickly import getSession to check.
+    // First, try session wallet if available
     const { getSession } = await import("@/lib/session");
     const session = await getSession();
-
     let walletAddress = session?.walletAddress;
 
+    // If no wallet in session, lookup by email
     if (!walletAddress) {
-      // Fallback: If session doesn't have it (legacy session?), fetch it again using email
-      // This is a safety net.
-      console.log(`Wallet address not in session, fetching for email: ${email}`);
-      const { getWalletByEmail } = await import("@/lib/crossmint");
-      try {
-        const wallet = await getWalletByEmail(email);
-        walletAddress = wallet.publicKey || wallet.address;
-      } catch (e) {
-        console.error("Failed to resolve wallet address:", e);
-        return NextResponse.json({ error: "Wallet not found" }, { status: 404 });
+      const { data: user } = await supabase
+        .from("users")
+        .select("walletAddress")
+        .eq("email", email)
+        .single();
+
+      if (user?.walletAddress) {
+        walletAddress = user.walletAddress;
+      } else {
+        // No wallet means no NFTs. Returning 404 causes the UI to show an error screen.
+        // Returning an empty array gracefully handles "new" users who haven't linked a wallet.
+        return NextResponse.json({ nfts: [] });
       }
     }
 
@@ -59,48 +53,16 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Invalid wallet address" }, { status: 400 });
     }
 
-    // 2. Get NFTs from Alchemy using the WALLET ADDRESS
-    console.log(`Using Alchemy to fetch NFTs for address: ${walletAddress}`);
-    const alchemyResult = await getNFTsForOwner(walletAddress);
-    const ownedNfts = alchemyResult.filter(
-      (nft: any) =>
-        nft.contract.address.toLowerCase() === contractAddress.toLowerCase()
-    );
+    // 2. Get NFTs from thirdweb
+    const chain = process.env.NEXT_PUBLIC_CHAIN_NAME || "polygon"; // Update to environment variable or actual production chain
+    const ownedNfts = await getNFTsForWallet(contractAddress, walletAddress, chain as any);
 
-    console.log(`Alchemy found ${ownedNfts.length} NFTs for this collection.`);
-
-    // 3. Fetch latest metadata from Crossmint to get "Status"
-    const crossmintRes = await fetch(
-      `https://www.crossmint.com/api/2022-06-09/collections/${collectionId}/nfts?perPage=50`,
-      {
-        headers: {
-          "X-API-KEY": process.env.CROSSMINT_API_KEY || "",
-        },
-      }
-    );
-
-    let crossmintNfts: any[] = [];
-    if (crossmintRes.ok) {
-      crossmintNfts = await crossmintRes.json();
-    }
-
-    // 4. Merge/Format data
+    // 3. Format data
     const nfts = ownedNfts.map((nft: any) => {
-      // Find matching NFT in Crossmint data by tokenId
-      const dynamicNft = crossmintNfts.find(
-        (cn: any) => cn.onChain?.tokenId === nft.tokenId
-      );
-
-      // Use Crossmint metadata if available (for "Status"), fallback to Alchemy
-      const metadata = dynamicNft?.metadata || nft.raw?.metadata || {};
+      const metadata = nft.metadata || {};
       const attributes = metadata.attributes || [];
 
-      let imageUrl =
-        nft.image?.cachedUrl ||
-        nft.image?.thumbnailUrl ||
-        nft.image?.originalUrl ||
-        metadata.image ||
-        "";
+      let imageUrl = metadata.image || "";
 
       // Handle ipfs:// prefix
       if (imageUrl && imageUrl.startsWith("ipfs://")) {
@@ -108,15 +70,16 @@ export async function GET(req: NextRequest) {
       }
 
       return {
-        id: dynamicNft?.id || nft.tokenId, // Prefer Crossmint UUID if available
-        tokenId: nft.tokenId,
-        contractAddress: nft.contract.address,
-        name: metadata.name || nft.name || `Ticket #${nft.tokenId}`,
-        description: metadata.description || nft.description,
+        id: nft.id.toString(), // Token ID as string
+        tokenId: nft.id.toString(),
+        contractAddress: contractAddress,
+        name: metadata.name || `Ticket #${nft.id.toString()}`,
+        description: metadata.description || "",
         image: imageUrl,
+        supply: nft.supply ? Number(nft.supply) : 1,
         metadata: {
-          name: metadata.name || nft.name,
-          description: metadata.description || nft.description,
+          name: metadata.name,
+          description: metadata.description,
           image: imageUrl,
           attributes: attributes
         }

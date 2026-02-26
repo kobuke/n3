@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getWalletByEmail } from "@/lib/crossmint";
 import { setSession } from "@/lib/session";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,17 +10,34 @@ export async function POST(req: NextRequest) {
     let walletAddress: string | undefined;
     let finalEmail: string = email;
 
+    const supabase = createAdminClient();
+
     if (providedWalletAddress) {
       // Direct wallet login (e.g. MetaMask)
       walletAddress = providedWalletAddress;
       finalEmail = email || `${walletAddress?.slice(0, 6)}...${walletAddress?.slice(-4)}`; // Fallback display name
+
+      // Upsert into users table just in case they are new but logging in via wallet direct
+      const { data: existingUser } = await supabase.from('users').select('id').eq('walletAddress', walletAddress).single();
+      if (!existingUser) {
+        // Attempt upsert (graceful fail if email constraint etc)
+        await supabase.from('users').insert({ email: finalEmail, walletAddress }).select().single();
+      }
+
     } else if (email) {
-      // Email based login (Crossmint)
+      // Email based login
       if (typeof email !== "string") {
         return NextResponse.json({ error: "Email is required" }, { status: 400 });
       }
-      const wallet = await getWalletByEmail(email.trim().toLowerCase());
-      walletAddress = wallet.publicKey ?? wallet.address;
+
+      const { data: userRecord } = await supabase
+        .from('users')
+        .select('walletAddress')
+        .eq('email', email.trim().toLowerCase())
+        .single();
+
+      walletAddress = userRecord?.walletAddress;
+
     } else {
       return NextResponse.json({ error: "Email or Wallet Address is required" }, { status: 400 });
     }

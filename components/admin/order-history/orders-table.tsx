@@ -41,7 +41,7 @@ type Order = {
   recipient: string
   status: MintStatus
   errorMessage?: string
-  crossmintActionId?: string
+  thirdwebActionId?: string
   createdAt: string
 }
 
@@ -73,18 +73,22 @@ export function OrdersTable() {
     fetch('/api/logs?type=mint')
       .then(res => res.json())
       .then(data => {
-        // Transform data to match Order type
-        const formattedOrders = data.map((log: any) => ({
-          id: log.id,
-          shopifyOrderId: log.shopify_order_id,
-          productName: log.product_name || "Unknown Product",
-          recipientType: log.recipient_wallet ? "wallet" : "email",
-          recipient: log.recipient_wallet || log.recipient_email || "Unknown",
-          status: log.status,
-          errorMessage: log.error_message,
-          createdAt: log.created_at
-        }))
-        setOrders(formattedOrders)
+        if (data && Array.isArray(data)) {
+          // Transform data to match Order type
+          const formattedOrders = data.map((log: any) => ({
+            id: log.id,
+            shopifyOrderId: log.shopify_order_id,
+            productName: log.product_name || "Unknown Product",
+            recipientType: (log.recipient_wallet ? "wallet" : "email") as "wallet" | "email",
+            recipient: log.recipient_wallet || log.recipient_email || "Unknown",
+            status: log.status,
+            errorMessage: log.error_message,
+            createdAt: log.created_at
+          }))
+          setOrders(formattedOrders)
+        } else if (data && data.error) {
+          console.error("API error:", data.error)
+        }
         setLoading(false)
       })
       .catch(err => {

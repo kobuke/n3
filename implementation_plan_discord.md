@@ -47,8 +47,8 @@ Enable users who hold specific NFTs currently authenticated in the web app to au
 
 ## Environment Variables
 - `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY` (for backend admin tasks)
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `SUPABASE_SECRET_KEY` (for backend admin tasks)
 - `DISCORD_CLIENT_ID`
 - `DISCORD_CLIENT_SECRET`
 - `DISCORD_BOT_TOKEN`

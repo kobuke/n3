@@ -40,6 +40,11 @@ const navItems = [
     icon: ScanLine,
   },
   {
+    title: "NFTテンプレート",
+    href: "/staff/templates",
+    icon: Hexagon,
+  },
+  {
     title: "商品マッピング",
     href: "/staff/mapping",
     icon: Link2,

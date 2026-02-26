@@ -128,11 +128,11 @@ function MyPageContent() {
           </p>
         </div>
 
-        <p className="text-sm text-muted-foreground mb-4">
-          {nfts.length > 0
-            ? `${nfts.length}枚のチケットが見つかりました`
-            : "読み込み中..."}
-        </p>
+        {!nftLoading && nfts.length > 0 && (
+          <p className="text-sm text-muted-foreground mb-4">
+            {nfts.length}枚のチケットが見つかりました
+          </p>
+        )}
 
         {/* Loading state */}
         {nftLoading && (
@@ -143,38 +143,19 @@ function MyPageContent() {
           </div>
         )}
 
-        {/* Error state */}
-        {nftError && (
-          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center">
-            <p className="text-sm text-destructive font-medium">
-              チケットの読み込みに失敗しました
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              ページを更新してお試しください。
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-4"
-              onClick={() => mutate()}
-            >
-              再試行
-            </Button>
-          </div>
-        )}
-
-        {/* Empty state */}
-        {!nftLoading && !nftError && nfts.length === 0 && (
+        {/* Empty state (No wallet / No NFTs) */}
+        {!nftLoading && (!nfts || nfts.length === 0) && (
           <div className="rounded-xl border border-border/50 bg-card p-10 text-center flex flex-col items-center gap-3">
             <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
               <Ticket className="w-7 h-7 text-muted-foreground" />
             </div>
             <h3 className="font-semibold text-foreground">チケットがありません</h3>
             <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
-              ウォレットに紐づく NFT チケットが発行されると、ここに表示されます。
+              ウォレットに紐づく NFT チケットが発行されるか、ここにウォレットを接続すると表示されます。
             </p>
           </div>
         )}
+
 
         {/* NFT List */}
         {!nftLoading && !nftError && nfts.length > 0 && (

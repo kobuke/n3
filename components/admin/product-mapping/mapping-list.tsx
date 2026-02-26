@@ -22,10 +22,10 @@ type ShopifyProduct = {
   status: "active" | "draft"
 }
 
-type CrossmintTemplate = {
+type ContractTemplate = {
   id: string
   name: string
-  collectionName: string
+  contractAddress: string
 }
 
 type Mapping = {
@@ -35,7 +35,7 @@ type Mapping = {
 
 export function MappingList() {
   const [products, setProducts] = useState<ShopifyProduct[]>([])
-  const [templates, setTemplates] = useState<CrossmintTemplate[]>([])
+  const [templates, setTemplates] = useState<ContractTemplate[]>([])
   const [mappings, setMappings] = useState<Record<string, string>>({}) // productId -> templateId
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -60,7 +60,7 @@ export function MappingList() {
         const mappingMap: Record<string, string> = {}
         if (Array.isArray(mappingsData)) {
           mappingsData.forEach((m: any) => {
-            mappingMap[m.shopify_product_id] = m.crossmint_template_id
+            mappingMap[m.shopify_product_id] = m.nft_template_id
           })
         }
         setMappings(mappingMap)
@@ -84,7 +84,7 @@ export function MappingList() {
         return fetch('/api/mappings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ shopify_product_id: productId, crossmint_template_id: templateId })
+          body: JSON.stringify({ shopify_product_id: productId, nft_template_id: templateId })
         })
       }
       return Promise.resolve() // Handle unlink later if needed
@@ -210,7 +210,7 @@ export function MappingList() {
                     </div>
                     <div className="flex flex-col gap-1">
                       <span className="text-xs font-medium text-muted-foreground">
-                        Crossmint Template
+                        NFT Template
                       </span>
                       <Select
                         value={currentTemplateId || "none"}
@@ -239,7 +239,7 @@ export function MappingList() {
                       </Select>
                       {selectedTemplate && (
                         <span className="text-xs text-muted-foreground">
-                          {"Collection: "}{selectedTemplate.collectionName}
+                          {selectedTemplate.contractAddress ? `Contract: ${selectedTemplate.contractAddress}` : 'Default Contract'}
                         </span>
                       )}
                     </div>

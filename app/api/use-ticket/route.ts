@@ -1,86 +1,93 @@
-import { NextRequest, NextResponse } from "next/server";
-import { updateNFTMetadata, getNFTById } from "@/lib/crossmint";
-import { getNFTMetadata } from "@/lib/alchemy";
+import { NextResponse } from 'next/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { getContract } from "thirdweb";
+import { client } from "@/lib/thirdweb";
+import { polygon, polygonAmoy } from "thirdweb/chains";
 
-export async function POST(req: NextRequest) {
-  try {
-    // Verify staff auth via cookie
-    const staffSecret = req.cookies.get("nanjo_staff_secret")?.value;
-    if (!staffSecret || staffSecret !== process.env.STAFF_SECRET) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
-
-    const { nftId } = await req.json();
-
-    if (!nftId) {
-      return NextResponse.json({ error: "nftId is required" }, { status: 400 });
-    }
-
-    const contractAddress = process.env.NEXT_PUBLIC_COLLECTION_ID;
-    const crossmintCollectionId = process.env.CROSSMINT_COLLECTION_ID;
-
-    if (!contractAddress || !crossmintCollectionId) {
-      console.error("Configuration error: Missing collection IDs");
-      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
-    }
-
-    // 1. Fetch current NFT metadata
-    let nft: any;
-    const isUUID = nftId.includes("-");
-
+export async function POST(req: Request) {
     try {
-      if (isUUID) {
-        console.log(`Fetching metadata from Crossmint for UUID: ${nftId}`);
-        nft = await getNFTById(crossmintCollectionId, nftId);
-      } else {
-        console.log(`Fetching metadata from Alchemy for Token ID: ${nftId}`);
-        nft = await getNFTMetadata(contractAddress, nftId);
-      }
-    } catch (fetchErr: any) {
-      console.error("Metadata fetch failed:", fetchErr.message);
-      return NextResponse.json({ error: `NFT not found: ${fetchErr.message}` }, { status: 404 });
+        const { tokenId, walletAddress, staffSecret, contractAddress } = await req.json();
+
+        // 1. Verify Staff Secret
+        if (staffSecret !== process.env.STAFF_SECRET) {
+            return NextResponse.json({ error: "Invalid staff secret" }, { status: 403 });
+        }
+
+        if (!tokenId || !walletAddress || !contractAddress) {
+            return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+        }
+
+        const supabase = createAdminClient();
+
+        // 2. Check if already used locally
+        const { data: usageLog } = await supabase
+            .from('ticket_usages')
+            .select('status')
+            .eq('token_id', tokenId)
+            .eq('contract_address', contractAddress)
+            .eq('status', 'used')
+            .single();
+
+        if (usageLog) {
+            return NextResponse.json({ error: "Ticket feels like it's already used." }, { status: 400 });
+        }
+
+        // 3. Initiate Burn transaction to invalidate ticket on-chain
+        // thirdweb burn endpoint from engine
+        const ENGINE_URL = process.env.THIRDWEB_ENGINE_URL || "";
+        const ENGINE_ACCESS_TOKEN = process.env.THIRDWEB_ENGINE_ACCESS_TOKEN || "";
+        const ENGINE_BACKEND_WALLET = process.env.THIRDWEB_ENGINE_BACKEND_WALLET || "";
+
+        const chain = process.env.NEXT_PUBLIC_CHAIN_NAME || "Polygon";
+        // NOTE: "burn-from" requires the wallet to have approved the backend wallet to burn on its behalf.
+        // If not approved, or if we just want to update metadata (not burn), we execute standard contract write.
+        /* 
+        const url = `${ENGINE_URL}/contract/${chain}/${contractAddress}/erc1155/burn-from`;
+        const res = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${ENGINE_ACCESS_TOKEN}`,
+                "x-backend-wallet-address": ENGINE_BACKEND_WALLET,
+            },
+            body: JSON.stringify({
+                account: walletAddress,
+                tokenId: tokenId,
+                amount: "1"
+            })
+        });
+
+        if (!res.ok) {
+            throw new Error(await res.text());
+        }
+        const data = await res.json();
+        */
+
+        // For now, since true on-chain burn requires user approval, we simulate the 'used' state locally.
+        // A true on-chain update typically means burning or updating metadata via a custom smart contract "markUsed" function.
+        // We will log it.
+        const txHash = "pending_onchain_update_or_burn";
+
+        // 4. Log Usage
+        await supabase.from('ticket_usages').insert({
+            token_id: tokenId,
+            contract_address: contractAddress,
+            wallet_address: walletAddress,
+            transaction_hash: txHash,
+            status: "used"
+        });
+
+        // Audit Log
+        await supabase.from('audit_logs').insert({
+            user_id: 'Staff',
+            action: 'TICKET_USED',
+            details: { tokenId, contractAddress, walletAddress, txHash }
+        });
+
+        return NextResponse.json({ success: true, txHash });
+
+    } catch (error: any) {
+        console.error("Use ticket error:", error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
-
-    // Normalize attributes based on the response format (Crossmint vs Alchemy)
-    const currentAttributes: any[] =
-      (nft.metadata?.attributes) ||
-      (nft.raw?.metadata?.attributes) ||
-      [];
-
-    // Check current status
-    const statusAttr = currentAttributes.find((a: any) => a.trait_type === "Status");
-    if (statusAttr?.value === "Used") {
-      return NextResponse.json({ error: "This ticket has already been used", nft }, { status: 409 });
-    }
-
-    // 2. Prepare metadata update
-    const now = new Date().toISOString();
-    const updatedAttributes = currentAttributes
-      .filter((a: any) => a.trait_type !== "Status" && a.trait_type !== "Used_At")
-      .concat([
-        { trait_type: "Status", value: "Used" },
-        { trait_type: "Used_At", value: now },
-      ]);
-
-    // Construct the full metadata object as required by Crossmint PATCH API
-    const updatedMetadata = {
-      name: nft.name || nft.metadata?.name || nft.raw?.metadata?.name || "NFT Ticket",
-      description: nft.description || nft.metadata?.description || nft.raw?.metadata?.description || "",
-      image: nft.image?.originalUrl || nft.image?.cachedUrl || nft.metadata?.image || nft.raw?.metadata?.image || "",
-      attributes: updatedAttributes
-    };
-
-    // 3. Update via Crossmint
-    // Use locator format if numeric Token ID, otherwise if UUID use it directly
-    const targetIdForUpdate = isUUID ? nftId : `polygon:${contractAddress}:${nftId}`;
-    console.log(`Updating via Crossmint. Target ID: ${targetIdForUpdate}`);
-
-    const result = await updateNFTMetadata(crossmintCollectionId, targetIdForUpdate, updatedMetadata);
-    return NextResponse.json({ ok: true, result, usedAt: now });
-
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Use ticket error:", message);
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
 }

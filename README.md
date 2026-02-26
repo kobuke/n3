@@ -19,9 +19,9 @@ NFTチケットの保有確認・使用（QRコードスキャン）に加え、
 ### 🎫 ユーザー向け
 
 1. **ログイン / 認証**
-   - **メール認証 (OTP)**: Crossmint発行のウォレットを持つユーザー向け。メールアドレスに6桁の認証コードを送信。
+   - **メール認証 (OTP)**: Thirdweb In-App Walletを持つユーザー向け。メールアドレスに6桁の認証コードを送信（LINE連携時も同様）。
    - **WalletConnect (AppKit)**: MetaMask等の外部ウォレットを持つユーザー向け。
-   - メールに紐づくCrossmintウォレットが存在しない場合、ログインはブロックされエラーメッセージが表示される。
+   - メールに紐づくウォレットが存在しない場合でも、ログイン自体は可能ですがウォレット接続を求められます。
 
 2. **マイページ (チケット一覧)**
    - 保有するNFTチケットの一覧表示（南城市NFTコレクションのみ）
@@ -73,8 +73,8 @@ NFTチケットの保有確認・使用（QRコードスキャン）に加え、
 | **Framework** | [Next.js 16](https://nextjs.org/) (App Router, Turbopack) |
 | **Language** | TypeScript |
 | **Styling** | Tailwind CSS v3, Shadcn UI, Lucide React |
-| **認証** | Cookie-based Session, Email OTP (Resend), WalletConnect (AppKit/Reown) |
-| **Blockchain** | Alchemy SDK (NFTデータ取得), Crossmint (ウォレット管理・NFTミント) |
+| **認証** | Cookie-based Session, Email OTP (Resend + Thirdweb Auth), WalletConnect (AppKit/Reown) |
+| **Blockchain** | Thirdweb Engine (NFT発行、In-App Wallet自動生成), Alchemy SDK (必要に応じたデータ取得) |
 | **Database** | Supabase (PostgreSQL) |
 | **Email** | Resend |
 | **外部連携** | Discord API (OAuth2, Bot), Shopify Webhooks |
@@ -154,8 +154,12 @@ NFTチケットの保有確認・使用（QRコードスキャン）に加え、
 このアプリを動作させるには、以下の環境変数が必要です。
 
 ```env
-# ── Crossmint (ウォレット管理 & NFTミント) ──
-CROSSMINT_API_KEY=sk_production_...
+# ── Thirdweb (ウォレット管理 & NFTミント) ──
+NEXT_PUBLIC_THIRDWEB_CLIENT_ID=...
+THIRDWEB_SECRET_KEY=...
+THIRDWEB_ENGINE_URL=...
+THIRDWEB_ENGINE_ACCESS_TOKEN=...
+THIRDWEB_ENGINE_BACKEND_WALLET=...
 
 # ── 対象NFTコレクション ──
 NEXT_PUBLIC_COLLECTION_ID=ポリゴン上のコントラクトアドレス
@@ -174,8 +178,8 @@ NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=...
 
 # ── Supabase (データベース) ──
 NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=eyJ...
+SUPABASE_SECRET_KEY=eyJ...
 
 # ── Shopify (Webhook連携) ──
 SHOPIFY_WEBHOOK_SECRET=shpss_...
@@ -265,9 +269,19 @@ npm run dev
 [ユーザー] → メールアドレス入力
   → /api/auth/send-otp (OTP生成 & Resendでメール送信)
   → OTPコード入力
-  → /api/auth/verify-otp (OTP検証 → Crossmintウォレット検索)
-    → ウォレットが見つかればセッション確立 → /mypage
-    → ウォレットが見つからなければエラーメッセージ表示
+  → /api/auth/verify-otp (OTP検証 → Usersテーブルからウォレットアドレス検索)
+    → セッション確立 → /mypage
+```
+
+### 自動ウォレット生成 (Shopify Webhook)
+
+```
+[Shopify] → 商品購入
+  → /api/webhooks/shopify (Webhook受信)
+  → ユーザーのウォレットアドレス確認
+  → なければ Thirdweb Engine API にて Backend Managed Wallet を自動生成
+  → Usersテーブルに保存 → NFTを新ウォレットにMint
+  → お客様に完了メール送信
 ```
 
 ### スタッフ認証

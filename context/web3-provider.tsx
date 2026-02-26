@@ -2,7 +2,7 @@
 
 import { createAppKit } from '@reown/appkit/react'
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
-import { mainnet, polygon, arbitrum } from '@reown/appkit/networks'
+import { mainnet, polygon, arbitrum, type AppKitNetwork } from '@reown/appkit/networks'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider } from 'wagmi'
 
@@ -12,7 +12,7 @@ import { WagmiProvider } from 'wagmi'
 const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || 'f2b604b901614f04c6436e39527f309a' // Fallback public ID (do not use in prod)
 
 // 2. Set up Wagmi Adapter
-export const networks = [mainnet, polygon, arbitrum]
+export const networks: [AppKitNetwork, ...AppKitNetwork[]] = [mainnet, polygon, arbitrum]
 
 export const wagmiAdapter = new WagmiAdapter({
     projectId,

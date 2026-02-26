@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession, setSession, clearSession } from "@/lib/session";
-import { getWalletByEmail } from "@/lib/crossmint";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
     try {
-        const { otp: userInputOtp } = await req.json();
+        const { otp: userInputOtp, lineId } = await req.json();
         const session = await getSession();
 
         if (!session || !session.otp || !session.pendingEmail || !session.otpExpires) {
@@ -20,28 +20,38 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Invalid OTP." }, { status: 400 });
         }
 
-        // OTP Verified -> Get Wallet
+        // OTP Verified -> Get Wallet from Supabase DB
         const email = session.pendingEmail;
-        let wallet;
-        try {
-            wallet = await getWalletByEmail(email);
-        } catch (err: any) {
-            if (err.message?.includes("404")) {
-                return NextResponse.json(
-                    { error: "このメールアドレスに紐づくウォレットが見つかりません。NFTが発行されたメールアドレスでログインしてください。" },
-                    { status: 404 }
-                );
-            }
-            throw err;
+        const supabase = createAdminClient();
+
+        // Check if user exists
+        const { data: userRecord } = await supabase
+            .from('users')
+            .select('walletAddress')
+            .eq('email', email)
+            .single();
+
+        let walletAddress = userRecord?.walletAddress;
+
+        // Note: For full thirdweb In-App Wallet integration, the backend might generate the wallet here
+        // if userRecord does not exist. That is typical of the Email OTP flow.
+
+        // If a wallet doesn't exist yet, we still allow login, but walletAddress will be undefined/null.
+        // We will prompt them to generate a wallet or claim their NFT on the mypage or claim page.
+        if (!walletAddress) {
+            console.log(`No wallet found for email ${email}, creating session anyway. User will need to connect/create wallet.`);
         }
 
-        const walletAddress = wallet.publicKey ?? wallet.address;
+        // Link LINE ID if provided
+        if (lineId) {
+            const { error: updateError } = await supabase
+                .from('users')
+                .update({ lineId })
+                .eq('email', email);
 
-        if (!walletAddress) {
-            return NextResponse.json(
-                { error: "このメールアドレスに紐づくウォレットが見つかりません。NFTが発行されたメールアドレスでログインしてください。" },
-                { status: 404 }
-            );
+            if (updateError) {
+                console.error("Failed to link LINE ID:", updateError.message);
+            }
         }
 
         // Set Final Authenticated Session
@@ -58,4 +68,3 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
-

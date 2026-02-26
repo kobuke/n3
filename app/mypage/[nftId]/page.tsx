@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { QRCodeSVG } from "qrcode.react";
@@ -11,6 +11,9 @@ import {
   CheckCircle2,
   Clock,
   MapPin,
+  Share2,
+  Copy,
+  Check,
 } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { Button } from "@/components/ui/button";
@@ -32,6 +35,36 @@ export default function TicketDetailPage({
 }) {
   const { nftId } = use(params);
   const router = useRouter();
+
+  const [isTransferring, setIsTransferring] = useState(false);
+  const [transferLink, setTransferLink] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const handleCreateTransferLink = async () => {
+    try {
+      setIsTransferring(true);
+      const res = await fetch("/api/transfer/create-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nftId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "リンクの発行に失敗しました");
+
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      setTransferLink(`${origin}/claim?token=${data.token}`);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setIsTransferring(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(transferLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const { data: session, isLoading: sessionLoading } = useSWR(
     "/api/session",
@@ -77,7 +110,7 @@ export default function TicketDetailPage({
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   // QRコードの値には、可能であれば内部ID (UUID) を優先的に使用して、バックエンドでの検索をスムーズにする
   const identifier = nft?.uuid || nftId;
-  const qrValue = `${origin}/staff/scan?nftId=${identifier}`;
+  const qrValue = `${origin}/staff/scan?nftId=${identifier}&walletAddress=${session.walletAddress}`;
 
   return (
     <div className="min-h-screen bg-background">
@@ -158,30 +191,71 @@ export default function TicketDetailPage({
 
         {/* QR Code Section */}
         {!isUsed ? (
-          <Card className="shadow-lg border-border/50">
-            <CardContent className="p-6 flex flex-col items-center gap-5">
-              <p className="text-sm font-medium text-foreground text-center">
-                このQRコードをスタッフに提示してください
-              </p>
+          <>
+            <Card className="shadow-lg border-border/50 mb-6">
+              <CardContent className="p-6 flex flex-col items-center gap-5">
+                <p className="text-sm font-medium text-foreground text-center">
+                  このQRコードをスタッフに提示してください
+                </p>
 
-              <div className="bg-white p-4 rounded-2xl border border-border/30 shadow-inner">
-                <QRCodeSVG
-                  value={qrValue}
-                  size={220}
-                  level="H"
-                  includeMargin
-                  bgColor="transparent"
-                  fgColor="#000000"
-                  className="text-foreground"
-                />
-              </div>
+                <div className="bg-white p-4 rounded-2xl border border-border/30 shadow-inner">
+                  <QRCodeSVG
+                    value={qrValue}
+                    size={220}
+                    level="H"
+                    includeMargin
+                    bgColor="transparent"
+                    fgColor="#000000"
+                    className="text-foreground"
+                  />
+                </div>
 
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <MapPin className="w-3.5 h-3.5" />
-                会場入口で提示してください
-              </div>
-            </CardContent>
-          </Card>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <MapPin className="w-3.5 h-3.5" />
+                  会場入口で提示してください
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Transfer Section */}
+            <Card className="shadow-lg border-border/50">
+              <CardContent className="p-6 flex flex-col items-center gap-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Share2 className="w-5 h-5 text-primary" />
+                  <h3 className="font-semibold text-foreground">チケットを譲渡する</h3>
+                </div>
+                <p className="text-sm text-muted-foreground text-center mb-2">
+                  チケットを他の人に譲渡するための専用リンクを発行します。<br />
+                  <span className="text-destructive font-medium">発行後はご自身でこのチケットを使用できなくなります。</span>
+                </p>
+
+                {transferLink ? (
+                  <div className="w-full space-y-3">
+                    <div className="p-3 bg-muted rounded-lg break-all text-xs font-mono text-muted-foreground border border-border/50">
+                      {transferLink}
+                    </div>
+                    <Button
+                      onClick={copyToClipboard}
+                      className="w-full flex items-center justify-center gap-2"
+                      variant={copied ? "secondary" : "default"}
+                    >
+                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      {copied ? "コピーしました" : "リンクをコピー"}
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={handleCreateTransferLink}
+                    disabled={isTransferring}
+                    className="w-full"
+                    variant="outline"
+                  >
+                    {isTransferring ? "発行処理中..." : "譲渡リンクを発行する"}
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          </>
         ) : (
           <Card className="border-border/30 opacity-70">
             <CardContent className="p-6 text-center flex flex-col items-center gap-3">

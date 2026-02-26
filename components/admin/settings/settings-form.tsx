@@ -12,7 +12,7 @@ import { Eye, EyeOff, Save, TestTube, CheckCircle2 } from "lucide-react"
 
 export function SettingsForm() {
   const [showShopifyKey, setShowShopifyKey] = useState(false)
-  const [showCrossmintKey, setShowCrossmintKey] = useState(false)
+  const [showThirdwebSecret, setShowThirdwebSecret] = useState(false)
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [autoRetry, setAutoRetry] = useState(false)
 
@@ -23,7 +23,7 @@ export function SettingsForm() {
         <CardHeader>
           <CardTitle className="text-base">API Configuration</CardTitle>
           <CardDescription>
-            Manage your Shopify and Crossmint API credentials
+            Manage your Shopify and thirdweb API credentials
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
@@ -72,10 +72,10 @@ export function SettingsForm() {
 
           <Separator />
 
-          {/* Crossmint */}
+          {/* thirdweb */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="crossmint-key">Crossmint API Key</Label>
+              <Label htmlFor="thirdweb-secret">thirdweb Secret Key</Label>
               <Badge className="bg-success/10 text-success hover:bg-success/20 border-0 gap-1">
                 <CheckCircle2 className="size-3" />
                 Connected
@@ -83,9 +83,9 @@ export function SettingsForm() {
             </div>
             <div className="relative">
               <Input
-                id="crossmint-key"
-                type={showCrossmintKey ? "text" : "password"}
-                defaultValue="sk_production_xxxxxxxxxxxxxxxxxxxx"
+                id="thirdweb-secret"
+                type={showThirdwebSecret ? "text" : "password"}
+                defaultValue="sk_xxxxxxxxxxxxxxxxxxxx"
                 className="pr-10 font-mono text-sm"
               />
               <Button
@@ -93,9 +93,9 @@ export function SettingsForm() {
                 variant="ghost"
                 size="icon"
                 className="absolute right-1 top-1/2 -translate-y-1/2 size-7"
-                onClick={() => setShowCrossmintKey(!showCrossmintKey)}
+                onClick={() => setShowThirdwebSecret(!showThirdwebSecret)}
               >
-                {showCrossmintKey ? (
+                {showThirdwebSecret ? (
                   <EyeOff className="size-3.5" />
                 ) : (
                   <Eye className="size-3.5" />
@@ -105,12 +105,22 @@ export function SettingsForm() {
             </div>
           </div>
 
-          {/* Crossmint Project ID */}
+          {/* thirdweb Engine URL */}
           <div className="flex flex-col gap-2">
-            <Label htmlFor="crossmint-project">Crossmint Project ID</Label>
+            <Label htmlFor="thirdweb-engine-url">thirdweb Engine URL</Label>
             <Input
-              id="crossmint-project"
-              defaultValue="prj_nomad_resort_production"
+              id="thirdweb-engine-url"
+              defaultValue="https://your-engine-name.up.railway.app"
+              className="font-mono text-sm"
+            />
+          </div>
+
+          {/* thirdweb Client ID */}
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="thirdweb-client-id">thirdweb Client ID</Label>
+            <Input
+              id="thirdweb-client-id"
+              defaultValue="your_client_id_here"
               className="font-mono text-sm"
             />
           </div>

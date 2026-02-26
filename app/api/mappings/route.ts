@@ -14,13 +14,14 @@ export async function GET() {
 
 export async function POST(request: Request) {
     const supabase = createAdminClient()
-    const { shopify_product_id, crossmint_template_id } = await request.json()
+    const { shopify_product_id, contract_address, nft_template_id } = await request.json()
 
     const { data, error } = await supabase
         .from('mappings')
         .upsert({
             shopify_product_id,
-            crossmint_template_id,
+            contract_address: contract_address || process.env.NEXT_PUBLIC_COLLECTION_ID || "default",
+            nft_template_id,
             updated_by: null
         }, { onConflict: 'shopify_product_id' })
         .select()
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
     await supabase.from('audit_logs').insert({
         user_id: null,
         action: 'UPDATE_MAPPING',
-        details: { shopify_product_id, crossmint_template_id }
+        details: { shopify_product_id, contract_address, nft_template_id }
     })
 
     return NextResponse.json(data)

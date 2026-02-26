@@ -1,27 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getNFTById } from "@/lib/crossmint";
-import { getNFTMetadata } from "@/lib/alchemy";
-
-// CrossmintのリストからTokenIDでNFTを検索するヘルパー
-async function findNFTInCrossmint(collectionId: string, tokenId: string) {
-  try {
-    const apiKey = process.env.CROSSMINT_API_KEY;
-    const res = await fetch(
-      `https://www.crossmint.com/api/2022-06-09/collections/${collectionId}/nfts?perPage=50`,
-      {
-        headers: {
-          "X-API-KEY": apiKey || "",
-        },
-      }
-    );
-    if (!res.ok) return null;
-    const nfts = await res.json();
-    return nfts.find((n: any) => n.onChain?.tokenId === tokenId);
-  } catch (e) {
-    console.error("Error searching in Crossmint:", e);
-    return null;
-  }
-}
+import { getNFTById } from "@/lib/thirdweb";
 
 export async function GET(
   _req: NextRequest,
@@ -29,62 +7,49 @@ export async function GET(
 ) {
   const { nftId } = await params;
   const contractAddress = process.env.NEXT_PUBLIC_COLLECTION_ID;
-  const crossmintCollectionId = process.env.CROSSMINT_COLLECTION_ID;
 
-  if (!contractAddress || !crossmintCollectionId) {
+  if (!contractAddress) {
     return NextResponse.json(
-      { error: "Collection IDs not configured" },
+      { error: "Collection ID not configured" },
       { status: 500 }
     );
   }
 
   try {
+    const chain = process.env.NEXT_PUBLIC_CHAIN_NAME || "polygon"; // Update to environment variable or actual production chain
+
+    // We expect nftId to be the token ID directly (numeric ID)
     let nft: any;
-    const isUUID = nftId.includes("-");
+    try {
+      nft = await getNFTById(contractAddress, nftId, chain as any);
+    } catch (err: any) {
+      console.error("fetch NFT failed:", err.message);
+      return NextResponse.json({ error: "NFT not found" }, { status: 404 });
+    }
 
-    if (isUUID) {
-      console.log(`Using Crossmint for detail (UUID): ${nftId}`);
-      nft = await getNFTById(crossmintCollectionId, nftId);
-    } else {
-      console.log(`Searching Crossmint for dynamic metadata (Token ID: ${nftId})`);
-      const crossmintNft = await findNFTInCrossmint(crossmintCollectionId, nftId);
-
-      if (crossmintNft) {
-        console.log("Found dynamic metadata in Crossmint.");
-        nft = crossmintNft;
-      } else {
-        console.log("Not found in Crossmint, falling back to Alchemy.");
-        nft = await getNFTMetadata(contractAddress, nftId);
-      }
+    if (!nft) {
+      return NextResponse.json({ error: "NFT not found" }, { status: 404 });
     }
 
     // Normalize image URL logic to handle IPFS and different providers
-    let imageUrl =
-      nft.image?.cachedUrl ||
-      nft.image?.thumbnailUrl ||
-      nft.image?.originalUrl ||
-      nft.metadata?.image ||
-      nft.raw?.metadata?.image ||
-      "";
-
-    // Handle ipfs:// prefix
+    // Using simple conversion for standard ipfs format usually returned by thirdweb
+    let imageUrl = nft.metadata?.image || "";
     if (imageUrl.startsWith("ipfs://")) {
       imageUrl = imageUrl.replace("ipfs://", "https://ipfs.io/ipfs/");
     }
 
     // Format for frontend
     const formattedNft = {
-      uuid: nft.id || (isUUID ? nftId : null),
-      tokenId: nft.onChain?.tokenId || nft.tokenId,
-      contractAddress: nft.onChain?.contractAddress || nft.contract?.address,
-      name: nft.name || nft.metadata?.name || nft.raw?.metadata?.name || `NFT #${nft.tokenId}`,
-      description: nft.description || nft.metadata?.description || nft.raw?.metadata?.description,
+      tokenId: nft.id.toString(),
+      contractAddress: contractAddress,
+      name: nft.metadata?.name || `NFT #${nft.id.toString()}`,
+      description: nft.metadata?.description || "",
       image: imageUrl,
       metadata: {
-        name: nft.name || nft.metadata?.name || nft.raw?.metadata?.name,
-        description: nft.description || nft.metadata?.description || nft.raw?.metadata?.description,
+        name: nft.metadata?.name || "",
+        description: nft.metadata?.description || "",
         image: imageUrl,
-        attributes: nft.metadata?.attributes ?? nft.raw?.metadata?.attributes ?? []
+        attributes: nft.metadata?.attributes || []
       }
     };
 
