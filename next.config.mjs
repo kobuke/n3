@@ -9,6 +9,7 @@ const nextConfig = {
       { protocol: "https", hostname: "**" },
     ],
   },
+  serverExternalPackages: ["pino", "thread-stream"],
 }
 
 export default nextConfig
