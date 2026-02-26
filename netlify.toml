@@ -3,9 +3,10 @@
   publish = ".next"
 
 [build.environment]
-  # NEXT_PUBLIC_* variables are intentionally embedded in client bundles.
-  # Skip secrets scanning for these public variables.
+  # NEXT_PUBLIC_* variables are intentionally embedded in client bundles (false positives).
   SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_THIRDWEB_CLIENT_ID,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,NEXT_PUBLIC_COLLECTION_ID,NEXT_PUBLIC_CHAIN_NAME,NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,NEXT_PUBLIC_DISCORD_REDIRECT_URI,NEXT_PUBLIC_APP_URL,NEXT_PUBLIC_LIFF_ID"
+  # Exclude webpack cache and server build output from secrets scanning
+  SECRETS_SCAN_OMIT_PATHS = ".netlify/.next/cache,.netlify/functions-internal"
 
 [context.production]
   command = "npm run build"
