@@ -218,11 +218,14 @@ const handler: Handler = async (event) => {
 
             // 成功メール送信
             if (customerEmail) {
+                const appUrl = (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost'))
+                    ? process.env.NEXT_PUBLIC_APP_URL
+                    : 'https://n3-nanjo-nft.netlify.app'
                 await resend.emails.send({
-                    from: "N3 NFT System <updates@nomadresort.io>",
+                    from: "N3 NFT System <updates@nomadresort.jp>",
                     to: customerEmail,
                     subject: `Your NFT is ready!`,
-                    html: `<p>Your NFT for ${templateData?.name || productName} has been minted to your wallet (${recipientWallet}).</p><p><a href="${process.env.NEXT_PUBLIC_APP_URL || "https://n3-nanjo-nft.netlify.app"}">Log in to view your NFT</a></p>`,
+                    html: `<p>Your NFT for ${templateData?.name || productName} has been minted to your wallet (${recipientWallet}).</p><p><a href="${appUrl}">Log in to view your NFT</a></p>`,
                 });
                 console.log(`[BG] Confirmation email sent to ${customerEmail}`);
             }
