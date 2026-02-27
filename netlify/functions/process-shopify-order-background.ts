@@ -174,7 +174,7 @@ const handler: Handler = async (event) => {
 
             // Thirdweb Engine でミント
             const chain = process.env.NEXT_PUBLIC_CHAIN_NAME || "polygon";
-            const mintUrl = `https://${process.env.THIRDWEB_ENGINE_URL}/contract/${chain}/${contractAddressToUse}/erc721/mint-to`;
+            const mintUrl = `https://${process.env.THIRDWEB_ENGINE_URL}/contract/${chain}/${contractAddressToUse}/erc1155/mint-to`;
             console.log(`[BG] Calling mint endpoint: ${mintUrl}`);
 
             const mintRes = await fetch(mintUrl, {
@@ -186,7 +186,10 @@ const handler: Handler = async (event) => {
                 },
                 body: JSON.stringify({
                     receiver: recipientWallet,
-                    metadata: metadata,
+                    metadataWithSupply: {
+                        metadata: metadata,
+                        supply: "1",
+                    },
                 }),
             });
 
