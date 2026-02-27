@@ -40,11 +40,17 @@ async function processShopifyOrder(rawBody: string) {
         const productName = item.title || 'Unknown Product'
 
         // 1. マッピング確認
-        const { data: mapping } = await supabase
+        const { data: mapping, error: mappingError } = await supabase
             .from('mappings')
             .select('nft_template_id, contract_address')
             .eq('shopify_product_id', productId)
             .maybeSingle()
+
+        console.log(`[Webhook] Mapping query for product ${productId}:`, JSON.stringify({ mapping, error: mappingError }))
+
+        if (mappingError) {
+            console.error(`[Webhook] Mapping query error:`, mappingError.message, mappingError.details)
+        }
 
         if (!mapping || (!mapping.nft_template_id && !mapping.contract_address)) {
             console.log(`[Webhook] No mapping found for product: ${productName} (${productId})`)
@@ -94,16 +100,17 @@ async function processShopifyOrder(rawBody: string) {
             recipientWallet = walletAttr.value;
         }
 
-        // DBからメールでウォレットを検索
+        // DBからメールでウォレットを検索（重複ウォレット防止）
         if (!recipientWallet && customerEmail) {
             const { data: userRecord } = await supabase
                 .from('users')
                 .select('walletAddress')
                 .eq('email', customerEmail)
-                .single()
+                .maybeSingle()
 
             if (userRecord?.walletAddress) {
                 recipientWallet = userRecord.walletAddress;
+                console.log(`[Webhook] Found existing wallet for ${customerEmail}: ${recipientWallet}`);
             } else {
                 // ウォレットなし → Thirdweb Engine でバックエンドウォレットを自動生成
                 try {
@@ -120,11 +127,11 @@ async function processShopifyOrder(rawBody: string) {
                         const data = await res.json();
                         const newWalletAddress = data.result.walletAddress;
 
-                        // Supabase に保存
-                        await supabase.from('users').insert({
-                            email: customerEmail,
-                            walletAddress: newWalletAddress
-                        });
+                        // upsert で重複挿入を防止（同メールなら更新しない）
+                        await supabase.from('users').upsert(
+                            { email: customerEmail, walletAddress: newWalletAddress },
+                            { onConflict: 'email', ignoreDuplicates: true }
+                        );
 
                         recipientWallet = newWalletAddress;
                         console.log(`[Webhook] Successfully created and saved wallet: ${newWalletAddress}`);
