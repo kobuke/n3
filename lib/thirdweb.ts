@@ -133,14 +133,12 @@ export async function getNFTsForWallet(
     address: contractAddress as `0x${string}`,
   });
 
-  // Since thirdweb v5 is modular, you might typically use `getOwnedNFTs` from the ERC1155 extension.
-  // We dynamic import to avoid large bundles if this file is used in both server and client blindly, 
-  // but generally it's safe to import directly if needed.
+  // The contract is ERC721 based on our checks. We use the erc721 extension to get owned NFTs.
   try {
-    const { getOwnedNFTs } = await import("thirdweb/extensions/erc1155");
+    const { getOwnedNFTs } = await import("thirdweb/extensions/erc721");
     const nfts = await getOwnedNFTs({
       contract,
-      address: walletAddress,
+      owner: walletAddress,
     });
     return nfts;
   } catch (error) {
