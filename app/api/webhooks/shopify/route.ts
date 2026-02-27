@@ -2,7 +2,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { verifyShopifyWebhook } from '@/lib/shopify'
 import { mintTo } from '@/lib/thirdweb'
 import { Resend } from 'resend'
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -16,11 +16,14 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Invalid HMAC signature' }, { status: 401 })
     }
 
-    // ✅ Shopifyのタイムアウト（5秒）を回避するため、即座に200を返す
-    // 実際のミント処理はバックグラウンドで続行する
-    processShopifyOrder(rawBody).catch(err =>
-        console.error('[Webhook] Background processing error:', err)
-    )
+    console.log('[Webhook] HMAC verified OK, scheduling background processing...')
+
+    // ✅ after() を使って200応答後も確実にバックグラウンド処理を実行
+    after(async () => {
+        console.log('[Webhook] Background processing started')
+        await processShopifyOrder(rawBody)
+        console.log('[Webhook] Background processing complete')
+    })
 
     return NextResponse.json({ received: true })
 }
