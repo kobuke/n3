@@ -32,7 +32,7 @@ export async function GET(
     const supabase = createAdminClient();
     const { data: usageLog } = await supabase
       .from('ticket_usages')
-      .select('status, created_at')
+      .select('status, used_at')
       .eq('token_id', nftId)
       .ilike('contract_address', contractAddress)
       .eq('status', 'used')
@@ -43,13 +43,13 @@ export async function GET(
       const hasStatus = attributes.some((a: any) => a.trait_type === "Status");
       if (!hasStatus) {
         attributes.push({ trait_type: "Status", value: "Used" });
-        attributes.push({ trait_type: "Used_At", value: usageLog.created_at });
+        attributes.push({ trait_type: "Used_At", value: usageLog.used_at });
       } else {
         const statusAttr = attributes.find((a: any) => a.trait_type === "Status");
         if (statusAttr) statusAttr.value = "Used";
         const usedAtAttr = attributes.find((a: any) => a.trait_type === "Used_At");
-        if (usedAtAttr) usedAtAttr.value = usageLog.created_at;
-        else attributes.push({ trait_type: "Used_At", value: usageLog.created_at });
+        if (usedAtAttr) usedAtAttr.value = usageLog.used_at;
+        else attributes.push({ trait_type: "Used_At", value: usageLog.used_at });
       }
     }
 

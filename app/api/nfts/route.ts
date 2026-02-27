@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
     // 2.5 Fetch local usages (Status: Used) from DB
     const { data: usages } = await supabase
       .from("ticket_usages")
-      .select("token_id, contract_address, created_at, status")
+      .select("token_id, contract_address, used_at, status")
       .eq("wallet_address", walletAddress)
       .eq("status", "used");
 
@@ -88,13 +88,13 @@ export async function GET(req: NextRequest) {
             const hasStatus = attributes.some((a: any) => a.trait_type === "Status");
             if (!hasStatus) {
               attributes.push({ trait_type: "Status", value: "Used" });
-              attributes.push({ trait_type: "Used_At", value: usageLog.created_at });
+              attributes.push({ trait_type: "Used_At", value: usageLog.used_at });
             } else {
               const statusAttr = attributes.find((a: any) => a.trait_type === "Status");
               if (statusAttr) statusAttr.value = "Used";
               const usedAtAttr = attributes.find((a: any) => a.trait_type === "Used_At");
-              if (usedAtAttr) usedAtAttr.value = usageLog.created_at;
-              else attributes.push({ trait_type: "Used_At", value: usageLog.created_at });
+              if (usedAtAttr) usedAtAttr.value = usageLog.used_at;
+              else attributes.push({ trait_type: "Used_At", value: usageLog.used_at });
             }
           }
 
