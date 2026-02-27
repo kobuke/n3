@@ -54,7 +54,8 @@ export async function GET(req: NextRequest) {
     }
 
     // 2. Get NFTs from thirdweb
-    const chain = process.env.NEXT_PUBLIC_CHAIN_NAME || "polygon"; // Update to environment variable or actual production chain
+    // Normalize chain name to lowercase (Thirdweb SDK requires lowercase: 'polygon', not 'Polygon')
+    const chain = (process.env.NEXT_PUBLIC_CHAIN_NAME || "polygon").toLowerCase();
     const ownedNfts = await getNFTsForWallet(contractAddress, walletAddress, chain as any);
 
     // 3. Format data

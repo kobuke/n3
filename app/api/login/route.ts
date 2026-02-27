@@ -18,10 +18,10 @@ export async function POST(req: NextRequest) {
       finalEmail = email || `${walletAddress?.slice(0, 6)}...${walletAddress?.slice(-4)}`; // Fallback display name
 
       // Upsert into users table just in case they are new but logging in via wallet direct
-      const { data: existingUser } = await supabase.from('users').select('id').eq('walletAddress', walletAddress).single();
+      const { data: existingUser } = await supabase.from('users').select('id').eq('walletaddress', walletAddress).maybeSingle();
       if (!existingUser) {
         // Attempt upsert (graceful fail if email constraint etc)
-        await supabase.from('users').insert({ email: finalEmail, walletAddress }).select().single();
+        await supabase.from('users').insert({ email: finalEmail, walletaddress: walletAddress }).select().maybeSingle();
       }
 
     } else if (email) {
