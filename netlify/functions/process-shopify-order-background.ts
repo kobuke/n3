@@ -222,7 +222,7 @@ const handler: Handler = async (event) => {
                     ? process.env.NEXT_PUBLIC_APP_URL
                     : 'https://n3-nanjo-nft.netlify.app'
                 await resend.emails.send({
-                    from: "N3 NFT System <updates@nomadresort.jp>",
+                    from: "N3 NFT System <updates@resend.nomadresort.jp>",
                     to: customerEmail,
                     subject: `Your NFT is ready!`,
                     html: `<p>Your NFT for ${templateData?.name || productName} has been minted to your wallet (${recipientWallet}).</p><p><a href="${appUrl}">Log in to view your NFT</a></p>`,
