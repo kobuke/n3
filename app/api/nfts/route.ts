@@ -5,14 +5,6 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const email = searchParams.get("email");
-    const contractAddress = process.env.NEXT_PUBLIC_COLLECTION_ID;
-
-    if (!contractAddress) {
-      return NextResponse.json(
-        { error: "Configuration missing" },
-        { status: 500 }
-      );
-    }
 
     if (!email) {
       return NextResponse.json(
@@ -21,18 +13,14 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // 1. Get Session state to retrieve wallet address
-    // The client typically passes email or relies on session.
-    // We should ideally fetch walletAddress from the DB based on the email.
+    // 1. Get wallet address
     const { createAdminClient } = await import("@/lib/supabase/server");
     const supabase = createAdminClient();
 
-    // First, try session wallet if available
     const { getSession } = await import("@/lib/session");
     const session = await getSession();
     let walletAddress = session?.walletAddress;
 
-    // If no wallet in session, lookup by email
     if (!walletAddress) {
       const { data: user } = await supabase
         .from("users")
@@ -43,8 +31,6 @@ export async function GET(req: NextRequest) {
       if (user?.walletaddress) {
         walletAddress = user.walletaddress;
       } else {
-        // No wallet means no NFTs. Returning 404 causes the UI to show an error screen.
-        // Returning an empty array gracefully handles "new" users who haven't linked a wallet.
         return NextResponse.json({ nfts: [] });
       }
     }
@@ -53,40 +39,64 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Invalid wallet address" }, { status: 400 });
     }
 
-    // 2. Get NFTs from thirdweb
-    // thirdweb.ts already defaults to the correct Chain object (polygon or polygonAmoy)
-    const ownedNfts = await getNFTsForWallet(contractAddress, walletAddress);
+    // 2. Get all contract addresses from nft_templates + fallback to env var
+    const { data: templates } = await supabase
+      .from("nft_templates")
+      .select("contract_address")
+      .not("contract_address", "is", null)
+      .not("contract_address", "eq", "");
 
-    // 3. Format data
-    const nfts = ownedNfts.map((nft: any) => {
-      const metadata = nft.metadata || {};
-      const attributes = metadata.attributes || [];
-
-      let imageUrl = metadata.image || "";
-
-      // Handle ipfs:// prefix
-      if (imageUrl && imageUrl.startsWith("ipfs://")) {
-        imageUrl = imageUrl.replace("ipfs://", "https://ipfs.io/ipfs/");
+    const contractAddresses = new Set<string>();
+    if (templates) {
+      for (const t of templates) {
+        if (t.contract_address) contractAddresses.add(t.contract_address);
       }
+    }
+    // Fallback: also check env var
+    const envCollection = process.env.NEXT_PUBLIC_COLLECTION_ID;
+    if (envCollection) contractAddresses.add(envCollection);
 
-      return {
-        id: nft.id.toString(), // Token ID as string
-        tokenId: nft.id.toString(),
-        contractAddress: contractAddress,
-        name: metadata.name || `Ticket #${nft.id.toString()}`,
-        description: metadata.description || "",
-        image: imageUrl,
-        supply: nft.supply ? Number(nft.supply) : 1,
-        metadata: {
-          name: metadata.name,
-          description: metadata.description,
-          image: imageUrl,
-          attributes: attributes
+    if (contractAddresses.size === 0) {
+      return NextResponse.json({ nfts: [] });
+    }
+
+    // 3. Fetch NFTs from all contracts
+    const allNfts: any[] = [];
+    for (const contractAddress of contractAddresses) {
+      try {
+        const ownedNfts = await getNFTsForWallet(contractAddress, walletAddress);
+        for (const nft of ownedNfts) {
+          const metadata = nft.metadata || {};
+          const attributes = (metadata as any).attributes || [];
+
+          let imageUrl = (metadata as any).image || "";
+          if (imageUrl && imageUrl.startsWith("ipfs://")) {
+            imageUrl = imageUrl.replace("ipfs://", "https://ipfs.io/ipfs/");
+          }
+
+          allNfts.push({
+            id: nft.id.toString(),
+            tokenId: nft.id.toString(),
+            contractAddress: contractAddress,
+            name: (metadata as any).name || `Ticket #${nft.id.toString()}`,
+            description: (metadata as any).description || "",
+            image: imageUrl,
+            supply: (nft as any).supply ? Number((nft as any).supply) : ((nft as any).quantityOwned ? Number((nft as any).quantityOwned) : 1),
+            metadata: {
+              name: (metadata as any).name,
+              description: (metadata as any).description,
+              image: imageUrl,
+              attributes: attributes,
+            },
+          });
         }
-      };
-    });
+      } catch (contractErr: any) {
+        console.warn(`[NFT] Failed to fetch from ${contractAddress}:`, contractErr.message);
+        // Continue to next contract
+      }
+    }
 
-    return NextResponse.json({ nfts });
+    return NextResponse.json({ nfts: allNfts });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("NFT fetch error:", message);
