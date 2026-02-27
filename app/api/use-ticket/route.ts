@@ -41,18 +41,67 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Ticket feels like it's already used." }, { status: 400 });
         }
 
-        // 3. Initiate Burn transaction to invalidate ticket on-chain
-        // thirdweb burn endpoint from engine
+        // 3. Dynamic NFT Metadata Rewrite On-Chain (Uses setTokenURI on Edition)
         const ENGINE_URL = process.env.THIRDWEB_ENGINE_URL || "";
         const ENGINE_ACCESS_TOKEN = process.env.THIRDWEB_ENGINE_ACCESS_TOKEN || "";
         const ENGINE_BACKEND_WALLET = process.env.THIRDWEB_ENGINE_BACKEND_WALLET || "";
-
         const chain = process.env.NEXT_PUBLIC_CHAIN_NAME || "Polygon";
-        // NOTE: "burn-from" requires the wallet to have approved the backend wallet to burn on its behalf.
-        // If not approved, or if we just want to update metadata (not burn), we execute standard contract write.
-        /* 
-        const url = `${ENGINE_URL}/contract/${chain}/${contractAddress}/erc1155/burn-from`;
-        const res = await fetch(url, {
+
+        // Fetch current NFT to duplicate metadata
+        const { getNFTById } = await import("@/lib/thirdweb");
+        const nft = await getNFTById(contractAddress, tokenId);
+        if (!nft) {
+            return NextResponse.json({ error: "On-chain NFT not found" }, { status: 404 });
+        }
+
+        const oldMetadata = nft.metadata || {};
+        const oldAttributes = (oldMetadata.attributes as any[]) || [];
+        const newAttributes = [...oldAttributes];
+        const hasStatus = newAttributes.some((a: any) => a.trait_type === "Status");
+
+        // Use ISO string for deterministic used date
+        const usedAtTime = new Date().toISOString();
+
+        if (!hasStatus) {
+            newAttributes.push({ trait_type: "Status", value: "Used" });
+            newAttributes.push({ trait_type: "Used_At", value: usedAtTime });
+        } else {
+            const statusAttr = newAttributes.find((a: any) => a.trait_type === "Status");
+            if (statusAttr) statusAttr.value = "Used";
+            const usedAtAttr = newAttributes.find((a: any) => a.trait_type === "Used_At");
+            if (usedAtAttr) usedAtAttr.value = usedAtTime;
+            else newAttributes.push({ trait_type: "Used_At", value: usedAtTime });
+        }
+
+        const newMetadata = {
+            ...oldMetadata,
+            name: oldMetadata.name ? `${oldMetadata.name} (Used)` : "Ticket (Used)",
+            attributes: newAttributes
+        };
+
+        // Upload updated metadata via Thirdweb backend client (needs Secret Key)
+        const { createThirdwebClient } = await import("thirdweb");
+        const { upload } = await import("thirdweb/storage");
+
+        const backendClient = createThirdwebClient({
+            clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || "",
+            secretKey: process.env.THIRDWEB_SECRET_KEY || ""
+        });
+
+        let newMetadataUri;
+        try {
+            newMetadataUri = await upload({
+                client: backendClient,
+                files: [newMetadata]
+            });
+        } catch (uploadErr: any) {
+            console.error("IPFS Metadata Upload Failed:", uploadErr);
+            throw new Error("IPFS metadata rewrite upload failed");
+        }
+
+        // Apply via Engine to bypass user approval constraint (Engine signs for the contract via backend wallet as admin)
+        const writeUrl = `https://${ENGINE_URL}/contract/${chain}/${contractAddress}/write`;
+        const writeRes = await fetch(writeUrl, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -60,22 +109,18 @@ export async function POST(req: Request) {
                 "x-backend-wallet-address": ENGINE_BACKEND_WALLET,
             },
             body: JSON.stringify({
-                account: walletAddress,
-                tokenId: tokenId,
-                amount: "1"
+                functionName: "setTokenURI(uint256,string)",
+                args: [tokenId.toString(), newMetadataUri]
             })
         });
 
-        if (!res.ok) {
-            throw new Error(await res.text());
+        if (!writeRes.ok) {
+            const errText = await writeRes.text();
+            throw new Error(`Engine write error: ${errText}`);
         }
-        const data = await res.json();
-        */
 
-        // For now, since true on-chain burn requires user approval, we simulate the 'used' state locally.
-        // A true on-chain update typically means burning or updating metadata via a custom smart contract "markUsed" function.
-        // We will log it.
-        const txHash = "pending_onchain_update_or_burn";
+        const writeData = await writeRes.json();
+        const txHash = writeData.result?.queueId || "engine_used_mutation";
 
         // 4. Log Usage
         await supabase.from('ticket_usages').insert({
