@@ -4,24 +4,29 @@ import { mintTo } from '@/lib/thirdweb'
 import { Resend } from 'resend'
 import { NextResponse } from 'next/server'
 
-// Here we simulate generating a wallet on thirdweb engine for a new user
-// In a real production setup, if using embedded wallets via Engine/Auth, 
-// you would call your embedded wallet creation endpoint.
-// For now, we will assume backend wallet mints directly to email via engine if possible,
-// or we create a dummy wallet address if they don't have one and we can't create one.
-// The best approach using thirdweb is utilizing embedded wallets (email -> wallet).
-
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(request: Request) {
     const hmac = request.headers.get('X-Shopify-Hmac-Sha256')
     const rawBody = await request.text()
 
+    // HMAC検証 - 失敗時のみ即時エラー応答
     if (!verifyShopifyWebhook(hmac, rawBody, process.env.SHOPIFY_WEBHOOK_SECRET!)) {
         console.error('[Webhook] HMAC verification FAILED')
         return NextResponse.json({ error: 'Invalid HMAC signature' }, { status: 401 })
     }
 
+    // ✅ Shopifyのタイムアウト（5秒）を回避するため、即座に200を返す
+    // 実際のミント処理はバックグラウンドで続行する
+    processShopifyOrder(rawBody).catch(err =>
+        console.error('[Webhook] Background processing error:', err)
+    )
+
+    return NextResponse.json({ received: true })
+}
+
+// バックグラウンド処理（200応答後に実行）
+async function processShopifyOrder(rawBody: string) {
     const payload = JSON.parse(rawBody)
 
     const orderId = String(payload.id)
@@ -34,7 +39,7 @@ export async function POST(request: Request) {
         const productId = String(item.product_id)
         const productName = item.title || 'Unknown Product'
 
-        // 1. Check Mapping (Now using nft_template_id)
+        // 1. マッピング確認
         const { data: mapping } = await supabase
             .from('mappings')
             .select('nft_template_id, contract_address')
@@ -46,7 +51,7 @@ export async function POST(request: Request) {
             continue
         }
 
-        // 1.5 Fetch Template Details if exists
+        // 1.5 テンプレート詳細取得
         let templateData = null;
         let contractAddressToUse = mapping.contract_address;
 
@@ -63,10 +68,10 @@ export async function POST(request: Request) {
         }
 
         if (!contractAddressToUse) {
-            contractAddressToUse = process.env.NEXT_PUBLIC_COLLECTION_ID; // Fallback
+            contractAddressToUse = process.env.NEXT_PUBLIC_COLLECTION_ID;
         }
 
-        // 2. Idempotency Check
+        // 2. 冪等性チェック（二重ミント防止）
         const { data: existingLog } = await supabase
             .from('mint_logs')
             .select('id')
@@ -75,11 +80,13 @@ export async function POST(request: Request) {
             .eq('status', 'success')
             .single()
 
-        if (existingLog) continue
+        if (existingLog) {
+            console.log(`[Webhook] Already minted order ${orderId}, skipping.`)
+            continue
+        }
 
-        // 3. Determine Wallet Address
-        // Check if user provided wallet in order notes/attributes
-        let recipientWallet = null;
+        // 3. ウォレットアドレスの決定
+        let recipientWallet: string | null = null;
         const noteAttributes = payload.note_attributes || [];
         const walletAttr = noteAttributes.find((attr: any) => attr.name?.toLowerCase() === 'wallet_address');
 
@@ -87,7 +94,7 @@ export async function POST(request: Request) {
             recipientWallet = walletAttr.value;
         }
 
-        // If no wallet in order, check DB by email
+        // DBからメールでウォレットを検索
         if (!recipientWallet && customerEmail) {
             const { data: userRecord } = await supabase
                 .from('users')
@@ -98,7 +105,7 @@ export async function POST(request: Request) {
             if (userRecord?.walletAddress) {
                 recipientWallet = userRecord.walletAddress;
             } else {
-                // AUTO-CREATE WALLET VIA THIRDWEB ENGINE
+                // ウォレットなし → Thirdweb Engine でバックエンドウォレットを自動生成
                 try {
                     console.log(`[Webhook] Creating Engine Backend Wallet for ${customerEmail}...`)
                     const createUrl = `https://${process.env.THIRDWEB_ENGINE_URL}/backend-wallet/create`;
@@ -113,7 +120,7 @@ export async function POST(request: Request) {
                         const data = await res.json();
                         const newWalletAddress = data.result.walletAddress;
 
-                        // Save the new user and their wallet to Supabase
+                        // Supabase に保存
                         await supabase.from('users').insert({
                             email: customerEmail,
                             walletAddress: newWalletAddress
@@ -135,8 +142,14 @@ export async function POST(request: Request) {
             continue
         }
 
-        // 4. Mint NFT
+        // 4. NFTミント
         try {
+            const isEmail = recipientWallet.includes('@');
+            if (isEmail) {
+                console.log("Recipient is still an email. Engine wallet creation probably failed.");
+                throw new Error("Wallet creation failed.");
+            }
+
             const metadata = {
                 name: templateData ? templateData.name : productName,
                 description: templateData ? templateData.description : "Minted via Shopify Webhook",
@@ -147,41 +160,31 @@ export async function POST(request: Request) {
                 ]
             }
 
-            // actualWallet is the actual hex address (either user's attached wallet or the newly created backend wallet)
-            const isEmail = recipientWallet.includes('@');
-            let actualWallet = recipientWallet;
-
-            if (isEmail) {
-                // If it's still an email at this point, wallet creation failed.
-                console.log("Recipient is still an email. Engine wallet creation probably failed.");
-                throw new Error("Waller creation failed. Contacting user via email.");
-            }
-
             const mintResult = await mintTo(
                 process.env.NEXT_PUBLIC_CHAIN_NAME || "polygon",
                 contractAddressToUse!,
-                actualWallet,
+                recipientWallet,
                 metadata
             )
 
-            // 5. Log Success
+            // 5. 成功ログ
             await supabase.from('mint_logs').insert({
                 shopify_order_id: orderId,
                 shopify_product_id: productId,
                 product_name: templateData ? templateData.name : productName,
                 status: 'success',
                 recipient_email: customerEmail,
-                recipient_wallet: actualWallet,
+                recipient_wallet: recipientWallet,
                 details: { mintResult, contractAddress: contractAddressToUse }
             })
 
-            // Email success to user
+            // 成功メール送信
             if (customerEmail) {
                 await resend.emails.send({
                     from: 'N3 NFT System <updates@nomadresort.io>',
                     to: customerEmail,
                     subject: `Your NFT is ready!`,
-                    html: `<p>Your NFT for ${productName} has been minted to ${actualWallet}.</p>`
+                    html: `<p>Your NFT for ${productName} has been minted to ${recipientWallet}.</p><p><a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://n3-nanjo-nft.netlify.app'}">Log in to view your NFT</a></p>`
                 })
             }
 
@@ -198,15 +201,7 @@ export async function POST(request: Request) {
                 error_message: error.message
             })
 
-            // For emails without wallets, send instructional email
-            if (recipientWallet?.includes('@')) {
-                await resend.emails.send({
-                    from: 'N3 Support <support@nomadresort.io>',
-                    to: customerEmail,
-                    subject: `Claim your NFT for ${productName}`,
-                    html: `<p>Thank you for your purchase! To receive your NFT, please click <a href="${process.env.NEXT_PUBLIC_APP_URL}/">here</a> to log in and create your wallet to claim it.</p>`
-                })
-            } else if (process.env.ADMIN_EMAIL) {
+            if (process.env.ADMIN_EMAIL) {
                 await resend.emails.send({
                     from: 'NFT System <noreply@resend.nomadresort.jp>',
                     to: process.env.ADMIN_EMAIL,
@@ -216,6 +211,4 @@ export async function POST(request: Request) {
             }
         }
     }
-
-    return NextResponse.json({ received: true })
 }
