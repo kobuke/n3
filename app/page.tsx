@@ -8,12 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useAppKit, useAppKitAccount } from '@reown/appkit/react';
+import liff from "@line/liff";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const [lineId, setLineId] = useState<string | null>(null);
+  const [liffLoading, setLiffLoading] = useState(true);
 
   const router = useRouter();
   const { open } = useAppKit();
@@ -48,6 +52,66 @@ export default function LoginPage() {
 
     loginWithWallet();
   }, [isConnected, address, router]);
+
+  // Handle LINE LIFF Initialization
+  useEffect(() => {
+    async function initLiff() {
+      // Fast check if already logged in via cookie
+      try {
+        const sessionRes = await fetch("/api/session");
+        if (sessionRes.ok) {
+          const sessionData = await sessionRes.json();
+          if (sessionData.authenticated) {
+            router.push("/mypage");
+            return;
+          }
+        }
+      } catch (e) {
+        // Ignore session fetch error and proceed to LIFF
+      }
+
+      const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
+      if (!liffId) {
+        setLiffLoading(false);
+        return;
+      }
+
+      try {
+        await liff.init({ liffId });
+        if (liff.isLoggedIn()) {
+          const profile = await liff.getProfile();
+          const currentLineId = profile.userId;
+          setLineId(currentLineId);
+
+          // Check if linked
+          const res = await fetch("/api/auth/line", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ lineId: currentLineId }),
+          });
+
+          const data = await res.json();
+          if (res.ok && data.linked) {
+            toast.success("LINEからログインしました");
+            router.push("/mypage");
+          } else {
+            setLiffLoading(false);
+          }
+        } else {
+          if (liff.isInClient()) {
+            liff.login();
+          } else {
+            setLiffLoading(false);
+          }
+        }
+      } catch (err) {
+        console.error("LIFF Init Error:", err);
+        setLiffLoading(false);
+      }
+    }
+
+    initLiff();
+  }, [router]);
 
   // Step 1: Send OTP
   async function handleEmailSubmit(e: React.FormEvent) {
@@ -87,7 +151,7 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ otp: otpCode.trim() }),
+        body: JSON.stringify({ otp: otpCode.trim(), lineId }),
       });
       const data = await res.json();
 
@@ -103,6 +167,14 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (liffLoading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-background">
+        <span className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </main>
+    );
   }
 
   return (

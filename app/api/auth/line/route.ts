@@ -1,53 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
 import { setSession } from "@/lib/session";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
     try {
-        const { lineId, displayName } = await req.json();
-
+        const { lineId } = await req.json();
         if (!lineId) {
-            return NextResponse.json({ error: "lineId is required" }, { status: 400 });
+            return NextResponse.json({ error: "No lineId provided." }, { status: 400 });
         }
 
         const supabase = createAdminClient();
 
-        // 1. Check if user already exists with this LINE ID
-        const { data: existingUser, error: findError } = await supabase
+        // Check if user exists with this lineId
+        const { data: userRecord } = await supabase
             .from('users')
             .select('email, walletaddress')
             .eq('lineId', lineId)
             .maybeSingle();
 
-        if (existingUser && existingUser.walletaddress) {
-            // User is already registered and linked -> Establish session
+        if (userRecord && userRecord.walletaddress) {
+            // Associated account found, log them in automatically
             await setSession({
-                email: existingUser.email,
-                walletAddress: existingUser.walletaddress,
+                email: userRecord.email || undefined,
+                walletAddress: userRecord.walletaddress,
                 authenticated: true,
             });
 
-            return NextResponse.json({
-                ok: true,
-                message: "Successfully logged in via LINE",
-                walletAddress: existingUser.walletaddress,
-                status: "authenticated"
-            });
+            return NextResponse.json({ ok: true, walletAddress: userRecord.walletaddress, linked: true });
         }
 
-        // 2. User is not registered or completely linked
-        // Return a specific status so the frontend knows to redirect to Email OTP screen.
-        // The frontend should then pass this `lineId` along with the OTP verification.
-        return NextResponse.json({
-            ok: true,
-            status: "needs_email",
-            lineId,
-            message: "Proceed to email verification to link account and create wallet."
-        });
+        // Not linked yet
+        return NextResponse.json({ ok: true, linked: false });
 
     } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "Unknown error";
-        console.error("LINE Login API Error:", message);
-        return NextResponse.json({ error: message }, { status: 500 });
+        console.error("LINE Auth error:", err);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
