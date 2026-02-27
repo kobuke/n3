@@ -15,22 +15,22 @@ export async function POST(req: NextRequest) {
         // 1. Check if user already exists with this LINE ID
         const { data: existingUser, error: findError } = await supabase
             .from('users')
-            .select('email, walletAddress')
+            .select('email, walletaddress')
             .eq('lineId', lineId)
-            .single();
+            .maybeSingle();
 
-        if (existingUser && existingUser.walletAddress) {
+        if (existingUser && existingUser.walletaddress) {
             // User is already registered and linked -> Establish session
             await setSession({
                 email: existingUser.email,
-                walletAddress: existingUser.walletAddress,
+                walletAddress: existingUser.walletaddress,
                 authenticated: true,
             });
 
             return NextResponse.json({
                 ok: true,
                 message: "Successfully logged in via LINE",
-                walletAddress: existingUser.walletAddress,
+                walletAddress: existingUser.walletaddress,
                 status: "authenticated"
             });
         }

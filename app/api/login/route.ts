@@ -32,11 +32,11 @@ export async function POST(req: NextRequest) {
 
       const { data: userRecord } = await supabase
         .from('users')
-        .select('walletAddress')
+        .select('walletaddress')
         .eq('email', email.trim().toLowerCase())
-        .single();
+        .maybeSingle();
 
-      walletAddress = userRecord?.walletAddress;
+      walletAddress = userRecord?.walletaddress;
 
     } else {
       return NextResponse.json({ error: "Email or Wallet Address is required" }, { status: 400 });

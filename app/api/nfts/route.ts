@@ -36,12 +36,12 @@ export async function GET(req: NextRequest) {
     if (!walletAddress) {
       const { data: user } = await supabase
         .from("users")
-        .select("walletAddress")
+        .select("walletaddress")
         .eq("email", email)
-        .single();
+        .maybeSingle();
 
-      if (user?.walletAddress) {
-        walletAddress = user.walletAddress;
+      if (user?.walletaddress) {
+        walletAddress = user.walletaddress;
       } else {
         // No wallet means no NFTs. Returning 404 causes the UI to show an error screen.
         // Returning an empty array gracefully handles "new" users who haven't linked a wallet.

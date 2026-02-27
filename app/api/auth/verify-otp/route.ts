@@ -27,11 +27,11 @@ export async function POST(req: NextRequest) {
         // Check if user exists
         const { data: userRecord } = await supabase
             .from('users')
-            .select('walletAddress')
+            .select('walletaddress')
             .eq('email', email)
-            .single();
+            .maybeSingle();
 
-        let walletAddress = userRecord?.walletAddress;
+        let walletAddress = userRecord?.walletaddress;
 
         // Note: For full thirdweb In-App Wallet integration, the backend might generate the wallet here
         // if userRecord does not exist. That is typical of the Email OTP flow.
