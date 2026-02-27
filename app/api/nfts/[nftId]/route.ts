@@ -28,6 +28,31 @@ export async function GET(
       return NextResponse.json({ error: "NFT not found" }, { status: 404 });
     }
 
+    const { createAdminClient } = await import("@/lib/supabase/server");
+    const supabase = createAdminClient();
+    const { data: usageLog } = await supabase
+      .from('ticket_usages')
+      .select('status, created_at')
+      .eq('token_id', nftId)
+      .ilike('contract_address', contractAddress)
+      .eq('status', 'used')
+      .maybeSingle();
+
+    let attributes = [...(nft.metadata?.attributes || [])];
+    if (usageLog) {
+      const hasStatus = attributes.some((a: any) => a.trait_type === "Status");
+      if (!hasStatus) {
+        attributes.push({ trait_type: "Status", value: "Used" });
+        attributes.push({ trait_type: "Used_At", value: usageLog.created_at });
+      } else {
+        const statusAttr = attributes.find((a: any) => a.trait_type === "Status");
+        if (statusAttr) statusAttr.value = "Used";
+        const usedAtAttr = attributes.find((a: any) => a.trait_type === "Used_At");
+        if (usedAtAttr) usedAtAttr.value = usageLog.created_at;
+        else attributes.push({ trait_type: "Used_At", value: usageLog.created_at });
+      }
+    }
+
     let imageUrl = nft.metadata?.image || "";
     if (imageUrl.startsWith("ipfs://")) {
       imageUrl = imageUrl.replace("ipfs://", "https://ipfs.io/ipfs/");
@@ -43,7 +68,7 @@ export async function GET(
         name: nft.metadata?.name || "",
         description: nft.metadata?.description || "",
         image: imageUrl,
-        attributes: nft.metadata?.attributes || []
+        attributes: attributes
       }
     };
 
