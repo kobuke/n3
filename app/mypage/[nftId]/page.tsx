@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { QRCodeSVG } from "qrcode.react";
 import Image from "next/image";
@@ -35,6 +35,8 @@ export default function TicketDetailPage({
 }) {
   const { nftId } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const contract = searchParams.get("contract");
 
   const [isTransferring, setIsTransferring] = useState(false);
   const [transferLink, setTransferLink] = useState("");
@@ -46,7 +48,7 @@ export default function TicketDetailPage({
       const res = await fetch("/api/transfer/create-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nftId }),
+        body: JSON.stringify({ nftId, contractAddress: contract }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "リンクの発行に失敗しました");
@@ -71,7 +73,7 @@ export default function TicketDetailPage({
     fetcher
   );
   const { data: nft, isLoading: nftLoading } = useSWR(
-    nftId ? `/api/nfts/${nftId}` : null,
+    nftId ? `/api/nfts/${nftId}${contract ? `?contract=${contract}` : ""}` : null,
     fetcher
   );
 
@@ -110,7 +112,7 @@ export default function TicketDetailPage({
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   // QRコードの値には、可能であれば内部ID (UUID) を優先的に使用して、バックエンドでの検索をスムーズにする
   const identifier = nft?.uuid || nftId;
-  const qrValue = `${origin}/staff/scan?nftId=${identifier}&walletAddress=${session.walletAddress}`;
+  const qrValue = `${origin}/staff/scan?nftId=${identifier}&walletAddress=${session.walletAddress}${contract ? `&contract=${contract}` : ""}`;
 
   return (
     <div className="min-h-screen bg-background">

@@ -4,9 +4,18 @@ import { getContract } from "thirdweb";
 import { client } from "@/lib/thirdweb";
 import { polygon, polygonAmoy } from "thirdweb/chains";
 
+import { cookies } from "next/headers";
+
 export async function POST(req: Request) {
     try {
-        const { tokenId, walletAddress, staffSecret, contractAddress } = await req.json();
+        const body = await req.json();
+        const tokenId = body.tokenId || body.nftId;
+        const walletAddress = body.walletAddress;
+
+        const cookieStore = await cookies();
+        const staffSecret = cookieStore.get("nanjo_staff_secret")?.value || body.staffSecret;
+
+        const contractAddress = body.contractAddress || process.env.NEXT_PUBLIC_COLLECTION_ID;
 
         // 1. Verify Staff Secret
         if (staffSecret !== process.env.STAFF_SECRET) {

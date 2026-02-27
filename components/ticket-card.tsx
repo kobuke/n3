@@ -18,6 +18,7 @@ interface TicketCardProps {
   image?: string;
   description?: string;
   attributes?: NFTAttribute[];
+  contractAddress?: string;
 }
 
 export function TicketCard({
@@ -26,14 +27,17 @@ export function TicketCard({
   image,
   description,
   attributes = [],
+  contractAddress,
 }: TicketCardProps) {
   const statusAttr = attributes.find((a) => a.trait_type === "Status");
   const status = statusAttr?.value ?? "Unused";
   const isUsed = status === "Used";
   const usedAt = attributes.find((a) => a.trait_type === "Used_At")?.value;
 
+  const href = contractAddress ? `/mypage/${nftId}?contract=${contractAddress}` : `/mypage/${nftId}`;
+
   return (
-    <Link href={`/mypage/${nftId}`} className="block group">
+    <Link href={href} className="block group">
       <Card
         className={`overflow-hidden transition-all duration-200 ${isUsed
           ? "opacity-90 grayscale-[0.3] border-border/40 hover:opacity-100 hover:border-border/60 hover:shadow-sm"

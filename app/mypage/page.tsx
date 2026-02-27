@@ -171,6 +171,7 @@ function MyPageContent() {
                   image={meta.image ?? nft.image}
                   description={meta.description ?? nft.description}
                   attributes={meta.attributes ?? []}
+                  contractAddress={nft.contractAddress}
                 />
               );
             })}

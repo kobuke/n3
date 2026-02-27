@@ -6,7 +6,7 @@ export async function GET(
   { params }: { params: Promise<{ nftId: string }> }
 ) {
   const { nftId } = await params;
-  const contractAddress = process.env.NEXT_PUBLIC_COLLECTION_ID;
+  const contractAddress = _req.nextUrl.searchParams.get("contract") || process.env.NEXT_PUBLIC_COLLECTION_ID;
 
   if (!contractAddress) {
     return NextResponse.json(
@@ -16,12 +16,9 @@ export async function GET(
   }
 
   try {
-    const chain = process.env.NEXT_PUBLIC_CHAIN_NAME || "polygon"; // Update to environment variable or actual production chain
-
-    // We expect nftId to be the token ID directly (numeric ID)
     let nft: any;
     try {
-      nft = await getNFTById(contractAddress, nftId, chain as any);
+      nft = await getNFTById(contractAddress, nftId);
     } catch (err: any) {
       console.error("fetch NFT failed:", err.message);
       return NextResponse.json({ error: "NFT not found" }, { status: 404 });
@@ -31,14 +28,11 @@ export async function GET(
       return NextResponse.json({ error: "NFT not found" }, { status: 404 });
     }
 
-    // Normalize image URL logic to handle IPFS and different providers
-    // Using simple conversion for standard ipfs format usually returned by thirdweb
     let imageUrl = nft.metadata?.image || "";
     if (imageUrl.startsWith("ipfs://")) {
       imageUrl = imageUrl.replace("ipfs://", "https://ipfs.io/ipfs/");
     }
 
-    // Format for frontend
     const formattedNft = {
       tokenId: nft.id.toString(),
       contractAddress: contractAddress,

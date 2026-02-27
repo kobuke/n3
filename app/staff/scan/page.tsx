@@ -18,8 +18,8 @@ import { toast } from "sonner";
 
 type ScanState =
   | { mode: "scanning" }
-  | { mode: "confirming"; nftId: string; walletAddress: string }
-  | { mode: "processing"; nftId: string; walletAddress: string }
+  | { mode: "confirming"; nftId: string; walletAddress: string; contract?: string }
+  | { mode: "processing"; nftId: string; walletAddress: string; contract?: string }
   | { mode: "success"; nftId: string; usedAt: string }
   | { mode: "already_used"; nftId: string; nft?: any }
   | { mode: "error"; message: string };
@@ -43,18 +43,20 @@ function StaffScanContent() {
     const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
     const nftIdParam = searchParams?.get("nftId");
     const walletAddressParam = searchParams?.get("walletAddress");
+    const contractParam = searchParams?.get("contract");
     return nftIdParam && walletAddressParam
-      ? { mode: "confirming", nftId: nftIdParam, walletAddress: walletAddressParam }
+      ? { mode: "confirming", nftId: nftIdParam, walletAddress: walletAddressParam, contract: contractParam || undefined }
       : { mode: "scanning" };
   });
 
-  const extractParams = useCallback((scannedData: string): { nftId: string; walletAddress: string } | null => {
+  const extractParams = useCallback((scannedData: string): { nftId: string; walletAddress: string; contract?: string } | null => {
     try {
       const url = new URL(scannedData);
       const nftId = url.searchParams.get("nftId");
       const walletAddress = url.searchParams.get("walletAddress");
+      const contract = url.searchParams.get("contract");
       if (nftId && walletAddress) {
-        return { nftId, walletAddress };
+        return { nftId, walletAddress, contract: contract || undefined };
       }
       return null;
     } catch {
@@ -67,7 +69,7 @@ function StaffScanContent() {
     (result: string) => {
       const params = extractParams(result);
       if (params) {
-        setState({ mode: "confirming", nftId: params.nftId, walletAddress: params.walletAddress });
+        setState({ mode: "confirming", nftId: params.nftId, walletAddress: params.walletAddress, contract: params.contract });
       } else {
         toast.error("Invalid QR code formatting");
         setState({ mode: "scanning" });
@@ -76,14 +78,14 @@ function StaffScanContent() {
     [extractParams]
   );
 
-  async function handleUseTicket(nftId: string, walletAddress: string) {
+  async function handleUseTicket(nftId: string, walletAddress: string, contractAddress?: string) {
     setState({ mode: "processing", nftId, walletAddress });
 
     try {
       const res = await fetch("/api/use-ticket", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nftId, walletAddress }),
+        body: JSON.stringify({ nftId, walletAddress, contractAddress }),
       });
 
       const data = await res.json();
@@ -164,7 +166,7 @@ function StaffScanContent() {
                   </Button>
                   <Button
                     className="flex-1"
-                    onClick={() => handleUseTicket(state.nftId, state.walletAddress)}
+                    onClick={() => handleUseTicket(state.nftId, state.walletAddress, "contract" in state ? (state.contract as string) : undefined)}
                   >
                     <CheckCircle2 className="w-4 h-4 mr-1.5" />
                     使用する
