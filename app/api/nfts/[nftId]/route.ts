@@ -38,7 +38,7 @@ export async function GET(
       .eq('status', 'used')
       .maybeSingle();
 
-    let attributes = [...(nft.metadata?.attributes || [])];
+    let attributes = (nft.metadata?.attributes || []).map((a: any) => ({ ...a }));
     if (usageLog) {
       const hasStatus = attributes.some((a: any) => a.trait_type === "Status");
       if (!hasStatus) {

@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
         const ownedNfts = await getNFTsForWallet(contractAddress, walletAddress);
         for (const nft of ownedNfts) {
           const metadata = nft.metadata || {};
-          const attributes = [...((metadata as any).attributes || [])]; // clone to modify
+          let attributes = ((metadata as any).attributes || []).map((a: any) => ({ ...a })); // Deep clone each attribute object
 
           const usageLog = usagesMap.get(`${contractAddress.toLowerCase()}-${nft.id.toString()}`);
           if (usageLog) {
