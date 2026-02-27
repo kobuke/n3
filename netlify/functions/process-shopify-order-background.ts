@@ -106,14 +106,14 @@ const handler: Handler = async (event) => {
         if (!recipientWallet && customerEmail) {
             const { data: userRecord, error: userError } = await supabase
                 .from("users")
-                .select("walletAddress")
+                .select("walletaddress")
                 .eq("email", customerEmail)
                 .maybeSingle();
 
             console.log(`[BG] User lookup for ${customerEmail}:`, JSON.stringify({ userRecord, error: userError }));
 
-            if (userRecord?.walletAddress) {
-                recipientWallet = userRecord.walletAddress;
+            if (userRecord?.walletaddress) {
+                recipientWallet = userRecord.walletaddress;
                 console.log(`[BG] Found existing wallet: ${recipientWallet}`);
             } else {
                 // ウォレットなし → Thirdweb Engine でバックエンドウォレットを自動生成
@@ -135,10 +135,13 @@ const handler: Handler = async (event) => {
                         console.log(`[BG] Engine wallet created: ${newWalletAddress}`);
 
                         // upsert で重複挿入を防止
-                        await supabase.from("users").upsert(
-                            { email: customerEmail, walletAddress: newWalletAddress },
+                        const { error: upsertError } = await supabase.from("users").upsert(
+                            { email: customerEmail, walletaddress: newWalletAddress },
                             { onConflict: "email", ignoreDuplicates: true }
                         );
+                        if (upsertError) {
+                            console.error("[BG] Failed to save wallet to DB:", upsertError.message);
+                        }
 
                         recipientWallet = newWalletAddress;
                     } else {
@@ -198,17 +201,20 @@ const handler: Handler = async (event) => {
             }
 
             // 5. 成功ログ
-            await supabase.from("mint_logs").insert({
+            const { error: insertSuccessError } = await supabase.from("mint_logs").insert({
                 shopify_order_id: orderId,
                 shopify_product_id: productId,
                 product_name: templateData?.name || productName,
                 status: "success",
                 recipient_email: customerEmail,
                 recipient_wallet: recipientWallet,
-                details: { mintData, contractAddress: contractAddressToUse },
             });
 
-            console.log(`[BG] ✅ Mint SUCCESS for order ${orderId}`);
+            if (insertSuccessError) {
+                console.error("[BG] ⚠️ Failed to insert success log:", insertSuccessError.message);
+            } else {
+                console.log(`[BG] ✅ Mint SUCCESS for order ${orderId}`);
+            }
 
             // 成功メール送信
             if (customerEmail) {
