@@ -74,12 +74,26 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // 2.7 Fetch transfers out (Status: ACTIVE or CLAIMED)
+    const { data: transfersOut } = await supabase
+      .from("transfer_links")
+      .select("tokenid")
+      .eq("giveraddress", walletAddress)
+      .in("status", ["ACTIVE", "CLAIMED"]);
+
+    const hiddenTokenIds = new Set(transfersOut?.map(t => t.tokenid) || []);
+
     // 3. Fetch NFTs from all contracts
     const allNfts: any[] = [];
     for (const contractAddress of contractAddresses) {
       try {
         const ownedNfts = await getNFTsForWallet(contractAddress, walletAddress);
         for (const nft of ownedNfts) {
+          const nftIdStr = nft.id.toString();
+          if (hiddenTokenIds.has(nftIdStr)) {
+            continue; // Hide NFTs that have been transferred out
+          }
+
           const metadata = nft.metadata || {};
           let attributes = ((metadata as any).attributes || []).map((a: any) => ({ ...a })); // Deep clone each attribute object
 

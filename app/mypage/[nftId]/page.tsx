@@ -232,8 +232,19 @@ export default function TicketDetailPage({
                 </p>
 
                 {transferLink ? (
-                  <div className="w-full space-y-3">
-                    <div className="p-3 bg-muted rounded-lg break-all text-xs font-mono text-muted-foreground border border-border/50">
+                  <div className="w-full space-y-4">
+                    <div className="flex justify-center p-3 bg-white rounded-xl border border-border/30 shadow-sm">
+                      <QRCodeSVG
+                        value={transferLink}
+                        size={150}
+                        level="Q"
+                        includeMargin
+                        bgColor="transparent"
+                        fgColor="#000000"
+                        className="text-foreground"
+                      />
+                    </div>
+                    <div className="p-3 bg-muted rounded-lg break-all text-[10px] font-mono text-muted-foreground border border-border/50 text-center">
                       {transferLink}
                     </div>
                     <Button

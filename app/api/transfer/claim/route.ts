@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/server";
-import { transfer } from "@/lib/thirdweb";
+import { getNFTById, mintTo } from "@/lib/thirdweb";
 
 export async function POST(req: NextRequest) {
     try {
@@ -50,21 +50,25 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "You cannot claim your own transfer link" }, { status: 400 });
         }
 
-        // 2. Transfer from Escrow (Backend Wallet) to the claiming user
+        // 2. Fetch original NFT metadata and Mint a fresh copy to the claimer
         const chain = process.env.NEXT_PUBLIC_CHAIN_NAME || "polygon";
         let txHash: string | null = null;
         try {
-            const transferResult = await transfer(
+            // Retrieve metadata of the original token
+            const originalNft = await getNFTById(contractAddress, linkRecord.tokenid);
+            const metadata = originalNft.metadata;
+
+            // Mint a new token with the identical metadata to the claimer
+            const mintResult = await mintTo(
                 chain,
                 contractAddress,
-                session.walletAddress,
-                linkRecord.tokenid,
-                "1"
+                session.walletAddress,   // claimer
+                metadata
             );
-            txHash = transferResult?.result?.queueId || null;
-        } catch (transferErr: any) {
-            console.error("Claim transfer failed:", transferErr.message);
-            return NextResponse.json({ error: "Failed to transfer NFT from escrow." }, { status: 500 });
+            txHash = mintResult?.result?.queueId || null;
+        } catch (err: any) {
+            console.error("Claim transfer/mint failed:", err.message);
+            return NextResponse.json({ error: "Failed to mint NFT ticket." }, { status: 500 });
         }
 
         // 3. Update transfer link status to CLAIMED and save tx hash

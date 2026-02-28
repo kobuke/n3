@@ -35,26 +35,9 @@ export async function POST(req: NextRequest) {
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 7); // Token valid for 7 days
 
-        // 2. Transfer the NFT from the user to the Backend Wallet (Escrow)
-        // IMPORTANT: The user must have approved the Backend Wallet to spend their tokens.
-        // In a fully gasless relayer setup, this might require a signed message or EIP-712 permit
-        // depending on the contract configuration.
-        // Assuming Engine can transfer *from* the user via relayer if permissions are set:
-        // (NOTE: The standard /erc1155/transfer endpoint in Engine transfers FROM the backend wallet.
-        // To transfer from a user, it requires /erc1155/transfer-from if supported, or a custom approach.)
-        const chain = process.env.NEXT_PUBLIC_CHAIN_NAME || "polygon";
-        try {
-            await transfer(
-                chain,
-                contractAddress,
-                backendWallet,         // to escrow (3rd arg is toAddress)
-                String(nftId),
-                "1"
-            );
-        } catch (transferErr: any) {
-            console.error("Escrow transfer failed:", transferErr.message);
-            return NextResponse.json({ error: "Failed to transfer NFT to escrow." }, { status: 500 });
-        }
+        // 2. We do NOT transfer the token on-chain here. 
+        // Instead, we just lock it in the DB, and mint a fresh copy to the recipient upon claim.
+        // This avoids requiring the sender (MetaMask user) to sign a transaction or give approvals.
 
         // 3. Save transfer link to DB
         const supabase = createAdminClient();

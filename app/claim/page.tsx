@@ -68,7 +68,7 @@ function ClaimNFTContent() {
                     </div>
                     <CardTitle className="text-2xl">NFTチケットのお届け</CardTitle>
                     <CardDescription>
-                        誰かからNFTチケットが譲渡されました！
+                        NFTチケットが譲渡されました！
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
