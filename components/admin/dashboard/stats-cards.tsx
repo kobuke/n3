@@ -7,7 +7,7 @@ import {
   ArrowDownRight,
   Package,
   CheckCircle2,
-  XCircle,
+  Wallet,
   Link2,
 } from "lucide-react"
 
@@ -16,6 +16,7 @@ export function StatsCards() {
     successCount: 0,
     errorCount: 0,
     mappingsCount: 0,
+    walletBalance: "Loading...",
     loading: true
   })
 
@@ -63,12 +64,12 @@ export function StatsCards() {
       icon: CheckCircle2,
     },
     {
-      title: "Failed Mints",
-      value: data.errorCount.toString(),
+      title: "Server Wallet Balance",
+      value: data.walletBalance,
       change: "--",
-      trend: "down" as const,
-      description: "errors",
-      icon: XCircle,
+      trend: "up" as const,
+      description: "Remaining funds",
+      icon: Wallet,
     },
     {
       title: "Active Mappings",

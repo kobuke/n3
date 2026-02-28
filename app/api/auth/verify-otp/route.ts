@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
         if (lineId) {
             const { error: updateError } = await supabase
                 .from('users')
-                .update({ lineId })
+                .update({ lineid: lineId })
                 .eq('email', email);
 
             if (updateError) {

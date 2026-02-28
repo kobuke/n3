@@ -30,40 +30,45 @@ export function RecentActivity() {
     <Card>
       <CardHeader>
         <CardTitle className="text-base font-semibold">
-          Recent Mint Activity
+          Recent Activity
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-4">
           {logs.length === 0 && <p className="text-sm text-muted-foreground">No recent activity.</p>}
-          {logs.map((order) => (
+          {logs.map((activity) => (
             <div
-              key={order.id}
+              key={activity.id}
               className="flex items-center justify-between rounded-lg border border-border px-4 py-3"
             >
               <div className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-foreground">
-                    Order #{order.shopify_order_id}
+                    {activity.title}
                   </span>
+                  <Badge variant="outline" className="text-[10px] uppercase font-normal px-1.5 py-0 h-4">
+                    {activity.type}
+                  </Badge>
                 </div>
                 <span className="text-xs text-muted-foreground">
-                  {"To: "}{order.recipient_email || order.recipient_wallet || 'Unknown'}
+                  {activity.description}
                 </span>
               </div>
               <div className="flex items-center gap-3">
                 <Badge
-                  variant={order.status === "success" ? "default" : "destructive"}
+                  variant={activity.status === "success" ? "default" : "secondary"}
                   className={
-                    order.status === "success"
+                    activity.status === "success"
                       ? "bg-success/10 text-success hover:bg-success/20 border-0"
-                      : ""
+                      : activity.status === "failed"
+                        ? "bg-destructive/10 text-destructive hover:bg-destructive/20 border-0"
+                        : "bg-muted/50 text-muted-foreground border-0"
                   }
                 >
-                  {order.status === "success" ? "Success" : "Failed"}
+                  {activity.status === "success" ? "Success" : activity.status === "failed" ? "Failed" : "Pending"}
                 </Badge>
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  {formatDistanceToNow(new Date(order.created_at), { addSuffix: true })}
+                  {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
                 </span>
               </div>
             </div>

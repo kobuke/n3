@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
         const { data: userRecord } = await supabase
             .from('users')
             .select('email, walletaddress')
-            .eq('lineId', lineId)
+            .eq('lineid', lineId)
             .maybeSingle();
 
         if (userRecord && userRecord.walletaddress) {
