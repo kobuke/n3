@@ -61,7 +61,7 @@ export async function transfer(
   tokenId: string,
   amount: string = "1"
 ) {
-  const url = `${ENGINE_URL}/contract/${chain}/${contractAddress}/erc1155/transfer`;
+  const url = `https://${ENGINE_URL}/contract/${chain}/${contractAddress}/erc1155/transfer`;
 
   const body = {
     to: toAddress,
@@ -96,7 +96,7 @@ export async function burnFrom(
   tokenId: string,
   amount: string = "1"
 ) {
-  const url = `${ENGINE_URL}/contract/${chain}/${contractAddress}/erc1155/burn-from`;
+  const url = `https://${ENGINE_URL}/contract/${chain}/${contractAddress}/erc1155/burn-from`;
 
   const body = {
     account: accountAddress,
