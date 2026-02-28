@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { Ticket, RefreshCw, AlertCircle, CheckCircle2, Activity as ActivityIcon, LayoutList, Check, Gift, Undo2, XCircle } from "lucide-react";
@@ -33,6 +33,7 @@ function MyPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const lineAirdropTriggered = useRef(false);
 
   const {
     data: session,
@@ -59,6 +60,23 @@ function MyPageContent() {
       router.replace("/mypage");
     }
   }, [searchParams, router]);
+
+  // LINE browser auto-airdrop
+  useEffect(() => {
+    if (!session?.authenticated || lineAirdropTriggered.current) return;
+    const isLineBrowser = /Line\//i.test(navigator.userAgent);
+    if (!isLineBrowser) return;
+
+    lineAirdropTriggered.current = true;
+    fetch("/api/airdrop/line", { method: "POST" })
+      .then(res => res.json())
+      .then(data => {
+        if (data.ok && data.message) {
+          toast.success(data.message);
+        }
+      })
+      .catch(() => { /* silent fail */ });
+  }, [session?.authenticated]);
 
   const {
     data: nftData,

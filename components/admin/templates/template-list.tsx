@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Plus, Edit, Trash, Type, Hexagon, Image as ImageIcon, UploadCloud, Loader2, AlertTriangle } from "lucide-react"
+import { Plus, Edit, Trash, Type, Hexagon, Image as ImageIcon, UploadCloud, Loader2, AlertTriangle, QrCode } from "lucide-react"
+import { QRCodeSVG } from "qrcode.react"
 import { Button } from "@/components/admin/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/admin/ui/card"
 import { Badge } from "@/components/admin/ui/badge"
@@ -48,6 +49,11 @@ export function TemplateList() {
     const [imageUrl, setImageUrl] = useState("")
     const [isTransferable, setIsTransferable] = useState(true)
     const [contractAddress, setContractAddress] = useState(process.env.NEXT_PUBLIC_COLLECTION_ID || "")
+    const [maxSupply, setMaxSupply] = useState("")
+    const [isInfinite, setIsInfinite] = useState(true)
+
+    // QR State
+    const [qrTemplate, setQrTemplate] = useState<any>(null)
 
     // Image Upload State
     const [isUploading, setIsUploading] = useState(false)
@@ -82,6 +88,8 @@ export function TemplateList() {
         setType("ticket")
         setIsTransferable(true)
         setContractAddress(process.env.NEXT_PUBLIC_COLLECTION_ID || "")
+        setMaxSupply("")
+        setIsInfinite(true)
     }
 
     function handleEdit(t: any, e: React.MouseEvent) {
@@ -94,6 +102,8 @@ export function TemplateList() {
         setType(t.type)
         setIsTransferable(t.is_transferable)
         setContractAddress(t.contract_address || process.env.NEXT_PUBLIC_COLLECTION_ID || "")
+        setMaxSupply(t.max_supply ? t.max_supply.toString() : "")
+        setIsInfinite(t.max_supply === null)
         setIsDialogOpen(true)
     }
 
@@ -112,7 +122,8 @@ export function TemplateList() {
                     image_url: imageUrl,
                     type,
                     is_transferable: isTransferable,
-                    contract_address: contractAddress
+                    contract_address: contractAddress,
+                    max_supply: isInfinite ? null : maxSupply
                 })
             })
 
@@ -266,6 +277,30 @@ export function TemplateList() {
                                             rows={5}
                                         />
                                     </div>
+                                    <div className="flex flex-col gap-2 mt-2 border-t pt-4">
+                                        <Label>在庫数（最大発行可能数）</Label>
+                                        <div className="flex items-center space-x-2 border rounded-md p-3">
+                                            <Switch id="infinite_supply" checked={isInfinite} onCheckedChange={(val) => {
+                                                setIsInfinite(val);
+                                                if (val) setMaxSupply("");
+                                            }} />
+                                            <Label htmlFor="infinite_supply" className="font-normal cursor-pointer text-sm">
+                                                無制限に発行する
+                                            </Label>
+                                        </div>
+                                        {!isInfinite && (
+                                            <div className="mt-2 text-sm">
+                                                <Input
+                                                    type="number"
+                                                    min="1"
+                                                    placeholder="例: 100"
+                                                    value={maxSupply}
+                                                    onChange={e => setMaxSupply(e.target.value)}
+                                                    required={!isInfinite}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="flex flex-col gap-4">
@@ -371,6 +406,45 @@ export function TemplateList() {
                 </DialogContent>
             </Dialog>
 
+            {/* Airdrop QR Dialog */}
+            <Dialog open={!!qrTemplate} onOpenChange={(open) => { if (!open) setQrTemplate(null) }}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>配布用QRコード</DialogTitle>
+                        <DialogDescription>
+                            このQRコードを来場者にスキャンしてもらうことで、NFT「{qrTemplate?.name}」を配布（Airdrop）します。
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex flex-col items-center justify-center p-6 bg-muted/20 border rounded-xl gap-4">
+                        {qrTemplate && (
+                            <div className="bg-white p-4 rounded-xl shadow-sm border">
+                                <QRCodeSVG
+                                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/drop/${qrTemplate.id}`}
+                                    size={200}
+                                    level="H"
+                                    includeMargin={false}
+                                />
+                            </div>
+                        )}
+                        <p className="text-sm font-mono text-muted-foreground break-all text-center px-4">
+                            {typeof window !== 'undefined' ? window.location.origin : ''}/drop/{qrTemplate?.id}
+                        </p>
+                        <div className="flex items-center gap-2 mt-2 w-full">
+                            <Button
+                                variant="default"
+                                className="w-full"
+                                onClick={() => {
+                                    navigator.clipboard.writeText(`${typeof window !== 'undefined' ? window.location.origin : ''}/drop/${qrTemplate?.id}`);
+                                    alert("URLをコピーしました！");
+                                }}
+                            >
+                                URLをコピー
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {loading ? (
                     <div className="col-span-full flex justify-center py-12">
@@ -397,12 +471,15 @@ export function TemplateList() {
                                         </Badge>
                                     )}
                                 </div>
-                                {/* Hover overlay for Edit/Delete */}
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                    <Button variant="secondary" size="sm" onClick={(e) => handleEdit(t, e)} className="gap-2">
+                                {/* Hover overlay for Actions */}
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3">
+                                    <Button variant="secondary" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setQrTemplate(t) }} className="gap-2 w-32">
+                                        <QrCode className="size-4" /> QRで配布
+                                    </Button>
+                                    <Button variant="secondary" size="sm" onClick={(e) => handleEdit(t, e)} className="gap-2 w-32">
                                         <Edit className="size-4" /> Edit
                                     </Button>
-                                    <Button variant="destructive" size="sm" onClick={(e) => confirmDelete(t.id, e)} className="gap-2">
+                                    <Button variant="destructive" size="sm" onClick={(e) => confirmDelete(t.id, e)} className="gap-2 w-32">
                                         <Trash className="size-4" /> Delete
                                     </Button>
                                 </div>
@@ -417,6 +494,16 @@ export function TemplateList() {
                                         <Hexagon className="size-3 text-primary/70" />
                                         <span className="truncate">{t.contract_address ? t.contract_address.slice(0, 8) + '...' + t.contract_address.slice(-6) : 'Default Contract'}</span>
                                     </div>
+                                </div>
+                                <div className="flex items-center justify-between text-xs mt-2 border-t pt-2">
+                                    <span className="text-muted-foreground">在庫状況:</span>
+                                    <span className="font-medium text-foreground">
+                                        {t.max_supply === null ? (
+                                            "無制限発行"
+                                        ) : (
+                                            `${t.current_supply || 0} / ${t.max_supply}`
+                                        )}
+                                    </span>
                                 </div>
                             </CardContent>
                         </Card>
