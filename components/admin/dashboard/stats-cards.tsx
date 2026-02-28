@@ -48,35 +48,35 @@ export function StatsCards() {
 
   const stats = [
     {
-      title: "Total Orders",
+      title: "総注文数",
       value: totalOrders.toString(),
       change: "--", // TODO: Implement historical comparison
       trend: "up" as const,
-      description: "processed",
+      description: "件の注文を処理済み",
       icon: Package,
     },
     {
-      title: "Mint Success Rate",
+      title: "ミント成功率",
       value: `${successRate}%`,
       change: "--",
       trend: "up" as const,
-      description: "success rate",
+      description: "成功",
       icon: CheckCircle2,
     },
     {
-      title: "Server Wallet Balance",
+      title: "サーバーウォレット残高",
       value: data.walletBalance,
       change: "--",
       trend: "up" as const,
-      description: "Remaining funds",
+      description: "ガス代の残高 (MATIC)",
       icon: Wallet,
     },
     {
-      title: "Active Mappings",
+      title: "有効な商品連携",
       value: data.mappingsCount.toString(),
       change: "--",
       trend: "up" as const,
-      description: "linked products",
+      description: "連携済みの商品数",
       icon: Link2,
     },
   ]

@@ -5,8 +5,8 @@ export default function ProductMappingPage() {
   return (
     <div className="flex flex-col">
       <PageHeader
-        title="Product Mapping"
-        description="Link Shopify products to thirdweb NFT contracts"
+        title="商品マッピング"
+        description="Shopify商品とThirdwebのNFTコントラクトを紐づけます"
       />
       <div className="flex flex-1 flex-col gap-6 p-6">
         <MappingList />

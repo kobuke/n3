@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/admin/ui/card"
 import { Badge } from "@/components/admin/ui/badge"
 import { formatDistanceToNow } from "date-fns"
+import { ja } from "date-fns/locale"
 
 export function RecentActivity() {
   const [logs, setLogs] = useState<any[]>([])
@@ -30,12 +31,12 @@ export function RecentActivity() {
     <Card>
       <CardHeader>
         <CardTitle className="text-base font-semibold">
-          Recent Activity
+          最近のアクティビティ
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-4">
-          {logs.length === 0 && <p className="text-sm text-muted-foreground">No recent activity.</p>}
+          {logs.length === 0 && <p className="text-sm text-muted-foreground">最近のアクティビティはありません。</p>}
           {logs.map((activity) => (
             <div
               key={activity.id}
@@ -65,11 +66,11 @@ export function RecentActivity() {
                         : "bg-muted/50 text-muted-foreground border-0"
                   }
                 >
-                  {activity.status === "success" ? "Success" : activity.status === "failed" ? "Failed" : "Pending"}
+                  {activity.status === "success" ? "成功" : activity.status === "failed" ? "失敗" : "保留中"}
                 </Badge>
                 <div className="flex flex-col items-end gap-1">
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
+                    {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true, locale: ja })}
                   </span>
                   {activity.gasUsed && (
                     <span className="text-[10px] text-muted-foreground whitespace-nowrap bg-muted/30 px-1.5 py-0.5 rounded">

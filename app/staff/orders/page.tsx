@@ -7,8 +7,8 @@ export default function OrderHistoryPage() {
   return (
     <div className="flex flex-col">
       <PageHeader
-        title="Order History"
-        description="Track NFT mint delivery statuses for all Shopify orders"
+        title="注文履歴"
+        description="Shopifyからの注文ごとのNFTミントステータスを追跡します"
       >
         <Button variant="outline" size="sm" className="gap-2">
           <Download className="size-3.5" />

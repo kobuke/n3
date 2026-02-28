@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/admin/ui/
 import { Button } from "@/components/admin/ui/button"
 import { RefreshCw, AlertTriangle } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
+import { ja } from "date-fns/locale"
 
 export function RecentErrors() {
   const [errors, setErrors] = useState<any[]>([])
@@ -32,12 +33,12 @@ export function RecentErrors() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base font-semibold">
           <AlertTriangle className="size-4 text-destructive" />
-          Recent Errors
+          最近のエラー
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-3">
-          {errors.length === 0 && <p className="text-sm text-muted-foreground">No recent errors.</p>}
+          {errors.length === 0 && <p className="text-sm text-muted-foreground">最近のエラーはありません。</p>}
           {errors.map((errorLog) => (
             <div
               key={errorLog.id}
@@ -46,14 +47,14 @@ export function RecentErrors() {
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-foreground">
-                    Order #{errorLog.shopify_order_id}
+                    注文 #{errorLog.shopify_order_id}
                   </span>
                 </div>
                 <span className="text-xs text-destructive">
-                  {errorLog.error_message || "Unknown error"}
+                  {errorLog.error_message || "不明なエラー"}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(errorLog.created_at), { addSuffix: true })}
+                  {formatDistanceToNow(new Date(errorLog.created_at), { addSuffix: true, locale: ja })}
                 </span>
               </div>
               {/* Retry button logic could be implemented here */}

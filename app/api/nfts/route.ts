@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getNFTsForWallet } from "@/lib/thirdweb";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -70,7 +72,7 @@ export async function GET(req: NextRequest) {
     const usagesMap = new Map();
     if (usages) {
       usages.forEach(u => {
-        usagesMap.set(`${u.contract_address.toLowerCase()}-${u.token_id}`, u);
+        usagesMap.set(`${u.contract_address.toLowerCase()} -${u.token_id} `, u);
       });
     }
 
@@ -97,7 +99,7 @@ export async function GET(req: NextRequest) {
           const metadata = nft.metadata || {};
           let attributes = ((metadata as any).attributes || []).map((a: any) => ({ ...a })); // Deep clone each attribute object
 
-          const usageLog = usagesMap.get(`${contractAddress.toLowerCase()}-${nft.id.toString()}`);
+          const usageLog = usagesMap.get(`${contractAddress.toLowerCase()} -${nft.id.toString()} `);
           if (usageLog) {
             const hasStatus = attributes.some((a: any) => a.trait_type === "Status");
             if (!hasStatus) {
@@ -121,7 +123,7 @@ export async function GET(req: NextRequest) {
             id: nft.id.toString(),
             tokenId: nft.id.toString(),
             contractAddress: contractAddress,
-            name: (metadata as any).name || `Ticket #${nft.id.toString()}`,
+            name: (metadata as any).name || `Ticket #${nft.id.toString()} `,
             description: (metadata as any).description || "",
             image: imageUrl,
             supply: (nft as any).supply ? Number((nft as any).supply) : ((nft as any).quantityOwned ? Number((nft as any).quantityOwned) : 1),
@@ -134,7 +136,7 @@ export async function GET(req: NextRequest) {
           });
         }
       } catch (contractErr: any) {
-        console.warn(`[NFT] Failed to fetch from ${contractAddress}:`, contractErr.message);
+        console.warn(`[NFT] Failed to fetch from ${contractAddress}: `, contractErr.message);
         // Continue to next contract
       }
     }

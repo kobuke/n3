@@ -5,8 +5,8 @@ export default function AuditLogsPage() {
   return (
     <div className="flex flex-col">
       <PageHeader
-        title="Audit Logs"
-        description="Track all admin actions and system events"
+        title="監査ログ"
+        description="すべての管理操作とシステムイベントの記録"
       />
       <div className="flex flex-1 flex-col gap-6 p-6">
         <AuditTable />

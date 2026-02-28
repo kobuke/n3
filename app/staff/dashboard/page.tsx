@@ -7,8 +7,8 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col">
       <PageHeader
-        title="Dashboard"
-        description="NFT mint status and system overview"
+        title="ダッシュボード"
+        description="NFTの発行状況とシステムの全体像"
       />
       <div className="flex flex-1 flex-col gap-6 p-6">
         <StatsCards />

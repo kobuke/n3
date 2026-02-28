@@ -5,8 +5,8 @@ export default function TemplatesPage() {
     return (
         <div className="flex flex-col">
             <PageHeader
-                title="NFT Templates"
-                description="Create and manage NFT templates to be minted upon Shopify purchases"
+                title="NFTテンプレート"
+                description="Shopifyでの購入時にミントされるNFTテンプレートを作成・管理します"
             />
             <div className="flex flex-1 flex-col gap-6 p-6">
                 <TemplateList />

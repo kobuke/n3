@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, Lock, ArrowRight, Waves } from "lucide-react";
+import { ShieldCheck, Lock, ArrowRight, Waves, ScanLine, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export default function StaffLoginPage() {
@@ -26,16 +27,16 @@ export default function StaffLoginPage() {
       });
 
       if (!res.ok) {
-        toast.error("Invalid Secret");
+        toast.error("シークレットキーが正しくありません");
         setLoading(false);
         return;
       }
 
-      toast.success("Staff mode activated");
+      toast.success("スタッフモードに切り替わりました");
       router.push("/staff/dashboard");
-      router.refresh(); // Refresh to update middleware state
+      router.refresh();
     } catch {
-      toast.error("Login Error");
+      toast.error("ログインエラー");
       setLoading(false);
     }
   }
@@ -54,7 +55,7 @@ export default function StaffLoginPage() {
           </div>
           <div className="text-center">
             <h1 className="text-2xl font-bold tracking-tight text-foreground text-balance">
-              Staff Portal
+              スタッフポータル
             </h1>
             <p className="text-sm text-muted-foreground mt-1 flex items-center justify-center gap-1.5">
               <Waves className="w-3.5 h-3.5" />
@@ -65,46 +66,55 @@ export default function StaffLoginPage() {
 
         <Card className="w-full shadow-lg border-border/50">
           <CardHeader className="pb-2 pt-6 px-6">
-            <h2 className="text-lg font-semibold text-foreground">
-              Staff Authentication
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Enter the staff secret to access the ticket scanner
-            </p>
+            <CardTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
+              スタッフ認証
+            </CardTitle>
+            <CardDescription className="text-sm text-muted-foreground mt-1">
+              管理者用ダッシュボードやスキャナーにアクセスするにはスタッフシークレットを入力してください
+            </CardDescription>
           </CardHeader>
           <CardContent className="px-6 pb-6">
-            <form onSubmit={handleLogin} className="flex flex-col gap-4">
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  type="password"
-                  placeholder="Staff secret"
-                  value={secret}
-                  onChange={(e) => setSecret(e.target.value)}
-                  className="pl-10 h-12 text-base"
-                  required
-                  autoFocus
-                />
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="secret">スタッフシークレットキー</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="secret"
+                    type="password"
+                    placeholder="シークレットキーを入力"
+                    value={secret}
+                    onChange={(e) => setSecret(e.target.value)}
+                    className="pl-10 h-12 text-base"
+                    required
+                    autoFocus
+                  />
+                </div>
               </div>
               <Button
                 type="submit"
                 disabled={loading || !secret.trim()}
-                className="h-12 text-base font-medium gap-2"
+                className="w-full h-12 text-base font-medium gap-2"
               >
-                {loading ? "Authenticating..." : (
+                {loading ? (
+                  "認証中..."
+                ) : (
                   <>
-                    Open Scanner
-                    <ArrowRight className="w-4 h-4" />
+                    <ScanLine className="w-4 h-4" />
+                    認証する
                   </>
                 )}
               </Button>
             </form>
+
+            <div className="flex items-center gap-3 p-4 text-sm rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 mt-6 md:mt-4">
+              <ShieldAlert className="w-5 h-5 flex-shrink-0" />
+              <p className="leading-relaxed text-xs font-medium">
+                このエリアは権限を与えられたスタッフ専用です。<br />不正なアクセスの記録はサーバーに保存されます。
+              </p>
+            </div>
           </CardContent>
         </Card>
-
-        <p className="text-xs text-muted-foreground text-center max-w-xs leading-relaxed">
-          This area is restricted to authorized staff only. The secret is verified server-side on each scan.
-        </p>
       </div>
     </main>
   );
