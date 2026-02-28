@@ -33,6 +33,7 @@ function MyPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const lineAirdropTriggered = useRef(false);
 
   const {
@@ -144,8 +145,6 @@ function MyPageContent() {
     if (categoryFilter === "all") return true;
     return getCategory(nft) === categoryFilter;
   });
-
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
