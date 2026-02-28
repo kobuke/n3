@@ -1,10 +1,10 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Plus, Edit, Trash, Type, Hexagon, Image as ImageIcon, UploadCloud, Loader2, AlertTriangle, QrCode } from "lucide-react"
+import { Plus, Edit, Trash, Hexagon, Image as ImageIcon, UploadCloud, Loader2, AlertTriangle, QrCode, Package } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import { Button } from "@/components/admin/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/admin/ui/card"
+import { Card, CardContent } from "@/components/admin/ui/card"
 import { Badge } from "@/components/admin/ui/badge"
 import {
     Dialog,
@@ -27,6 +27,14 @@ import {
 } from "@/components/admin/ui/select"
 import { Switch } from "@/components/admin/ui/switch"
 
+const TYPE_LABELS: Record<string, string> = {
+    ticket: "チケット・特典",
+    tour: "ツアーパス",
+    resident_card: "デジタル住民証",
+    artwork: "アート作品",
+    certificate: "証明書",
+}
+
 export function TemplateList() {
     const [templates, setTemplates] = useState<any[]>([])
     const [mounted, setMounted] = useState(false)
@@ -37,7 +45,7 @@ export function TemplateList() {
     // Editing State
     const [editId, setEditId] = useState<string | null>(null)
 
-    // Deleting State (Modern confirmation)
+    // Deleting State
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
     const [idToDelete, setIdToDelete] = useState<string | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
@@ -48,7 +56,6 @@ export function TemplateList() {
     const [type, setType] = useState("ticket")
     const [imageUrl, setImageUrl] = useState("")
     const [isTransferable, setIsTransferable] = useState(true)
-    const [contractAddress, setContractAddress] = useState(process.env.NEXT_PUBLIC_COLLECTION_ID || "")
     const [maxSupply, setMaxSupply] = useState("")
     const [isInfinite, setIsInfinite] = useState(true)
 
@@ -87,7 +94,6 @@ export function TemplateList() {
         setImageUrl("")
         setType("ticket")
         setIsTransferable(true)
-        setContractAddress(process.env.NEXT_PUBLIC_COLLECTION_ID || "")
         setMaxSupply("")
         setIsInfinite(true)
     }
@@ -101,7 +107,6 @@ export function TemplateList() {
         setImageUrl(t.image_url || "")
         setType(t.type)
         setIsTransferable(t.is_transferable)
-        setContractAddress(t.contract_address || process.env.NEXT_PUBLIC_COLLECTION_ID || "")
         setMaxSupply(t.max_supply ? t.max_supply.toString() : "")
         setIsInfinite(t.max_supply === null)
         setIsDialogOpen(true)
@@ -122,7 +127,7 @@ export function TemplateList() {
                     image_url: imageUrl,
                     type,
                     is_transferable: isTransferable,
-                    contract_address: contractAddress,
+                    contract_address: process.env.NEXT_PUBLIC_COLLECTION_ID || "",
                     max_supply: isInfinite ? null : maxSupply
                 })
             })
@@ -133,11 +138,11 @@ export function TemplateList() {
                 resetForm()
             } else {
                 const error = await res.json()
-                alert(`Error: ${error.error}`)
+                alert(`エラー: ${error.error}`)
             }
         } catch (error) {
             console.error(error)
-            alert("Failed to save template")
+            alert("テンプレートの保存に失敗しました")
         } finally {
             setIsSubmitting(false)
         }
@@ -161,11 +166,11 @@ export function TemplateList() {
                 setImageUrl(data.url)
             } else {
                 const error = await res.json()
-                alert(`Upload failed: ${error.error}`)
+                alert(`アップロード失敗: ${error.error}`)
             }
         } catch (e) {
             console.error(e)
-            alert("Upload failed")
+            alert("アップロードに失敗しました")
         } finally {
             setIsUploading(false)
         }
@@ -211,11 +216,11 @@ export function TemplateList() {
                 fetchTemplates()
             } else {
                 const error = await res.json()
-                alert(`Error: ${error.error}`)
+                alert(`エラー: ${error.error}`)
             }
         } catch (error) {
             console.error(error)
-            alert("Failed to delete template")
+            alert("テンプレートの削除に失敗しました")
         } finally {
             setIsDeleting(false)
             setIdToDelete(null)
@@ -226,8 +231,8 @@ export function TemplateList() {
         <div className="flex flex-col gap-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-xl font-semibold tracking-tight">Your Templates</h2>
-                    <p className="text-sm text-muted-foreground">Manage templates to be minted on Shopify orders.</p>
+                    <h2 className="text-xl font-semibold tracking-tight">テンプレート一覧</h2>
+                    <p className="text-sm text-muted-foreground">NFTの配布・販売用テンプレートを管理します。</p>
                 </div>
 
                 <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -236,48 +241,49 @@ export function TemplateList() {
                 }}>
                     <DialogTrigger asChild>
                         <Button className="gap-2" onClick={() => resetForm()}>
-                            <Plus className="size-4" /> Create Template
+                            <Plus className="size-4" /> 新規作成
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-3xl">
+                    <DialogContent className="max-w-2xl">
                         <DialogHeader>
-                            <DialogTitle>{editId ? "Edit NFT Template" : "Create NFT Template"}</DialogTitle>
+                            <DialogTitle>{editId ? "テンプレートを編集" : "テンプレートを作成"}</DialogTitle>
                             <DialogDescription>
-                                Define the metadata for the NFT that will be minted to the user.
+                                ユーザーに配布するNFTのメタデータを設定します。
                             </DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="flex flex-col gap-4">
                                     <div className="flex flex-col gap-2">
-                                        <Label htmlFor="name">Template Name *</Label>
-                                        <Input id="name" value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Bronze Resort Ticket" />
+                                        <Label htmlFor="name">テンプレート名 <span className="text-destructive">*</span></Label>
+                                        <Input id="name" value={name} onChange={e => setName(e.target.value)} required placeholder="例: 来場記念NFT" />
                                     </div>
                                     <div className="flex flex-col gap-2">
-                                        <Label htmlFor="type">Template Type</Label>
+                                        <Label htmlFor="type">種別</Label>
                                         <Select value={type} onValueChange={setType}>
                                             <SelectTrigger>
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="ticket">Ticket / Voucher</SelectItem>
-                                                <SelectItem value="tour">Tour Pass</SelectItem>
-                                                <SelectItem value="resident_card">Digital Resident Card</SelectItem>
-                                                <SelectItem value="artwork">Artwork</SelectItem>
+                                                <SelectItem value="ticket">チケット・特典</SelectItem>
+                                                <SelectItem value="tour">ツアーパス</SelectItem>
+                                                <SelectItem value="resident_card">デジタル住民証</SelectItem>
+                                                <SelectItem value="artwork">アート作品</SelectItem>
+                                                <SelectItem value="certificate">証明書</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
                                     <div className="flex flex-col gap-2">
-                                        <Label htmlFor="description">Description</Label>
+                                        <Label htmlFor="description">説明文</Label>
                                         <Textarea
                                             id="description"
                                             value={description}
                                             onChange={e => setDescription(e.target.value)}
-                                            placeholder="Special discount ticket for regular customers"
-                                            rows={5}
+                                            placeholder="例: 南城市来場者限定の特別NFTです"
+                                            rows={4}
                                         />
                                     </div>
-                                    <div className="flex flex-col gap-2 mt-2 border-t pt-4">
+                                    <div className="flex flex-col gap-2 border-t pt-4">
                                         <Label>在庫数（最大発行可能数）</Label>
                                         <div className="flex items-center space-x-2 border rounded-md p-3">
                                             <Switch id="infinite_supply" checked={isInfinite} onCheckedChange={(val) => {
@@ -289,7 +295,7 @@ export function TemplateList() {
                                             </Label>
                                         </div>
                                         {!isInfinite && (
-                                            <div className="mt-2 text-sm">
+                                            <div className="mt-2">
                                                 <Input
                                                     type="number"
                                                     min="1"
@@ -305,7 +311,7 @@ export function TemplateList() {
 
                                 <div className="flex flex-col gap-4">
                                     <div className="flex flex-col gap-2">
-                                        <Label>Template Image</Label>
+                                        <Label>画像</Label>
                                         <div
                                             className={`relative flex flex-col items-center justify-center min-h-[160px] border-2 border-dashed rounded-lg transition-colors overflow-hidden
                                                 ${isDragging ? 'border-primary bg-primary/5' : 'border-border bg-muted/30 hover:bg-muted/50'}
@@ -330,52 +336,46 @@ export function TemplateList() {
                                             {isUploading ? (
                                                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
                                                     <Loader2 className="size-6 animate-spin" />
-                                                    <span className="text-sm">Uploading...</span>
+                                                    <span className="text-sm">アップロード中...</span>
                                                 </div>
                                             ) : imageUrl ? (
                                                 <div className="relative w-full h-full group/preview">
-                                                    <img src={imageUrl} alt="Template Preview" className="w-full h-48 object-cover rounded-md" />
+                                                    <img src={imageUrl} alt="プレビュー" className="w-full h-48 object-cover rounded-md" />
                                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/preview:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 rounded-md">
                                                         <Button type="button" variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()}>
-                                                            Change Image
+                                                            画像を変更
                                                         </Button>
                                                         <Button type="button" variant="destructive" size="sm" onClick={() => setImageUrl("")}>
-                                                            Remove
+                                                            削除
                                                         </Button>
                                                     </div>
                                                 </div>
                                             ) : (
                                                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
                                                     <UploadCloud className="size-8 mb-2 opacity-50" />
-                                                    <p className="text-sm font-medium">Click to upload or drag and drop</p>
-                                                    <p className="text-xs opacity-70">PNG, JPG or GIF (max 5MB)</p>
+                                                    <p className="text-sm font-medium">クリックまたはドラッグ&ドロップ</p>
+                                                    <p className="text-xs opacity-70">PNG, JPG, GIF（最大5MB）</p>
                                                 </div>
                                             )}
                                         </div>
                                     </div>
 
                                     <div className="flex flex-col gap-2 mt-2">
-                                        <Label>Transferable (SBT or NFT)</Label>
+                                        <Label>譲渡可否</Label>
                                         <div className="flex items-center space-x-2 border rounded-md p-3">
                                             <Switch id="transferable" checked={isTransferable} onCheckedChange={setIsTransferable} />
-                                            <Label htmlFor="transferable" className="font-normal cursor-pointer">
-                                                {isTransferable ? "Yes, users can transfer/sell this NFT" : "No, Bound to wallet (SBT)"}
+                                            <Label htmlFor="transferable" className="font-normal cursor-pointer text-sm">
+                                                {isTransferable ? "譲渡可能（他のユーザーに渡せます）" : "譲渡不可（SBT：ウォレットに固定）"}
                                             </Label>
                                         </div>
-                                    </div>
-
-                                    <div className="flex flex-col gap-2">
-                                        <Label htmlFor="contract_address">Target Contract Address <span className="text-muted-foreground font-normal">(Optional)</span></Label>
-                                        <Input id="contract_address" value={contractAddress} onChange={e => setContractAddress(e.target.value)} placeholder="0x..." />
-                                        <p className="text-[10px] text-muted-foreground">Default collection used if blank.</p>
                                     </div>
                                 </div>
                             </div>
 
                             <DialogFooter>
-                                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>キャンセル</Button>
                                 <Button type="submit" disabled={isSubmitting || isUploading}>
-                                    {isSubmitting ? "Saving..." : (editId ? "Save Changes" : "Create Template")}
+                                    {isSubmitting ? "保存中..." : (editId ? "変更を保存" : "テンプレートを作成")}
                                 </Button>
                             </DialogFooter>
                         </form>
@@ -388,7 +388,7 @@ export function TemplateList() {
                 <DialogContent className="max-w-md">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-destructive">
-                            <AlertTriangle className="size-5" /> Delete Template
+                            <AlertTriangle className="size-5" /> テンプレートの削除
                         </DialogTitle>
                         <DialogDescription>
                             このテンプレートを削除してもよろしいですか？この操作は取り消せません。
@@ -397,10 +397,10 @@ export function TemplateList() {
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter className="gap-2 sm:gap-0">
-                        <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={isDeleting}>Cancel</Button>
+                        <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={isDeleting}>キャンセル</Button>
                         <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
                             {isDeleting ? <Loader2 className="size-4 animate-spin mr-2" /> : <Trash className="size-4 mr-2" />}
-                            Delete Template
+                            削除する
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -445,65 +445,65 @@ export function TemplateList() {
                 </DialogContent>
             </Dialog>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Template Grid - Compact cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {loading ? (
                     <div className="col-span-full flex justify-center py-12">
                         <Loader2 className="size-8 animate-spin text-muted-foreground" />
                     </div>
                 ) : templates.length === 0 ? (
-                    <p className="text-sm text-muted-foreground col-span-full">No templates found. Create one above.</p>
+                    <p className="text-sm text-muted-foreground col-span-full">テンプレートがありません。「新規作成」から追加してください。</p>
                 ) : (
                     templates.map(t => (
-                        <Card key={t.id} className="overflow-hidden flex flex-col group relative">
-                            <div className="aspect-video w-full bg-muted flex items-center justify-center relative border-b">
-                                {t.image_url ? (
-                                    <img src={t.image_url} alt={t.name} className="w-full h-full object-cover" />
-                                ) : (
-                                    <ImageIcon className="size-10 text-muted-foreground/30" />
-                                )}
-                                <div className="absolute top-2 right-2 flex gap-2">
-                                    <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm border-0 capitalize">
-                                        {t.type.replace('_', ' ')}
-                                    </Badge>
-                                    {!t.is_transferable && (
-                                        <Badge variant="destructive" className="bg-destructive/80 backdrop-blur-sm border-0">
-                                            SBT
-                                        </Badge>
-                                    )}
-                                </div>
-                                {/* Hover overlay for Actions */}
-                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3">
-                                    <Button variant="secondary" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setQrTemplate(t) }} className="gap-2 w-32">
-                                        <QrCode className="size-4" /> QRで配布
-                                    </Button>
-                                    <Button variant="secondary" size="sm" onClick={(e) => handleEdit(t, e)} className="gap-2 w-32">
-                                        <Edit className="size-4" /> Edit
-                                    </Button>
-                                    <Button variant="destructive" size="sm" onClick={(e) => confirmDelete(t.id, e)} className="gap-2 w-32">
-                                        <Trash className="size-4" /> Delete
-                                    </Button>
-                                </div>
-                            </div>
-                            <CardContent className="flex-1 p-5 flex flex-col gap-3">
-                                <div className="flex justify-between items-start gap-4">
-                                    <h3 className="font-semibold line-clamp-1">{t.name}</h3>
-                                </div>
-                                <p className="text-sm text-muted-foreground line-clamp-2">{t.description || "No description provided."}</p>
-                                <div className="mt-auto pt-4 flex items-center justify-between text-xs text-muted-foreground border-t">
-                                    <div className="flex items-center gap-1.5 truncate">
-                                        <Hexagon className="size-3 text-primary/70" />
-                                        <span className="truncate">{t.contract_address ? t.contract_address.slice(0, 8) + '...' + t.contract_address.slice(-6) : 'Default Contract'}</span>
-                                    </div>
-                                </div>
-                                <div className="flex items-center justify-between text-xs mt-2 border-t pt-2">
-                                    <span className="text-muted-foreground">在庫状況:</span>
-                                    <span className="font-medium text-foreground">
-                                        {t.max_supply === null ? (
-                                            "無制限発行"
+                        <Card key={t.id} className="overflow-hidden group relative">
+                            <CardContent className="p-0">
+                                {/* Compact: horizontal layout with small thumbnail */}
+                                <div className="flex flex-col">
+                                    {/* Small image area */}
+                                    <div className="relative w-full h-28 bg-muted flex items-center justify-center overflow-hidden">
+                                        {t.image_url ? (
+                                            <img src={t.image_url} alt={t.name} className="w-full h-full object-cover" />
                                         ) : (
-                                            `${t.current_supply || 0} / ${t.max_supply}`
+                                            <ImageIcon className="size-8 text-muted-foreground/30" />
                                         )}
-                                    </span>
+                                        {/* Type badge */}
+                                        <div className="absolute top-1.5 right-1.5 flex gap-1">
+                                            <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm border-0 text-[10px] px-1.5 py-0">
+                                                {TYPE_LABELS[t.type] || t.type}
+                                            </Badge>
+                                            {!t.is_transferable && (
+                                                <Badge variant="destructive" className="bg-destructive/80 backdrop-blur-sm border-0 text-[10px] px-1.5 py-0">
+                                                    SBT
+                                                </Badge>
+                                            )}
+                                        </div>
+                                        {/* Hover overlay */}
+                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                            <Button variant="secondary" size="sm" className="h-7 text-xs gap-1 px-2" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setQrTemplate(t) }}>
+                                                <QrCode className="size-3" /> QR配布
+                                            </Button>
+                                            <Button variant="secondary" size="sm" className="h-7 text-xs gap-1 px-2" onClick={(e) => handleEdit(t, e)}>
+                                                <Edit className="size-3" /> 編集
+                                            </Button>
+                                            <Button variant="destructive" size="sm" className="h-7 text-xs gap-1 px-2" onClick={(e) => confirmDelete(t.id, e)}>
+                                                <Trash className="size-3" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    {/* Info area */}
+                                    <div className="p-3 flex flex-col gap-1.5">
+                                        <h3 className="font-semibold text-sm line-clamp-1">{t.name}</h3>
+                                        <p className="text-xs text-muted-foreground line-clamp-1">{t.description || "説明なし"}</p>
+                                        <div className="flex items-center justify-between text-[11px] mt-1 pt-1.5 border-t text-muted-foreground">
+                                            <div className="flex items-center gap-1">
+                                                <Package className="size-3" />
+                                                <span>在庫:</span>
+                                            </div>
+                                            <span className="font-medium text-foreground">
+                                                {t.max_supply === null ? "無制限" : `${t.current_supply || 0} / ${t.max_supply}`}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
