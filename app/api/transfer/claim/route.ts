@@ -97,6 +97,23 @@ export async function POST(req: NextRequest) {
             // Note: NFT transferred but DB not updated. Needs compensation in prod.
         }
 
+        // 4. Log the claim into mint_logs to populate the receiver's activity history
+        // Fetch metadata briefly or use dummy name if metadata missing
+        let metadataRef = { name: `Ticket #${linkRecord.tokenid}` };
+        try {
+            const originalNft = await getNFTById(contractAddress, linkRecord.tokenid);
+            metadataRef.name = originalNft.metadata?.name || metadataRef.name;
+        } catch (e) { }
+
+        await supabase.from('mint_logs').insert({
+            shopify_order_id: `transfer-claim-${linkRecord.token}`,
+            status: 'success',
+            recipient_wallet: session.walletAddress,
+            product_name: metadataRef.name,
+            transaction_hash: txHash,
+            recipient_email: session.email || ''
+        });
+
         return NextResponse.json({
             ok: true,
             message: "Successfully claimed the NFT",

@@ -76,8 +76,8 @@ function ClaimNFTContent() {
                         <div className="flex flex-col items-center gap-3">
                             <CheckCircle2 className="w-12 h-12 text-green-500" />
                             <p className="font-semibold text-foreground">受け取り完了！</p>
-                            <p className="text-sm text-muted-foreground">
-                                チケットはあなたのウォレットに移動しました。
+                            <p className="text-sm text-muted-foreground mt-2 px-2">
+                                ※ ブロックチェーン上の処理に時間がかかるため、マイページに表示されるまで通常 <span className="font-semibold text-primary">30秒〜1分程度</span> かかります。しばらく待ってからページを更新してください。
                             </p>
                             <Button onClick={() => router.push("/mypage")} className="mt-4 w-full">
                                 マイページで確認する
