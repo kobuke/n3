@@ -67,9 +67,16 @@ export function RecentActivity() {
                 >
                   {activity.status === "success" ? "Success" : activity.status === "failed" ? "Failed" : "Pending"}
                 </Badge>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
-                </span>
+                <div className="flex flex-col items-end gap-1">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
+                  </span>
+                  {activity.gasUsed && (
+                    <span className="text-[10px] text-muted-foreground whitespace-nowrap bg-muted/30 px-1.5 py-0.5 rounded">
+                      ⛽ {activity.gasUsed}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           ))}

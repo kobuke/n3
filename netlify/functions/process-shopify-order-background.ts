@@ -200,6 +200,8 @@ const handler: Handler = async (event) => {
                 throw new Error(`Mint failed: ${JSON.stringify(mintData)}`);
             }
 
+            const txHash = mintData.result?.queueId || null;
+
             // 5. 成功ログ
             const { error: insertSuccessError } = await supabase.from("mint_logs").insert({
                 shopify_order_id: orderId,
@@ -208,6 +210,7 @@ const handler: Handler = async (event) => {
                 status: "success",
                 recipient_email: customerEmail,
                 recipient_wallet: recipientWallet,
+                transaction_hash: txHash,
             });
 
             if (insertSuccessError) {

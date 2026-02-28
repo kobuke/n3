@@ -21,19 +21,19 @@ export async function GET() {
     // Fetch from three different tables for mixed actual activity
     const { data: recentMints } = await supabase
         .from('mint_logs')
-        .select('id, shopify_order_id, status, recipient_email, recipient_wallet, created_at')
+        .select('id, shopify_order_id, status, recipient_email, recipient_wallet, transaction_hash, created_at')
         .order('created_at', { ascending: false })
         .limit(10)
 
     const { data: recentUsages } = await supabase
         .from('ticket_usages')
-        .select('id, token_id, wallet_address, status, used_at')
+        .select('id, token_id, wallet_address, status, transaction_hash, used_at')
         .order('used_at', { ascending: false })
         .limit(10)
 
     const { data: recentTransfers } = await supabase
         .from('transfer_links')
-        .select('id, token, giverAddress, tokenId, status, created_at')
+        .select('id, token, giverAddress, tokenId, status, transaction_hash, created_at')
         .order('created_at', { ascending: false })
         .limit(10)
 
@@ -47,6 +47,7 @@ export async function GET() {
                 status: m.status === 'success' ? 'success' : 'failed',
                 title: `Minted Order #${m.shopify_order_id}`,
                 description: `To: ${m.recipient_email || m.recipient_wallet || 'Unknown'}`,
+                transaction_hash: m.transaction_hash,
                 date: new Date(m.created_at).getTime(),
                 created_at: m.created_at
             })
@@ -61,6 +62,7 @@ export async function GET() {
                 status: u.status === 'used' ? 'success' : 'pending',
                 title: `Ticket Used: Token #${u.token_id}`,
                 description: `By: ${u.wallet_address.substring(0, 6)}...`,
+                transaction_hash: u.transaction_hash,
                 date: new Date(u.used_at).getTime(),
                 created_at: u.used_at
             })
@@ -75,6 +77,7 @@ export async function GET() {
                 status: t.status === 'CLAIMED' ? 'success' : 'pending',
                 title: t.status === 'CLAIMED' ? `Transfer Claimed: Token #${t.tokenId}` : `Transfer Link Created: Token #${t.tokenId}`,
                 description: `From: ${t.giverAddress.substring(0, 6)}...`,
+                transaction_hash: t.transaction_hash,
                 date: new Date(t.created_at).getTime(),
                 created_at: t.created_at
             })
@@ -89,7 +92,44 @@ export async function GET() {
         status: a.status,
         title: a.title,
         description: a.description,
+        transaction_hash: a.transaction_hash,
+        gasUsed: null as string | null,
         created_at: a.created_at
+    }))
+
+    // Fetch gas usage for recent logs concurrently
+    await Promise.all(recentLogs.map(async (log) => {
+        if (!log.transaction_hash) return
+
+        try {
+            const url = `https://${process.env.THIRDWEB_ENGINE_URL}/transaction/status/${log.transaction_hash}`
+            const res = await fetch(url, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${process.env.THIRDWEB_ENGINE_ACCESS_TOKEN}`
+                }
+            })
+            if (res.ok) {
+                const data = await res.json()
+                if (data.result) {
+                    const { gasUsed, effectiveGasPrice } = data.result
+                    if (gasUsed && effectiveGasPrice) {
+                        const costWei = BigInt(gasUsed) * BigInt(effectiveGasPrice)
+                        // Convert wei to ether (POL) string
+                        const costPol = Number(costWei) / 1e18
+                        log.gasUsed = `${costPol.toFixed(6)} POL` // Or MATIC
+                    } else if (data.result.status === "mined") {
+                        log.gasUsed = "Cost unavailable"
+                    } else {
+                        log.gasUsed = "Pending..."
+                    }
+                } else {
+                    log.gasUsed = "Cost unavailable"
+                }
+            }
+        } catch (e) {
+            console.error(`Failed to fetch gas for ${log.transaction_hash}:`, e)
+        }
     }))
 
     const { data: recentErrors } = await supabase

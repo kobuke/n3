@@ -53,23 +53,25 @@ export async function POST(req: NextRequest) {
 
         // 2. Transfer from Escrow (Backend Wallet) to the claiming user
         const chain = process.env.NEXT_PUBLIC_CHAIN_NAME || "polygon";
+        let txHash: string | null = null;
         try {
-            await transfer(
+            const transferResult = await transfer(
                 chain,
                 contractAddress,
                 session.walletAddress,   // to claimer
                 linkRecord.tokenId,
                 "1"
             );
+            txHash = transferResult?.result?.queueId || null;
         } catch (transferErr: any) {
             console.error("Claim transfer failed:", transferErr.message);
             return NextResponse.json({ error: "Failed to transfer NFT from escrow." }, { status: 500 });
         }
 
-        // 3. Update transfer link status to CLAIMED
+        // 3. Update transfer link status to CLAIMED and save tx hash
         const { error: updateError } = await supabase
             .from('transfer_links')
-            .update({ status: 'CLAIMED' })
+            .update({ status: 'CLAIMED', transaction_hash: txHash })
             .eq('id', linkRecord.id);
 
         if (updateError) {
