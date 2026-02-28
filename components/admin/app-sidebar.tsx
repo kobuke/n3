@@ -12,6 +12,7 @@ import {
   ScanLine,
   LogOut,
   Shield,
+  Send,
 } from "lucide-react"
 
 import {
@@ -43,6 +44,11 @@ const navItems = [
     title: "NFTテンプレート",
     href: "/staff/templates",
     icon: Hexagon,
+  },
+  {
+    title: "手動配布 (Airdrop)",
+    href: "/staff/distribute",
+    icon: Send,
   },
   {
     title: "商品マッピング",

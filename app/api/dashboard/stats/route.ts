@@ -41,11 +41,12 @@ export async function GET() {
 
     if (recentMints) {
         recentMints.forEach(m => {
+            const isManual = m.shopify_order_id?.startsWith('manual-airdrop')
             allActivities.push({
                 id: `mint-${m.id}`,
-                type: 'mint',
+                type: isManual ? 'airdrop' : 'mint',
                 status: m.status === 'success' ? 'success' : 'failed',
-                title: `Minted Order #${m.shopify_order_id}`,
+                title: isManual ? `Manual Airdrop` : `Minted Order #${m.shopify_order_id}`,
                 description: `To: ${m.recipient_email || m.recipient_wallet || 'Unknown'}`,
                 transaction_hash: m.transaction_hash,
                 date: new Date(m.created_at).getTime(),
