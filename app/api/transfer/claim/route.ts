@@ -50,6 +50,21 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "You cannot claim your own transfer link" }, { status: 400 });
         }
 
+        // 1.5 Check if the original ticket was already used
+        const { data: usageLog } = await supabase
+            .from('ticket_usages')
+            .select('status')
+            .eq('token_id', linkRecord.tokenid)
+            .eq('contract_address', contractAddress)
+            .eq('status', 'used')
+            .single();
+
+        if (usageLog) {
+            // Ticket was used while the link was pending. Cancel the link.
+            await supabase.from('transfer_links').update({ status: 'CANCELLED' }).eq('id', linkRecord.id);
+            return NextResponse.json({ error: "元のチケットが既に使用されているため、受け取ることができません。" }, { status: 400 });
+        }
+
         // 2. Fetch original NFT metadata and Mint a fresh copy to the claimer
         const chain = process.env.NEXT_PUBLIC_CHAIN_NAME || "polygon";
         let txHash: string | null = null;

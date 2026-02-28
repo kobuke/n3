@@ -74,12 +74,12 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // 2.7 Fetch transfers out (Status: ACTIVE or CLAIMED)
+    // 2.7 Fetch transfers out (Status: CLAIMED)
     const { data: transfersOut } = await supabase
       .from("transfer_links")
       .select("tokenid")
       .eq("giveraddress", walletAddress)
-      .in("status", ["ACTIVE", "CLAIMED"]);
+      .eq("status", "CLAIMED");
 
     const hiddenTokenIds = new Set(transfersOut?.map(t => t.tokenid) || []);
 
