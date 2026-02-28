@@ -113,7 +113,34 @@ export async function GET() {
             if (res.ok) {
                 const data = await res.json()
                 if (data.result) {
-                    const { gasUsed, effectiveGasPrice } = data.result
+                    let { gasUsed, effectiveGasPrice, transactionHash, chainId } = data.result
+
+                    // Fallback to fetch receipt via RPC if gasUsed is not in Engine response
+                    if ((!gasUsed || !effectiveGasPrice) && transactionHash && chainId) {
+                        try {
+                            const rpcUrl = `https://${chainId}.rpc.thirdweb.com/${process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || ''}`
+                            const rpcRes = await fetch(rpcUrl, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    jsonrpc: '2.0',
+                                    method: 'eth_getTransactionReceipt',
+                                    params: [transactionHash],
+                                    id: 1
+                                })
+                            })
+                            if (rpcRes.ok) {
+                                const rpcData = await rpcRes.json()
+                                if (rpcData.result) {
+                                    gasUsed = rpcData.result.gasUsed
+                                    effectiveGasPrice = rpcData.result.effectiveGasPrice
+                                }
+                            }
+                        } catch (rpcErr) {
+                            console.error('Failed to fetch receipt:', rpcErr)
+                        }
+                    }
+
                     if (gasUsed && effectiveGasPrice) {
                         const costWei = BigInt(gasUsed) * BigInt(effectiveGasPrice)
                         // Convert wei to ether (POL) string
