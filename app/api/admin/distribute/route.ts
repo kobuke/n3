@@ -95,6 +95,30 @@ export async function POST(req: Request) {
 
                 const txHash = mintData.result?.queueId || null
 
+                // Polling for transaction status (up to 12 seconds)
+                if (txHash) {
+                    let isMined = false;
+                    for (let i = 0; i < 6; i++) {
+                        await new Promise(r => setTimeout(r, 2000));
+                        const statusRes = await fetch(`https://${process.env.THIRDWEB_ENGINE_URL}/transaction/status/${txHash}`, {
+                            headers: { Authorization: `Bearer ${process.env.THIRDWEB_ENGINE_ACCESS_TOKEN}` }
+                        });
+                        if (statusRes.ok) {
+                            const statusData = await statusRes.json();
+                            const status = statusData.result?.status;
+                            if (status === "mined") {
+                                isMined = true;
+                                break;
+                            } else if (status === "errored") {
+                                throw new Error(`Transaction reverted on-chain: ${statusData.result.errorMessage || 'Unknown error'}`);
+                            }
+                        }
+                    }
+                    if (!isMined) {
+                        console.warn(`[Airdrop] Transaction ${txHash} still pending, assuming success for now.`);
+                    }
+                }
+
                 // Save log
                 const dummyOrderId = `manual-airdrop-${Date.now()}-${Math.floor(Math.random() * 1000)}`
                 await supabase.from("mint_logs").insert({

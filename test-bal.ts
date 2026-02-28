@@ -1,18 +1,20 @@
-import { getWalletBalance } from "thirdweb/wallets";
+import { createThirdwebClient, getContract } from "thirdweb";
 import { polygon } from "thirdweb/chains";
-import { client } from "./lib/thirdweb";
-import dotenv from "dotenv";
 
-dotenv.config({ path: ".env.local" });
+const client = createThirdwebClient({
+  clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID || ""
+});
 
-async function run() {
-    try {
-        const balance = await getWalletBalance({
-            client,
-            chain: polygon,
-            address: process.env.THIRDWEB_ENGINE_BACKEND_WALLET!
-        });
-        console.log("Balance:", balance.displayValue, balance.symbol);
-    } catch(e) { console.error(e); }
+async function main() {
+  console.log("clientId:", process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID);
+  
+  const contract = getContract({
+    client,
+    chain: polygon,
+    address: "0xF7c4fd3Ee759cAF58c3fE11344DC5FE24E993fE8",
+  });
+  
+  console.log(contract);
 }
-run();
+
+main();
