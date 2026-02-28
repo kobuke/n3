@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Waves, Wallet, ArrowLeft } from "lucide-react";
+import { Mail, Waves, Wallet, ArrowLeft, Sparkles, QrCode, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -36,7 +36,7 @@ export default function LoginPage() {
           });
 
           if (res.ok) {
-            toast.success("ウォレットが接続されました");
+            toast.success("ログインしました！");
             const redirect = localStorage.getItem('redirectAfterLogin');
             if (redirect) {
               localStorage.removeItem('redirectAfterLogin');
@@ -62,7 +62,6 @@ export default function LoginPage() {
   // Handle LINE LIFF Initialization
   useEffect(() => {
     async function initLiff() {
-      // Fast check if already logged in via cookie
       try {
         const sessionRes = await fetch("/api/session");
         if (sessionRes.ok) {
@@ -79,7 +78,7 @@ export default function LoginPage() {
           }
         }
       } catch (e) {
-        // Ignore session fetch error and proceed to LIFF
+        // ignore
       }
 
       const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
@@ -95,7 +94,6 @@ export default function LoginPage() {
           const currentLineId = profile.userId;
           setLineId(currentLineId);
 
-          // Check if linked
           const res = await fetch("/api/auth/line", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -151,7 +149,7 @@ export default function LoginPage() {
       }
 
       setOtpSent(true);
-      toast.success("認証コードをメールに送信しました");
+      toast.success("認証コードをメールに送信しました！");
     } catch {
       toast.error("ネットワークエラー。もう一度お試しください。");
     } finally {
@@ -174,11 +172,11 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "無効なコードです");
+        toast.error(data.error || "コードが正しくありません。もう一度確認してください。");
         return;
       }
 
-      toast.success("認証成功！");
+      toast.success("ログイン成功！");
       const redirect = localStorage.getItem('redirectAfterLogin');
       if (redirect) {
         localStorage.removeItem('redirectAfterLogin');
@@ -221,21 +219,39 @@ export default function LoginPage() {
               Nanjo NFT Wallet
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              沖縄リゾート デジタルチケット
+              南城市デジタルチケット・証明書サービス
             </p>
           </div>
         </div>
+
+        {/* Feature badges */}
+        {!otpSent && (
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
+              <QrCode className="w-3 h-3" /> QRチケット
+            </div>
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
+              <Sparkles className="w-3 h-3" /> デジタル記念品
+            </div>
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
+              <Shield className="w-3 h-3" /> 安全・無料
+            </div>
+          </div>
+        )}
 
         {/* Login card */}
         <Card className="w-full shadow-lg border-border/50 transition-all duration-300">
           <CardHeader className="pb-2 pt-6 px-6">
             <h2 className="text-lg font-semibold text-foreground">
-              {otpSent ? "メール認証" : "ログイン"}
+              {otpSent ? "メール認証" : "はじめる / ログイン"}
             </h2>
             <p className="text-sm text-muted-foreground">
               {otpSent
-                ? `${email} に送信された6桁のコードを入力してください`
-                : "ウォレットへのアクセス方法を選択してください"
+                ? <>
+                  <span className="font-medium text-foreground">{email}</span> に6桁の認証コードを送りました。<br />
+                  メールbox（迷惑メールも）をご確認ください。
+                </>
+                : "メールアドレスを入力するだけで、すぐに始められます。"
               }
             </p>
           </CardHeader>
@@ -244,78 +260,79 @@ export default function LoginPage() {
             {/* OTP Verification Form */}
             {otpSent ? (
               <form onSubmit={handleVerifyOtp} className="flex flex-col gap-4">
-                <Input
-                  type="text"
-                  placeholder="123456"
-                  value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value)}
-                  className="h-12 text-center text-xl tracking-widest font-mono"
-                  maxLength={6}
-                  autoFocus
-                  required
-                />
-                <Button type="submit" disabled={loading || otpCode.length < 6} className="h-10 text-sm font-medium w-full">
-                  {loading ? "認証中..." : "認証してログイン"}
+                <div className="flex flex-col gap-1.5">
+                  <Input
+                    type="text"
+                    placeholder="例: 123456"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
+                    className="h-14 text-center text-2xl tracking-widest font-mono"
+                    maxLength={6}
+                    autoFocus
+                    required
+                    inputMode="numeric"
+                  />
+                  <p className="text-[11px] text-muted-foreground text-center">
+                    メールに届いた6桁の数字を入力してください
+                  </p>
+                </div>
+                <Button type="submit" disabled={loading || otpCode.length < 6} className="h-12 text-base font-bold w-full">
+                  {loading ? "認証中..." : "✓ 認証してログイン"}
                 </Button>
                 <button
                   type="button"
-                  onClick={() => setOtpSent(false)}
-                  className="flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground mt-2"
+                  onClick={() => { setOtpSent(false); setOtpCode(""); }}
+                  className="flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-foreground mt-1 py-2"
                 >
                   <ArrowLeft className="w-3 h-3" />
-                  別のメールアドレスを使用
+                  メールアドレスを変更する
                 </button>
               </form>
             ) : (
               /* Initial Login Options */
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-5">
 
-                {/* Email Login Section */}
+                {/* Email Login Section - PRIMARY */}
                 <div className="flex flex-col gap-3">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-medium text-foreground">メールでログイン</span>
-                    <p className="text-[10px] text-muted-foreground">メールでNFTを受け取った方向け</p>
-                  </div>
                   <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3">
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
                         type="email"
-                        placeholder="you@email.com"
+                        placeholder="メールアドレスを入力"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10 h-10 text-base"
+                        className="pl-10 h-12 text-base"
                         required
                       />
                     </div>
-                    <Button type="submit" disabled={loading || !email} className="h-10 w-full" variant="secondary">
-                      {loading ? "送信中..." : "メールで続行"}
+                    <Button type="submit" disabled={loading || !email} className="h-12 w-full text-base font-bold">
+                      {loading ? "送信中..." : "メールで続ける →"}
                     </Button>
                   </form>
+                  <p className="text-[11px] text-muted-foreground text-center">
+                    ※ 登録不要。メールが届いたら6桁コードを入力するだけです。
+                  </p>
                 </div>
 
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t border-border/50" />
                   </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">または</span>
+                  <div className="relative flex justify-center text-xs">
+                    <span className="bg-background px-3 text-muted-foreground">暗号資産ウォレットをお持ちの方</span>
                   </div>
                 </div>
 
-                {/* Wallet Connection Section */}
-                <div className="flex flex-col gap-3">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-medium text-foreground">ウォレット接続</span>
-                    <p className="text-[10px] text-muted-foreground">MetaMask、Rainbow など</p>
-                  </div>
+                {/* Wallet Connection Section - SECONDARY */}
+                <div className="flex flex-col gap-2">
                   <Button
                     variant="outline"
                     onClick={() => open()}
-                    className="w-full h-10 gap-2 border-primary/20 hover:bg-primary/5 hover:text-primary"
+                    className="w-full h-10 gap-2 border-border/50 text-sm"
                   >
                     <Wallet className="w-4 h-4" />
-                    ウォレットを接続
+                    ウォレットで接続（上級者向け）
                   </Button>
                 </div>
 
@@ -323,6 +340,10 @@ export default function LoginPage() {
             )}
           </CardContent>
         </Card>
+
+        <p className="text-[11px] text-muted-foreground text-center px-4">
+          ログインすることで、お客様のデジタルチケットや記念品を安全に保管します。
+        </p>
       </div>
     </main>
   );

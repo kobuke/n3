@@ -145,9 +145,18 @@ function MyPageContent() {
     return getCategory(nft) === categoryFilter;
   });
 
-  const handleRefresh = () => {
-    mutateNfts();
-    mutateActivities();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([mutateNfts(), mutateActivities()]);
+      toast.success("情報を更新しました");
+    } catch (err) {
+      toast.error("更新に失敗しました");
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   return (
@@ -160,18 +169,25 @@ function MyPageContent() {
       <main className="max-w-lg mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold text-foreground">マイページ</h1>
-          <Button variant="outline" size="sm" onClick={handleRefresh} className="gap-1.5 h-8">
-            <RefreshCw className="w-3.5 h-3.5" />更新
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="gap-1.5 h-8 min-w-[80px]"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+            {isRefreshing ? "更新中" : "更新"}
           </Button>
         </div>
 
         <Tabs defaultValue="items" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="items" className="gap-2 font-medium">
-              <LayoutList className="w-4 h-4" />保有アイテム
+              <LayoutList className="w-4 h-4" />チケット・記念品
             </TabsTrigger>
             <TabsTrigger value="activity" className="gap-2 font-medium">
-              <ActivityIcon className="w-4 h-4" />履歴
+              <ActivityIcon className="w-4 h-4" />受け取り履歴
             </TabsTrigger>
           </TabsList>
 
@@ -223,11 +239,28 @@ function MyPageContent() {
 
             {/* Empty state */}
             {!nftLoading && (!filteredNfts || filteredNfts.length === 0) && (
-              <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-8 text-center flex flex-col items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                  <Ticket className="w-6 h-6 text-muted-foreground" />
+              <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-8 text-center flex flex-col items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
+                  <Ticket className="w-7 h-7 text-muted-foreground" />
                 </div>
-                <h3 className="font-semibold text-foreground text-sm">該当するアイテムがありません</h3>
+                {categoryFilter === "all" ? (
+                  <>
+                    <h3 className="font-semibold text-foreground text-sm">まだアイテムがありません</h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed max-w-[240px]">
+                      イベントに参加したり、スタッフからQRコードを受け取ると、ここにデジタルチケットや記念品が表示されます。
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="font-semibold text-foreground text-sm">このカテゴリにはアイテムがありません</h3>
+                    <button
+                      className="text-xs text-primary underline underline-offset-2"
+                      onClick={() => setCategoryFilter("all")}
+                    >
+                      すべてのアイテムを表示する
+                    </button>
+                  </>
+                )}
               </div>
             )}
 
@@ -261,11 +294,14 @@ function MyPageContent() {
                 ))}
               </div>
             ) : activities.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-8 text-center flex flex-col items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                  <ActivityIcon className="w-6 h-6 text-muted-foreground" />
+              <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-8 text-center flex flex-col items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
+                  <ActivityIcon className="w-7 h-7 text-muted-foreground" />
                 </div>
-                <h3 className="font-semibold text-foreground text-sm">履歴はありません</h3>
+                <h3 className="font-semibold text-foreground text-sm">受け取り履歴はまだありません</h3>
+                <p className="text-xs text-muted-foreground max-w-[240px] leading-relaxed">
+                  チケットや記念品を受け取ると、ここに履歴が表示されます。
+                </p>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
@@ -317,28 +353,31 @@ function MyPageContent() {
           </TabsContent>
         </Tabs>
 
-        {/* Discord Integration Section - Simplified */}
+        {/* Discord Integration Section */}
         <div className="mt-10 pt-6 border-t border-border/50">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-full bg-[#5865F2]/10 flex items-center justify-center">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-9 h-9 rounded-full bg-[#5865F2]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
               <svg className="w-4 h-4 text-[#5865F2]" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z" />
               </svg>
             </div>
             <div>
-              <h3 className="font-semibold text-foreground text-sm">Discord連携</h3>
-              <p className="text-xs text-muted-foreground">限定ロールを取得</p>
+              <h3 className="font-semibold text-foreground text-sm">Discordコミュニティ連携</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
+                Discordと連携すると、お持ちのチケットに応じた<br />
+                <span className="font-medium text-foreground">限定チャンネルへのアクセス</span>が可能になります。
+              </p>
             </div>
           </div>
 
           {discordStatus?.linked ? (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/10 border border-accent/20">
-              <CheckCircle2 className="w-4 h-4 text-accent" />
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent/10 border border-accent/20">
+              <CheckCircle2 className="w-4 h-4 text-accent flex-shrink-0" />
               <span className="text-xs text-foreground">連携済み: <strong>@{discordStatus.discordUsername}</strong></span>
             </div>
           ) : (
-            <a href="/api/auth/discord" className="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-md bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-medium transition-colors">
-              Discordを連携する
+            <a href="/api/auth/discord" className="flex items-center justify-center gap-2 h-10 px-4 rounded-md bg-[#5865F2] hover:bg-[#4752C4] text-white text-sm font-medium transition-colors w-full">
+              Discordに接続して特典を受け取る
             </a>
           )}
         </div>

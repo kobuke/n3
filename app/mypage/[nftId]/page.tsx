@@ -136,6 +136,26 @@ export default function TicketDetailPage({
   const identifier = nft?.uuid || nftId;
   const qrValue = `${origin}/staff/scan?nftId=${identifier}&walletAddress=${session.walletAddress}${contract ? `&contract=${contract}` : ""}`;
 
+  // Japanese labels for common attribute types
+  const ATTR_LABELS: Record<string, string> = {
+    "Status": "ステータス",
+    "Type": "種別",
+    "Source": "取得方法",
+    "Transferable": "譲渡",
+    "Used_At": "使用日時",
+    "Event": "イベント",
+    "Issued_At": "発行日",
+  };
+  const ATTR_VALUES: Record<string, string> = {
+    "Unused": "未使用",
+    "Used": "使用済み",
+    "Yes": "可能",
+    "No": "不可",
+    "Airdrop": "配布（QRコード）",
+    "LINE連携": "LINE連携",
+    "Purchase": "購入",
+  };
+
   return (
     <div
       className="min-h-screen bg-background pb-10 overflow-x-hidden"
@@ -331,22 +351,24 @@ export default function TicketDetailPage({
           <div className="mt-6">
             <Separator className="mb-5" />
             <h2 className="text-sm font-bold text-foreground mb-4 px-1">
-              プロパティ
+              チケット詳細情報
             </h2>
             <div className="grid grid-cols-2 gap-3">
-              {attributes.map((attr) => (
-                <div
-                  key={attr.trait_type}
-                  className="rounded-xl bg-card border border-border/40 p-3 flex flex-col justify-center items-center text-center shadow-sm"
-                >
-                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
-                    {attr.trait_type}
-                  </p>
-                  <p className="text-sm font-bold text-foreground">
-                    {attr.value}
-                  </p>
-                </div>
-              ))}
+              {attributes
+                .filter(attr => !['Status', 'Used_At'].includes(attr.trait_type))
+                .map((attr) => (
+                  <div
+                    key={attr.trait_type}
+                    className="rounded-xl bg-card border border-border/40 p-3 flex flex-col justify-center items-center text-center shadow-sm"
+                  >
+                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
+                      {ATTR_LABELS[attr.trait_type] || attr.trait_type}
+                    </p>
+                    <p className="text-sm font-bold text-foreground">
+                      {ATTR_VALUES[attr.value] || attr.value}
+                    </p>
+                  </div>
+                ))}
             </div>
           </div>
         )}

@@ -74,8 +74,8 @@ export default function DropClaimPage({ params }: { params: Promise<{ templateId
                 <AppHeader />
                 <div className="flex flex-col items-center justify-center p-6 text-center mt-20">
                     <AlertCircle className="w-12 h-12 text-destructive mb-4" />
-                    <h2 className="text-xl font-bold mb-2">テンプレートが見つかりません</h2>
-                    <p className="text-muted-foreground">無効なURLか、削除された可能性があります。</p>
+                    <h2 className="text-xl font-bold mb-2">ページが見つかりません</h2>
+                    <p className="text-muted-foreground">無効なURLか、配布が終了した可能性があります。<br />QRコードを再度スキャンするか、スタッフにお問い合わせください。</p>
                 </div>
             </main>
         );
@@ -91,9 +91,9 @@ export default function DropClaimPage({ params }: { params: Promise<{ templateId
                         <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                             <Gift className="w-8 h-8 text-primary" />
                         </div>
-                        <CardTitle className="text-2xl font-bold">{template?.name || "記念NFT"}</CardTitle>
+                        <CardTitle className="text-2xl font-bold">{template?.name || "記念アイテム"}</CardTitle>
                         <CardDescription className="text-base mt-2">
-                            {template?.description || "こちらの限定NFTを受け取ることができます。"}
+                            {template?.description || "こちらのデジタルチケット・記念品を受け取ることができます。"}
                         </CardDescription>
                     </CardHeader>
 
@@ -106,15 +106,17 @@ export default function DropClaimPage({ params }: { params: Promise<{ templateId
 
                         {claimStatus === "success" ? (
                             <div className="flex flex-col items-center gap-4 text-center">
-                                <div className="text-success flex flex-col items-center">
-                                    <CheckCircle2 className="w-12 h-12 mb-2" />
-                                    <h3 className="font-bold text-lg">受け取り完了！</h3>
+                                <div className="flex flex-col items-center gap-1 text-green-600">
+                                    <CheckCircle2 className="w-14 h-14 mb-1" />
+                                    <h3 className="font-bold text-xl">受け取り完了！</h3>
                                 </div>
-                                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                                    NFTの受け取りが完了しました。<br />ブロックチェーンへの反映には<br />30秒〜1分ほどかかる場合があります。
+                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                    デジタルチケットの受け取りが完了しました。<br />
+                                    マイページに表示されるまで、<br />
+                                    数十秒から数分かかる場合があります。
                                 </p>
                                 <Button
-                                    className="w-full mt-2"
+                                    className="w-full mt-2 text-base h-12"
                                     onClick={() => router.push("/mypage")}
                                 >
                                     マイページで確認する
@@ -129,23 +131,31 @@ export default function DropClaimPage({ params }: { params: Promise<{ templateId
                                 )}
 
                                 {!session?.authenticated ? (
-                                    <div className="flex flex-col gap-3">
-                                        <p className="text-sm text-center text-muted-foreground">受け取るにはログインが必要です</p>
+                                    <div className="flex flex-col gap-4 text-center">
+                                        <div className="p-4 bg-muted/50 rounded-xl">
+                                            <p className="text-sm font-medium text-foreground mb-1">ログインが必要です</p>
+                                            <p className="text-xs text-muted-foreground">チケットを受け取るには、メールアドレスでログインするだけでOKです。</p>
+                                        </div>
                                         <Button
-                                            className="w-full"
+                                            className="w-full h-12 text-base font-bold"
                                             size="lg"
                                             onClick={() => router.push("/")}
                                         >
-                                            ログインして受け取る
+                                            ログインして受け取る →
                                         </Button>
                                     </div>
                                 ) : (
                                     <Button
-                                        className="w-full text-lg h-14"
+                                        className="w-full text-base font-bold h-14"
                                         onClick={handleClaim}
                                         disabled={isClaiming}
                                     >
-                                        {isClaiming ? "受け取り中..." : "NFTを受け取る"}
+                                        {isClaiming ? (
+                                            <span className="flex items-center gap-2">
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                受け取り処理中…
+                                            </span>
+                                        ) : "デジタルチケットを受け取る"}
                                     </Button>
                                 )}
                             </div>
