@@ -99,7 +99,10 @@ function ClaimNFTContent() {
                             ) : !session?.authenticated ? (
                                 <div className="flex flex-col gap-3">
                                     <p className="text-sm text-muted-foreground">受け取るにはログインが必要です。</p>
-                                    <Button onClick={() => router.push("/")} className="w-full">
+                                    <Button onClick={() => {
+                                        localStorage.setItem('redirectAfterLogin', `/claim?token=${token}`);
+                                        router.push("/");
+                                    }} className="w-full">
                                         ログイン画面へ
                                     </Button>
                                 </div>

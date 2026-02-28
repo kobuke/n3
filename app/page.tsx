@@ -37,7 +37,13 @@ export default function LoginPage() {
 
           if (res.ok) {
             toast.success("ウォレットが接続されました");
-            router.push("/mypage");
+            const redirect = localStorage.getItem('redirectAfterLogin');
+            if (redirect) {
+              localStorage.removeItem('redirectAfterLogin');
+              router.push(redirect);
+            } else {
+              router.push("/mypage");
+            }
           } else {
             const data = await res.json();
             toast.error(data.error || "ログインに失敗しました");
@@ -62,7 +68,13 @@ export default function LoginPage() {
         if (sessionRes.ok) {
           const sessionData = await sessionRes.json();
           if (sessionData.authenticated) {
-            router.push("/mypage");
+            const redirect = localStorage.getItem('redirectAfterLogin');
+            if (redirect) {
+              localStorage.removeItem('redirectAfterLogin');
+              router.push(redirect);
+            } else {
+              router.push("/mypage");
+            }
             return;
           }
         }
@@ -93,7 +105,13 @@ export default function LoginPage() {
           const data = await res.json();
           if (res.ok && data.linked) {
             toast.success("LINEからログインしました");
-            router.push("/mypage");
+            const redirect = localStorage.getItem('redirectAfterLogin');
+            if (redirect) {
+              localStorage.removeItem('redirectAfterLogin');
+              router.push(redirect);
+            } else {
+              router.push("/mypage");
+            }
           } else {
             setLiffLoading(false);
           }
@@ -161,7 +179,13 @@ export default function LoginPage() {
       }
 
       toast.success("認証成功！");
-      router.push("/mypage");
+      const redirect = localStorage.getItem('redirectAfterLogin');
+      if (redirect) {
+        localStorage.removeItem('redirectAfterLogin');
+        router.push(redirect);
+      } else {
+        router.push("/mypage");
+      }
     } catch {
       toast.error("ネットワークエラー。もう一度お試しください。");
     } finally {
