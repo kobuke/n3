@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Plus, Trash2, RefreshCw, Shield, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -25,26 +24,37 @@ type GuildRole = {
     position: number;
 };
 
+type Template = {
+    id: string;
+    name: string;
+    contract_address?: string;
+};
+
 export default function DiscordSettingsPage() {
     const [mappings, setMappings] = useState<RoleMapping[]>([]);
     const [guildRoles, setGuildRoles] = useState<GuildRole[]>([]);
+    const [templates, setTemplates] = useState<Template[]>([]);
     const [loading, setLoading] = useState(true);
 
     // New mapping form
-    const [collectionAddress, setCollectionAddress] = useState("");
-    const [collectionName, setCollectionName] = useState("");
+    const [selectedTemplateId, setSelectedTemplateId] = useState("");
     const [selectedRoleId, setSelectedRoleId] = useState("");
-    const [description, setDescription] = useState("");
     const [saving, setSaving] = useState(false);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch("/api/discord/roles");
-            if (!res.ok) throw new Error("Failed to fetch");
-            const data = await res.json();
-            setMappings(data.mappings || []);
-            setGuildRoles(data.guildRoles || []);
+            const [rolesRes, templatesRes] = await Promise.all([
+                fetch("/api/discord/roles"),
+                fetch("/api/templates"),
+            ]);
+            if (!rolesRes.ok) throw new Error("Failed to fetch");
+            const rolesData = await rolesRes.json();
+            setMappings(rolesData.mappings || []);
+            setGuildRoles(rolesData.guildRoles || []);
+
+            const templatesData = await templatesRes.json();
+            if (Array.isArray(templatesData)) setTemplates(templatesData);
         } catch (err) {
             toast.error("データの取得に失敗しました");
         } finally {
@@ -58,23 +68,26 @@ export default function DiscordSettingsPage() {
 
     async function handleAddMapping(e: React.FormEvent) {
         e.preventDefault();
-        if (!collectionAddress || !selectedRoleId) {
-            toast.error("コレクションアドレスとロールIDを入力してください");
+        if (!selectedTemplateId || !selectedRoleId) {
+            toast.error("テンプレートとDiscordロールを選択してください");
             return;
         }
 
         setSaving(true);
         try {
+            const template = templates.find((t) => t.id === selectedTemplateId);
             const selectedRole = guildRoles.find((r) => r.id === selectedRoleId);
+            const collectionAddress = template?.contract_address || process.env.NEXT_PUBLIC_COLLECTION_ID || "";
+
             const res = await fetch("/api/discord/roles", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     collection_address: collectionAddress,
-                    collection_name: collectionName || null,
+                    collection_name: template?.name || null,
                     discord_role_id: selectedRoleId,
                     discord_role_name: selectedRole?.name || null,
-                    description: description || null,
+                    description: null,
                 }),
             });
 
@@ -84,10 +97,8 @@ export default function DiscordSettingsPage() {
             }
 
             toast.success("マッピングを保存しました");
-            setCollectionAddress("");
-            setCollectionName("");
+            setSelectedTemplateId("");
             setSelectedRoleId("");
-            setDescription("");
             fetchData();
         } catch (err: any) {
             toast.error(err.message || "保存に失敗しました");
@@ -115,10 +126,10 @@ export default function DiscordSettingsPage() {
         }
     }
 
-    function getRoleColor(color: number): string {
-        if (color === 0) return "#99aab5";
-        return `#${color.toString(16).padStart(6, "0")}`;
-    }
+    // Filter out guild roles that are managed by bots (@everyone, etc.)
+    const selectableRoles = guildRoles.filter(
+        (r) => r.name !== "@everyone" && r.name !== "新しいロール"
+    );
 
     return (
         <div className="flex flex-col">
@@ -128,7 +139,7 @@ export default function DiscordSettingsPage() {
                     Discord ロール管理
                 </h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                    NFTコレクションとDiscordロールの紐づけを管理します
+                    NFTテンプレートとDiscordロールの紐づけを管理します
                 </p>
             </div>
 
@@ -146,33 +157,27 @@ export default function DiscordSettingsPage() {
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div>
                                     <label className="text-sm font-medium mb-1 block">
-                                        NFTコレクションアドレス *
+                                        NFTテンプレート *
                                     </label>
-                                    <Input
-                                        placeholder="0x..."
-                                        value={collectionAddress}
-                                        onChange={(e) => setCollectionAddress(e.target.value)}
+                                    <select
+                                        className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                        value={selectedTemplateId}
+                                        onChange={(e) => setSelectedTemplateId(e.target.value)}
                                         required
-                                    />
+                                    >
+                                        <option value="">テンプレートを選択...</option>
+                                        {templates.map((t) => (
+                                            <option key={t.id} value={t.id}>
+                                                {t.name}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
-                                <div>
-                                    <label className="text-sm font-medium mb-1 block">
-                                        コレクション名（任意）
-                                    </label>
-                                    <Input
-                                        placeholder="Nanjo NFT Ticket"
-                                        value={collectionName}
-                                        onChange={(e) => setCollectionName(e.target.value)}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid gap-4 sm:grid-cols-2">
                                 <div>
                                     <label className="text-sm font-medium mb-1 block">
                                         Discordロール *
                                     </label>
-                                    {guildRoles.length > 0 ? (
+                                    {selectableRoles.length > 0 ? (
                                         <select
                                             className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                                             value={selectedRoleId}
@@ -180,30 +185,17 @@ export default function DiscordSettingsPage() {
                                             required
                                         >
                                             <option value="">ロールを選択...</option>
-                                            {guildRoles.map((role) => (
+                                            {selectableRoles.map((role) => (
                                                 <option key={role.id} value={role.id}>
                                                     {role.name}
                                                 </option>
                                             ))}
                                         </select>
                                     ) : (
-                                        <Input
-                                            placeholder="ロールIDを入力（例: 123456789012345678）"
-                                            value={selectedRoleId}
-                                            onChange={(e) => setSelectedRoleId(e.target.value)}
-                                            required
-                                        />
+                                        <div className="flex items-center h-10 px-3 text-sm text-muted-foreground border rounded-md bg-muted/30">
+                                            Discordサーバーのロールを読み込み中...
+                                        </div>
                                     )}
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium mb-1 block">
-                                        説明（任意）
-                                    </label>
-                                    <Input
-                                        placeholder="チケット保有者用ロール"
-                                        value={description}
-                                        onChange={(e) => setDescription(e.target.value)}
-                                    />
                                 </div>
                             </div>
 
@@ -249,33 +241,17 @@ export default function DiscordSettingsPage() {
                                         <div className="flex flex-col gap-1 min-w-0 flex-1">
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 <span className="text-sm font-medium">
-                                                    {mapping.collection_name || "Unnamed Collection"}
+                                                    {mapping.collection_name || "名称なし"}
                                                 </span>
-                                                <Badge
-                                                    variant="outline"
-                                                    className="font-mono text-xs truncate max-w-[200px]"
-                                                >
-                                                    {mapping.collection_address}
-                                                </Badge>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-xs text-muted-foreground">→</span>
                                                 <Badge
-                                                    style={{
-                                                        backgroundColor: `${getRoleColor(0)}20`,
-                                                        borderColor: getRoleColor(0),
-                                                        color: getRoleColor(0),
-                                                    }}
                                                     variant="outline"
                                                     className="text-xs"
                                                 >
                                                     @{mapping.discord_role_name || mapping.discord_role_id}
                                                 </Badge>
-                                                {mapping.description && (
-                                                    <span className="text-xs text-muted-foreground">
-                                                        {mapping.description}
-                                                    </span>
-                                                )}
                                             </div>
                                         </div>
                                         <Button

@@ -7,7 +7,6 @@ import { Label } from "@/components/admin/ui/label"
 import { Button } from "@/components/admin/ui/button"
 import { Switch } from "@/components/admin/ui/switch"
 import { Separator } from "@/components/admin/ui/separator"
-import { Badge } from "@/components/admin/ui/badge"
 import {
   Select,
   SelectContent,
@@ -15,20 +14,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/admin/ui/select"
-import { Eye, EyeOff, Save, TestTube, CheckCircle2, MessageSquare, Loader2 } from "lucide-react"
+import { Save, MessageSquare, Loader2, Bell, CheckCircle2 } from "lucide-react"
 
 export function SettingsForm() {
-  const [showShopifyKey, setShowShopifyKey] = useState(false)
-  const [showThirdwebSecret, setShowThirdwebSecret] = useState(false)
-  const [emailNotifications, setEmailNotifications] = useState(true)
-  const [autoRetry, setAutoRetry] = useState(false)
-
   // LINE Airdrop Settings
   const [lineAirdropEnabled, setLineAirdropEnabled] = useState(false)
   const [lineAirdropTemplateId, setLineAirdropTemplateId] = useState("")
   const [templates, setTemplates] = useState<any[]>([])
   const [lineSettingsLoading, setLineSettingsLoading] = useState(true)
   const [lineSettingsSaving, setLineSettingsSaving] = useState(false)
+
+  // Notification Settings
+  const [emailNotifications, setEmailNotifications] = useState(false)
+  const [notificationEmail, setNotificationEmail] = useState("")
+  const [autoRetry, setAutoRetry] = useState(false)
+  const [notifSettingsLoading, setNotifSettingsLoading] = useState(true)
+  const [notifSettingsSaving, setNotifSettingsSaving] = useState(false)
 
   useEffect(() => {
     // Load templates
@@ -45,6 +46,17 @@ export function SettingsForm() {
       })
       .catch(() => { })
       .finally(() => setLineSettingsLoading(false))
+
+    // Load notification settings
+    fetch("/api/settings?keys=email_notifications_enabled,notification_email,auto_retry_enabled")
+      .then(r => r.json())
+      .then(data => {
+        if (data.email_notifications_enabled === "true") setEmailNotifications(true)
+        if (data.notification_email) setNotificationEmail(data.notification_email)
+        if (data.auto_retry_enabled === "true") setAutoRetry(true)
+      })
+      .catch(() => { })
+      .finally(() => setNotifSettingsLoading(false))
   }, [])
 
   async function saveLineSettings() {
@@ -63,6 +75,26 @@ export function SettingsForm() {
       alert("保存に失敗しました。")
     } finally {
       setLineSettingsSaving(false)
+    }
+  }
+
+  async function saveNotifSettings() {
+    setNotifSettingsSaving(true)
+    try {
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email_notifications_enabled: emailNotifications ? "true" : "false",
+          notification_email: notificationEmail,
+          auto_retry_enabled: autoRetry ? "true" : "false",
+        }),
+      })
+      alert("通知設定を保存しました。")
+    } catch {
+      alert("保存に失敗しました。")
+    } finally {
+      setNotifSettingsSaving(false)
     }
   }
 
@@ -133,214 +165,76 @@ export function SettingsForm() {
         </CardContent>
       </Card>
 
-      {/* API Configuration */}
+      {/* Notification Settings - Functional */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">API設定</CardTitle>
-          <CardDescription>
-            ShopifyとThirdwebのAPI認証情報を管理します
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-5">
-          {/* Shopify */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="shopify-key">Shopify APIキー</Label>
-              <Badge className="bg-success/10 text-success hover:bg-success/20 border-0 gap-1">
-                <CheckCircle2 className="size-3" />
-                接続済み
-              </Badge>
-            </div>
-            <div className="relative">
-              <Input
-                id="shopify-key"
-                type={showShopifyKey ? "text" : "password"}
-                defaultValue="shpat_xxxxxxxxxxxxxxxxxxxx"
-                className="pr-10 font-mono text-sm"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-1 top-1/2 -translate-y-1/2 size-7"
-                onClick={() => setShowShopifyKey(!showShopifyKey)}
-              >
-                {showShopifyKey ? (
-                  <EyeOff className="size-3.5" />
-                ) : (
-                  <Eye className="size-3.5" />
-                )}
-                <span className="sr-only">表示切り替え</span>
-              </Button>
-            </div>
-          </div>
-
-          {/* Shopify Store URL */}
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="shopify-store">ShopifyストアURL</Label>
-            <Input
-              id="shopify-store"
-              defaultValue="nomad-resort.myshopify.com"
-              className="text-sm"
-            />
-          </div>
-
-          <Separator />
-
-          {/* thirdweb */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="thirdweb-secret">thirdweb シークレットキー</Label>
-              <Badge className="bg-success/10 text-success hover:bg-success/20 border-0 gap-1">
-                <CheckCircle2 className="size-3" />
-                接続済み
-              </Badge>
-            </div>
-            <div className="relative">
-              <Input
-                id="thirdweb-secret"
-                type={showThirdwebSecret ? "text" : "password"}
-                defaultValue="sk_xxxxxxxxxxxxxxxxxxxx"
-                className="pr-10 font-mono text-sm"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-1 top-1/2 -translate-y-1/2 size-7"
-                onClick={() => setShowThirdwebSecret(!showThirdwebSecret)}
-              >
-                {showThirdwebSecret ? (
-                  <EyeOff className="size-3.5" />
-                ) : (
-                  <Eye className="size-3.5" />
-                )}
-                <span className="sr-only">表示切り替え</span>
-              </Button>
-            </div>
-          </div>
-
-          {/* thirdweb Engine URL */}
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="thirdweb-engine-url">thirdweb Engine URL</Label>
-            <Input
-              id="thirdweb-engine-url"
-              defaultValue="https://your-engine-name.up.railway.app"
-              className="font-mono text-sm"
-            />
-          </div>
-
-          {/* thirdweb Client ID */}
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="thirdweb-client-id">thirdweb Client ID</Label>
-            <Input
-              id="thirdweb-client-id"
-              defaultValue="your_client_id_here"
-              className="font-mono text-sm"
-            />
-          </div>
-
-          <div className="flex gap-3">
-            <Button className="gap-2">
-              <Save className="size-4" />
-              設定を保存
-            </Button>
-            <Button variant="outline" className="gap-2">
-              <TestTube className="size-4" />
-              接続テスト
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Notification Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">通知設定</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Bell className="size-4" />
+            通知設定
+          </CardTitle>
           <CardDescription>
             ミント失敗やシステムイベントの通知設定を管理します
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col gap-0.5">
-              <Label>メール通知</Label>
-              <span className="text-xs text-muted-foreground">
-                ミント失敗時にメールでアラートを受け取ります
-              </span>
+          {notifSettingsLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="size-5 animate-spin text-muted-foreground" />
             </div>
-            <Switch
-              checked={emailNotifications}
-              onCheckedChange={setEmailNotifications}
-            />
-          </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-0.5">
+                  <Label>メール通知</Label>
+                  <span className="text-xs text-muted-foreground">
+                    ミント失敗時にメールでアラートを受け取ります
+                  </span>
+                </div>
+                <Switch
+                  checked={emailNotifications}
+                  onCheckedChange={setEmailNotifications}
+                />
+              </div>
 
-          {emailNotifications && (
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="notification-email">通知先メールアドレス</Label>
-              <Input
-                id="notification-email"
-                type="email"
-                defaultValue="admin@nomadresort.io"
-                className="text-sm"
-              />
-            </div>
-          )}
+              {emailNotifications && (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="notification-email">通知先メールアドレス</Label>
+                  <Input
+                    id="notification-email"
+                    type="email"
+                    placeholder="admin@example.com"
+                    value={notificationEmail}
+                    onChange={(e) => setNotificationEmail(e.target.value)}
+                    className="text-sm"
+                  />
+                </div>
+              )}
 
-          <Separator />
+              <Separator />
 
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col gap-0.5">
-              <Label>失敗時の自動リトライ</Label>
-              <span className="text-xs text-muted-foreground">
-                失敗したミントを最大3回まで自動でリトライします
-              </span>
-            </div>
-            <Switch
-              checked={autoRetry}
-              onCheckedChange={setAutoRetry}
-            />
-          </div>
-        </CardContent>
-      </Card>
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-0.5">
+                  <Label>失敗時の自動リトライ</Label>
+                  <span className="text-xs text-muted-foreground">
+                    失敗したミントを最大3回まで自動でリトライします
+                  </span>
+                </div>
+                <Switch
+                  checked={autoRetry}
+                  onCheckedChange={setAutoRetry}
+                />
+              </div>
 
-      {/* Webhook Configuration */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Webhook設定</CardTitle>
-          <CardDescription>
-            Shopifyからの注文処理用Webhookエンドポイントの設定
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <Label>Webhook URL</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                readOnly
-                value="https://api.nomadresort.io/webhooks/shopify/orders-paid"
-                className="font-mono text-sm bg-muted"
-              />
-              <Button variant="outline" size="sm">
-                コピー
+              <Button
+                className="gap-2 w-fit"
+                onClick={saveNotifSettings}
+                disabled={notifSettingsSaving}
+              >
+                {notifSettingsSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                通知設定を保存
               </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {"Shopify管理画面の「設定 > 通知 > Webhook」で "}
-              <span className="font-mono font-medium">{"orders/paid"}</span>
-              {" イベントにこのURLを設定してください。"}
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="webhook-secret">Webhookシークレット</Label>
-            <Input
-              id="webhook-secret"
-              type="password"
-              defaultValue="whsec_xxxxxxxxxxxxxxxxxxxx"
-              className="font-mono text-sm"
-            />
-          </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

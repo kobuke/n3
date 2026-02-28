@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/admin/ui/card"
+import Image from "next/image"
+import { Card, CardContent } from "@/components/admin/ui/card"
 import { Badge } from "@/components/admin/ui/badge"
 import { Button } from "@/components/admin/ui/button"
 import {
@@ -11,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/admin/ui/select"
-import { Link2, Unlink, Save, ShoppingBag, Hexagon, Loader2, RefreshCw } from "lucide-react"
+import { Link2, Unlink, Save, ShoppingBag, Hexagon, Loader2, RefreshCw, ImageIcon } from "lucide-react"
 
 type ShopifyProduct = {
   id: string
@@ -26,6 +27,7 @@ type ContractTemplate = {
   id: string
   name: string
   contractAddress: string
+  image_url?: string
 }
 
 type Mapping = {
@@ -87,12 +89,11 @@ export function MappingList() {
           body: JSON.stringify({ shopify_product_id: productId, nft_template_id: templateId })
         })
       }
-      return Promise.resolve() // Handle unlink later if needed
+      return Promise.resolve()
     })
 
     await Promise.all(promises)
 
-    // Update local state
     setMappings(prev => {
       const next = { ...prev }
       Object.entries(pendingChanges).forEach(([pid, tid]) => {
@@ -106,8 +107,6 @@ export function MappingList() {
 
   if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>
 
-  const linkedCount = Object.keys(mappings).length + Object.keys(pendingChanges).filter(k => pendingChanges[k]).length - Object.keys(pendingChanges).filter(k => mappings[k] && !pendingChanges[k]).length // Approximation
-  // Simplified count logic:
   const currentMappings = { ...mappings, ...pendingChanges }
   const activeCount = Object.values(currentMappings).filter(Boolean).length
 
@@ -120,18 +119,18 @@ export function MappingList() {
             <Link2 className="size-4" />
             <span>
               <span className="font-semibold text-foreground">{activeCount}</span>
-              {" / "}{products.length}{" products linked"}
+              {" / "}{products.length} 件紐付け済み
             </span>
           </div>
           <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="gap-2">
             <RefreshCw className="size-3.5" />
-            Sync Products
+            再同期
           </Button>
         </div>
         {Object.keys(pendingChanges).length > 0 && (
           <Button onClick={handleSave} disabled={saving} className="gap-2">
             {saving ? <Loader2 className="animate-spin size-4" /> : <Save className="size-4" />}
-            Save Changes
+            変更を保存
           </Button>
         )}
       </div>
@@ -154,10 +153,21 @@ export function MappingList() {
             >
               <CardContent className="p-0">
                 <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-                  {/* Shopify product */}
+                  {/* Shopify product with image */}
                   <div className="flex items-center gap-4">
-                    <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-secondary">
-                      <ShoppingBag className="size-5 text-muted-foreground" />
+                    <div className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-secondary overflow-hidden border border-border/50">
+                      {product.image ? (
+                        <Image
+                          src={product.image}
+                          alt={product.title}
+                          width={56}
+                          height={56}
+                          className="w-full h-full object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <ShoppingBag className="size-5 text-muted-foreground" />
+                      )}
                     </div>
                     <div className="flex flex-col gap-0.5">
                       <div className="flex items-center gap-2">
@@ -176,12 +186,12 @@ export function MappingList() {
                               : "text-xs"
                           }
                         >
-                          {product.status}
+                          {product.status === "active" ? "公開中" : "下書き"}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span className="font-mono">{product.sku}</span>
-                        <span>{product.price}</span>
+                        {product.sku && <span className="font-mono">{product.sku}</span>}
+                        {product.price && <span>{product.price}</span>}
                       </div>
                     </div>
                   </div>
@@ -203,14 +213,25 @@ export function MappingList() {
                     )}
                   </div>
 
-                  {/* Crossmint template selector */}
+                  {/* NFT template selector */}
                   <div className="flex items-center gap-3">
-                    <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-secondary">
-                      <Hexagon className="size-5 text-muted-foreground" />
+                    <div className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-secondary overflow-hidden border border-border/50">
+                      {selectedTemplate && (selectedTemplate as any).image_url ? (
+                        <Image
+                          src={(selectedTemplate as any).image_url}
+                          alt={selectedTemplate.name}
+                          width={56}
+                          height={56}
+                          className="w-full h-full object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <Hexagon className="size-5 text-muted-foreground" />
+                      )}
                     </div>
                     <div className="flex flex-col gap-1">
                       <span className="text-xs font-medium text-muted-foreground">
-                        NFT Template
+                        NFTテンプレート
                       </span>
                       <Select
                         value={currentTemplateId || "none"}
@@ -222,26 +243,19 @@ export function MappingList() {
                         }
                       >
                         <SelectTrigger className="w-56">
-                          <SelectValue placeholder="Select template..." />
+                          <SelectValue placeholder="テンプレートを選択..." />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">
-                            Not linked
+                            未紐付け
                           </SelectItem>
                           {templates.map((template) => (
                             <SelectItem key={template.id} value={template.id}>
-                              <div className="flex flex-col">
-                                <span>{template.name}</span>
-                              </div>
+                              {template.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      {selectedTemplate && (
-                        <span className="text-xs text-muted-foreground">
-                          {selectedTemplate.contractAddress ? `Contract: ${selectedTemplate.contractAddress}` : 'Default Contract'}
-                        </span>
-                      )}
                     </div>
                   </div>
                 </div>
