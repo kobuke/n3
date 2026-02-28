@@ -33,7 +33,7 @@ export async function GET() {
 
     const { data: recentTransfers } = await supabase
         .from('transfer_links')
-        .select('id, token, giverAddress, tokenId, status, transaction_hash, created_at')
+        .select('id, token, giveraddress, tokenid, status, transaction_hash, created_at')
         .order('created_at', { ascending: false })
         .limit(10)
 
@@ -76,8 +76,8 @@ export async function GET() {
                 id: `transfer-${t.id}`,
                 type: 'transfer',
                 status: t.status === 'CLAIMED' ? 'success' : 'pending',
-                title: t.status === 'CLAIMED' ? `Transfer Claimed: Token #${t.tokenId}` : `Transfer Link Created: Token #${t.tokenId}`,
-                description: `From: ${t.giverAddress.substring(0, 6)}...`,
+                title: t.status === 'CLAIMED' ? `Transfer Claimed: Token #${t.tokenid}` : `Transfer Link Created: Token #${t.tokenid}`,
+                description: `From: ${t.giveraddress.substring(0, 6)}...`,
                 transaction_hash: t.transaction_hash,
                 date: new Date(t.created_at).getTime(),
                 created_at: t.created_at

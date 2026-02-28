@@ -46,8 +46,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Transfer link has expired" }, { status: 400 });
         }
 
-        // Attempting to claim one's own link?
-        if (linkRecord.giverAddress === session.walletAddress) {
+        if (linkRecord.giveraddress === session.walletAddress) {
             return NextResponse.json({ error: "You cannot claim your own transfer link" }, { status: 400 });
         }
 
@@ -58,8 +57,8 @@ export async function POST(req: NextRequest) {
             const transferResult = await transfer(
                 chain,
                 contractAddress,
-                session.walletAddress,   // to claimer
-                linkRecord.tokenId,
+                session.walletAddress,
+                linkRecord.tokenid,
                 "1"
             );
             txHash = transferResult?.result?.queueId || null;
@@ -82,7 +81,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
             ok: true,
             message: "Successfully claimed the NFT",
-            tokenId: linkRecord.tokenId
+            tokenId: linkRecord.tokenid
         });
 
     } catch (err: unknown) {

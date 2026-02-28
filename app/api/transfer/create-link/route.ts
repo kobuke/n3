@@ -62,8 +62,8 @@ export async function POST(req: NextRequest) {
             .from('transfer_links')
             .insert({
                 token,
-                giverAddress: session.walletAddress,
-                tokenId: String(nftId),
+                giveraddress: session.walletAddress,
+                tokenid: String(nftId),
                 status: 'ACTIVE',
                 expires_at: expiresAt.toISOString(),
             });
