@@ -347,32 +347,47 @@ export default function TicketDetailPage({
         </div>
 
         {/* Attributes Section */}
-        {attributes.length > 0 && (
-          <div className="mt-6">
-            <Separator className="mb-5" />
-            <h2 className="text-sm font-bold text-foreground mb-4 px-1">
-              チケット詳細情報
-            </h2>
-            <div className="grid grid-cols-2 gap-3">
-              {attributes
-                .filter(attr => !['Status', 'Used_At'].includes(attr.trait_type))
-                .map((attr) => (
-                  <div
-                    key={attr.trait_type}
-                    className="rounded-xl bg-card border border-border/40 p-3 flex flex-col justify-center items-center text-center shadow-sm"
-                  >
-                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
-                      {ATTR_LABELS[attr.trait_type] || attr.trait_type}
-                    </p>
-                    <p className="text-sm font-bold text-foreground">
-                      {ATTR_VALUES[attr.value] || attr.value}
-                    </p>
-                  </div>
-                ))}
-            </div>
+        <div className="mt-6">
+          <Separator className="mb-5" />
+          <h2 className="text-sm font-bold text-foreground mb-4 px-1">
+            チケット詳細情報
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            {nft?.acquiredAt && (
+              <div className="rounded-xl bg-card border border-border/40 p-3 flex flex-col justify-center items-center text-center shadow-sm">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
+                  取得日時
+                </p>
+                <p className="text-sm font-bold text-foreground">
+                  {new Date(nft.acquiredAt).toLocaleString("ja-JP", {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </div>
+            )}
+            {attributes
+              .filter(attr => !['Status', 'Used_At'].includes(attr.trait_type))
+              .map((attr) => (
+                <div
+                  key={attr.trait_type}
+                  className="rounded-xl bg-card border border-border/40 p-3 flex flex-col justify-center items-center text-center shadow-sm"
+                >
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
+                    {ATTR_LABELS[attr.trait_type] || attr.trait_type}
+                  </p>
+                  <p className="text-sm font-bold text-foreground">
+                    {ATTR_VALUES[attr.value] || attr.value}
+                  </p>
+                </div>
+              ))}
           </div>
-        )}
+        </div>
       </main>
     </div>
   );
 }
+

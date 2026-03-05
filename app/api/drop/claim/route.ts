@@ -167,6 +167,7 @@ export async function POST(req: NextRequest) {
                 { trait_type: "Type", value: template.type },
                 { trait_type: "Source", value: "Location Drop" },
                 { trait_type: "Transferable", value: template.is_transferable ? "Yes" : "No" },
+                { trait_type: "TemplateID", value: finalTemplateId },
             ],
         };
 
@@ -174,14 +175,16 @@ export async function POST(req: NextRequest) {
 
         // 7. Record in mint_logs
         await supabase.from("mint_logs").insert({
-            wallet_address: session.walletAddress,
+            recipient_wallet: session.walletAddress,
             contract_address: contractAddress,
-            token_id: mintResult?.result?.tokenId || null,
+            token_id: mintResult?.result?.tokenId?.toString() || null,
             template_id: finalTemplateId,
             status: "success",
             metadata: metadata,
-            tx_hash: mintResult?.result?.transactionHash || null,
+            transaction_hash: mintResult?.result?.transactionHash || null,
+            shopify_order_id: spotId ? `spot-${spotId}` : `drop-${finalTemplateId}`,
         });
+
 
         return NextResponse.json({
             ok: true,

@@ -169,8 +169,10 @@ const handler: Handler = async (event) => {
                 attributes: [
                     { trait_type: "Type", value: templateData?.type || "product" },
                     { trait_type: "Order ID", value: orderId },
+                    { trait_type: "TemplateID", value: mapping.nft_template_id },
                 ],
             };
+
 
             // Thirdweb Engine でミント
             const chain = process.env.NEXT_PUBLIC_CHAIN_NAME || "polygon";
@@ -211,7 +213,10 @@ const handler: Handler = async (event) => {
                 recipient_email: customerEmail,
                 recipient_wallet: recipientWallet,
                 transaction_hash: txHash,
+                contract_address: contractAddressToUse,
+                template_id: mapping.nft_template_id
             });
+
 
             if (insertSuccessError) {
                 console.error("[BG] ⚠️ Failed to insert success log:", insertSuccessError.message);

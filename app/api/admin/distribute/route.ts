@@ -62,7 +62,8 @@ export async function POST(req: Request) {
                 image: templateData.image_url || undefined,
                 attributes: [
                     { trait_type: "Type", value: templateData.type || "airdrop" },
-                    { trait_type: "Source", value: "Manual Distribution" }
+                    { trait_type: "Source", value: "Manual Distribution" },
+                    { trait_type: "TemplateID", value: templateId },
                 ],
             }
 
@@ -93,29 +94,26 @@ export async function POST(req: Request) {
                     throw new Error(mintData.error?.message || "Mint engine failed")
                 }
 
-                const txHash = mintData.result?.queueId || null
+                const queueId = mintData.result?.queueId || null
+                let minedTokenId = null;
 
                 // Polling for transaction status (up to 12 seconds)
-                if (txHash) {
-                    let isMined = false;
+                if (queueId) {
                     for (let i = 0; i < 6; i++) {
                         await new Promise(r => setTimeout(r, 2000));
-                        const statusRes = await fetch(`https://${process.env.THIRDWEB_ENGINE_URL}/transaction/status/${txHash}`, {
+                        const statusRes = await fetch(`https://${process.env.THIRDWEB_ENGINE_URL}/transaction/status/${queueId}`, {
                             headers: { Authorization: `Bearer ${process.env.THIRDWEB_ENGINE_ACCESS_TOKEN}` }
                         });
                         if (statusRes.ok) {
                             const statusData = await statusRes.json();
                             const status = statusData.result?.status;
                             if (status === "mined") {
-                                isMined = true;
+                                minedTokenId = statusData.result?.tokenId;
                                 break;
                             } else if (status === "errored") {
                                 throw new Error(`Transaction reverted on-chain: ${statusData.result.errorMessage || 'Unknown error'}`);
                             }
                         }
-                    }
-                    if (!isMined) {
-                        console.warn(`[Airdrop] Transaction ${txHash} still pending, assuming success for now.`);
                     }
                 }
 
@@ -128,8 +126,12 @@ export async function POST(req: Request) {
                     status: "success",
                     recipient_email: email,
                     recipient_wallet: recipientWallet,
-                    transaction_hash: txHash,
+                    transaction_hash: queueId,
+                    token_id: minedTokenId?.toString() || null,
+                    contract_address: contractAddress,
+                    template_id: templateId,
                 })
+
 
                 results.push({
                     email,

@@ -278,6 +278,7 @@ function MyPageContent() {
                       description={meta.description ?? nft.description}
                       attributes={meta.attributes ?? []}
                       contractAddress={nft.contractAddress}
+                      acquiredAt={nft.acquiredAt}
                     />
                   );
                 })}

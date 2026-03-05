@@ -108,6 +108,7 @@ export async function POST(req: NextRequest) {
                 { trait_type: "Type", value: template.type },
                 { trait_type: "Source", value: "LINE連携" },
                 { trait_type: "Transferable", value: template.is_transferable ? "Yes" : "No" },
+                { trait_type: "TemplateID", value: templateId },
             ],
         };
 
@@ -115,14 +116,16 @@ export async function POST(req: NextRequest) {
 
         // 8. Log
         await supabase.from("mint_logs").insert({
-            wallet_address: session.walletAddress,
+            recipient_wallet: session.walletAddress,
             contract_address: contractAddress,
-            token_id: mintResult?.result?.tokenId || null,
+            token_id: mintResult?.result?.tokenId?.toString() || null,
             template_id: templateId,
             status: "success",
             metadata: metadata,
-            tx_hash: mintResult?.result?.transactionHash || null,
+            transaction_hash: mintResult?.result?.transactionHash || null,
+            shopify_order_id: `line-airdrop-${templateId}`,
         });
+
 
         return NextResponse.json({
             ok: true,

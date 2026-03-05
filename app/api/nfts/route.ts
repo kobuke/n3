@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
     const usagesMap = new Map();
     if (usages) {
       usages.forEach(u => {
-        usagesMap.set(`${u.contract_address.toLowerCase()} -${u.token_id} `, u);
+        usagesMap.set(`${u.contract_address.toLowerCase()}-${u.token_id}`, u);
       });
     }
 
@@ -84,6 +84,42 @@ export async function GET(req: NextRequest) {
       .eq("status", "CLAIMED");
 
     const hiddenTokenIds = new Set(transfersOut?.map(t => t.tokenid) || []);
+
+    // 2.9 Fetch Mint Logs and Airdrop Claims to get acquisition dates
+    // Using select("*") to be safer if column names vary slightly, then filtering in JS
+    const { data: mintLogs } = await supabase
+      .from("mint_logs")
+      .select("token_id, contract_address, template_id, created_at, recipient_wallet")
+      .ilike("recipient_wallet", walletAddress)
+      .eq("status", "success");
+
+
+    const { data: claims } = await supabase
+      .from("airdrop_claims")
+      .select("template_id, created_at")
+      .eq("wallet_address", walletAddress);
+
+    const mintLogsMap = new Map();
+    if (mintLogs) {
+      mintLogs.forEach(ml => {
+        // Match by token_id + contract
+        if (ml.token_id && ml.contract_address) {
+          mintLogsMap.set(`${ml.contract_address.toLowerCase()}-${ml.token_id}`, ml.created_at);
+        }
+        // Match by template_id
+        if (ml.template_id) {
+          mintLogsMap.set(`temp-${ml.template_id}`, ml.created_at);
+        }
+      });
+    }
+
+    const claimsMap = new Map();
+    if (claims) {
+      claims.forEach(c => {
+        claimsMap.set(c.template_id, c.created_at);
+      });
+    }
+
 
     // 3. Fetch NFTs from all contracts
     const allNfts: any[] = [];
@@ -99,7 +135,7 @@ export async function GET(req: NextRequest) {
           const metadata = nft.metadata || {};
           let attributes = ((metadata as any).attributes || []).map((a: any) => ({ ...a })); // Deep clone each attribute object
 
-          const usageLog = usagesMap.get(`${contractAddress.toLowerCase()} -${nft.id.toString()} `);
+          const usageLog = usagesMap.get(`${contractAddress.toLowerCase()}-${nft.id.toString()}`);
           if (usageLog) {
             const hasStatus = attributes.some((a: any) => a.trait_type === "Status");
             if (!hasStatus) {
@@ -114,6 +150,18 @@ export async function GET(req: NextRequest) {
             }
           }
 
+          // Try to find acquisition date
+          let acquiredAt = mintLogsMap.get(`${contractAddress.toLowerCase()}-${nft.id.toString()}`);
+
+          // If not found by token_id, maybe by template_id? 
+          // We need template_id from NFT attributes or metadata if available
+          if (!acquiredAt) {
+            const templateIdAttr = attributes.find((a: any) => a.trait_type === "TemplateID" || a.trait_type === "templateId");
+            if (templateIdAttr) {
+              acquiredAt = claimsMap.get(templateIdAttr.value) || mintLogsMap.get(`temp-${templateIdAttr.value}`);
+            }
+          }
+
           let imageUrl = (metadata as any).image || "";
           if (imageUrl && imageUrl.startsWith("ipfs://")) {
             imageUrl = imageUrl.replace("ipfs://", "https://ipfs.io/ipfs/");
@@ -123,9 +171,10 @@ export async function GET(req: NextRequest) {
             id: nft.id.toString(),
             tokenId: nft.id.toString(),
             contractAddress: contractAddress,
-            name: (metadata as any).name || `Ticket #${nft.id.toString()} `,
+            name: (metadata as any).name || `Ticket #${nft.id.toString()}`,
             description: (metadata as any).description || "",
             image: imageUrl,
+            acquiredAt: acquiredAt || null,
             supply: (nft as any).supply ? Number((nft as any).supply) : ((nft as any).quantityOwned ? Number((nft as any).quantityOwned) : 1),
             metadata: {
               name: (metadata as any).name,
@@ -136,12 +185,13 @@ export async function GET(req: NextRequest) {
           });
         }
       } catch (contractErr: any) {
-        console.warn(`[NFT] Failed to fetch from ${contractAddress}: `, contractErr.message);
+        console.warn(`[NFT] Failed to fetch from ${contractAddress}:`, contractErr.message);
         // Continue to next contract
       }
     }
 
     return NextResponse.json({ nfts: allNfts });
+
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("NFT fetch error:", message);

@@ -99,11 +99,28 @@ export async function POST(req: NextRequest) {
 
         // 4. Log the claim into mint_logs to populate the receiver's activity history
         // Fetch metadata briefly or use dummy name if metadata missing
-        let metadataRef = { name: `Ticket #${linkRecord.tokenid}` };
+        let metadataRef = { name: `Ticket #${linkRecord.tokenid}`, attributes: [] as any[] };
+        let originalTemplateId: string | null = null;
+
         try {
             const originalNft = await getNFTById(contractAddress, linkRecord.tokenid);
             metadataRef.name = originalNft.metadata?.name || metadataRef.name;
+            metadataRef.attributes = (originalNft.metadata as any)?.attributes || [];
+
+            // Extract template ID if present in attributes
+            const tId = metadataRef.attributes.find((a: any) => a.trait_type === "TemplateID" || a.trait_type === "templateId")?.value;
+            if (tId) originalTemplateId = tId;
         } catch (e) { }
+
+        // If template ID wasn't in metadata, try to find it via nft_templates (optional but good for consistency)
+        if (!originalTemplateId) {
+            const { data: tmpl } = await supabase
+                .from("nft_templates")
+                .select("id")
+                .eq("contract_address", contractAddress)
+                .maybeSingle();
+            if (tmpl) originalTemplateId = tmpl.id;
+        }
 
         await supabase.from('mint_logs').insert({
             shopify_order_id: `transfer-claim-${linkRecord.token}`,
@@ -111,8 +128,12 @@ export async function POST(req: NextRequest) {
             recipient_wallet: session.walletAddress,
             product_name: metadataRef.name,
             transaction_hash: txHash,
-            recipient_email: session.email || ''
+            recipient_email: session.email || '',
+            contract_address: contractAddress,
+            token_id: null, // We don't have the new token ID immediately as it's queued
+            template_id: originalTemplateId
         });
+
 
         return NextResponse.json({
             ok: true,

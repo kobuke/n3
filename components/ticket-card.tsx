@@ -19,6 +19,7 @@ interface TicketCardProps {
   description?: string;
   attributes?: NFTAttribute[];
   contractAddress?: string;
+  acquiredAt?: string;
 }
 
 export function TicketCard({
@@ -28,6 +29,7 @@ export function TicketCard({
   description,
   attributes = [],
   contractAddress,
+  acquiredAt,
 }: TicketCardProps) {
   const statusAttr = attributes.find((a) => a.trait_type === "Status");
   const status = statusAttr?.value ?? "Unused";
@@ -35,6 +37,18 @@ export function TicketCard({
   const usedAt = attributes.find((a) => a.trait_type === "Used_At")?.value;
 
   const href = contractAddress ? `/mypage/${nftId}?contract=${contractAddress}` : `/mypage/${nftId}`;
+
+  const formatDate = (dateStr: string) => {
+    try {
+      return new Date(dateStr).toLocaleDateString("ja-JP", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      });
+    } catch {
+      return dateStr;
+    }
+  };
 
   return (
     <Link href={href} className="block group">
@@ -47,14 +61,14 @@ export function TicketCard({
         <CardContent className="p-0">
           <div className="flex gap-4 p-4">
             {/* Thumbnail */}
-            <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-muted flex-shrink-0 border border-border/10">
+            <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0 border border-border/10">
               {image ? (
                 <Image
                   src={image}
                   alt={name}
                   fill
                   className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  sizes="80px"
+                  sizes="96px"
                   unoptimized
                 />
               ) : (
@@ -65,9 +79,9 @@ export function TicketCard({
             </div>
 
             {/* Content */}
-            <div className="flex flex-col flex-1 min-w-0 gap-1.5">
+            <div className="flex flex-col flex-1 min-w-0 gap-1">
               <div className="flex items-start justify-between gap-2">
-                <h3 className="font-semibold text-sm text-foreground truncate group-hover:text-primary transition-colors">
+                <h3 className="font-bold text-sm text-foreground truncate group-hover:text-primary transition-colors">
                   {name}
                 </h3>
                 <Badge
@@ -81,8 +95,15 @@ export function TicketCard({
                 </Badge>
               </div>
 
+              {acquiredAt && (
+                <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <span>取得日:</span>
+                  <span>{formatDate(acquiredAt)}</span>
+                </div>
+              )}
+
               {description && (
-                <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed mt-0.5">
                   {description}
                 </p>
               )}
@@ -91,12 +112,12 @@ export function TicketCard({
                 {isUsed && usedAt ? (
                   <p className="text-[10px] text-muted-foreground flex items-center gap-1">
                     <CheckCircle2 className="w-3 h-3 text-green-500/70" />
-                    <span>{new Date(usedAt).toLocaleDateString("ja-JP")}</span>
+                    <span>使用日: {formatDate(usedAt)}</span>
                   </p>
                 ) : (
                   <div className="flex items-center gap-1 text-[10px] font-medium text-primary">
                     <QrCode className="w-3 h-3" />
-                    <span>QR表示</span>
+                    <span>決済/確認用QRを表示</span>
                   </div>
                 )}
               </div>
@@ -105,5 +126,6 @@ export function TicketCard({
         </CardContent>
       </Card>
     </Link>
+
   );
 }

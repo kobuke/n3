@@ -58,7 +58,7 @@ export async function GET(
       imageUrl = imageUrl.replace("ipfs://", "https://ipfs.io/ipfs/");
     }
 
-    const formattedNft = {
+    const formattedNft: any = {
       tokenId: nft.id.toString(),
       contractAddress: contractAddress,
       name: nft.metadata?.name || `NFT #${nft.id.toString()}`,
@@ -72,7 +72,31 @@ export async function GET(
       }
     };
 
+    // Add acquisition date from session and logs
+    const { getSession } = await import("@/lib/session");
+    const session = await getSession();
+    const walletAddress = session?.walletAddress;
+
+    if (walletAddress) {
+      const { data: mintLog } = await supabase
+        .from("mint_logs")
+        .select("created_at")
+        .eq("token_id", nftId)
+        .ilike("contract_address", contractAddress)
+        .ilike("recipient_wallet", walletAddress)
+        .eq("status", "success")
+        .order("created_at", { ascending: true })
+        .maybeSingle();
+
+
+      if (mintLog) {
+        formattedNft.acquiredAt = mintLog.created_at;
+      }
+    }
+
     return NextResponse.json(formattedNft);
+
+
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("NFT detail error:", message);
