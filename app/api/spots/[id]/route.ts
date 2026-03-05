@@ -5,10 +5,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
     req: NextRequest,
-    context: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const idOrSlug = context.params.id;
+        const { id: idOrSlug } = await params;
         if (!idOrSlug) {
             return NextResponse.json({ error: "Missing ID" }, { status: 400 });
         }

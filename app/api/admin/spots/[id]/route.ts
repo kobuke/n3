@@ -3,12 +3,13 @@ import { createAdminClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await params;
         const body = await req.json();
         const supabase = createAdminClient();
 
-        if (!params.id) {
+        if (!id) {
             return NextResponse.json({ error: "No ID provided" }, { status: 400 });
         }
 
@@ -26,7 +27,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
                 is_active: body.is_active !== undefined ? body.is_active : true,
                 max_claims_total: body.max_claims_total || null
             })
-            .eq("id", params.id)
+            .eq("id", id)
             .select()
             .single();
 
@@ -43,18 +44,19 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await params;
         const supabase = createAdminClient();
 
-        if (!params.id) {
+        if (!id) {
             return NextResponse.json({ error: "No ID provided" }, { status: 400 });
         }
 
         const { error } = await supabase
             .from("nft_distribution_spots")
             .delete()
-            .eq("id", params.id);
+            .eq("id", id);
 
         if (error) {
             return NextResponse.json({ error: error.message }, { status: 500 });
