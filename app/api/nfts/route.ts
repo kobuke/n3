@@ -151,10 +151,13 @@ export async function GET(req: NextRequest) {
           }
 
           // Try to find acquisition date
+          // TODO: 【要改善】現在 mint_logs の token_id が null のケースがある（Thirdweb Engine が非同期でミントするため）。
+          // その場合、template_id でフォールバック照合を行うが、同じテンプレートのNFTを複数保有している場合、
+          // すべてのNFTに同一（最初の1件）の取得日が表示されてしまうリスクがある。
+          // 根本解決：Thirdweb Engine の Webhook を利用して、ミント完了後に token_id を mint_logs へ後から書き込む仕組みを実装する。
           let acquiredAt = mintLogsMap.get(`${contractAddress.toLowerCase()}-${nft.id.toString()}`);
 
-          // If not found by token_id, maybe by template_id? 
-          // We need template_id from NFT attributes or metadata if available
+          // token_id でヒットしなかった場合、template_id でフォールバック（上記リスクあり）
           if (!acquiredAt) {
             const templateIdAttr = attributes.find((a: any) => a.trait_type === "TemplateID" || a.trait_type === "templateId");
             if (templateIdAttr) {

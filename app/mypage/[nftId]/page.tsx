@@ -15,6 +15,7 @@ import {
   Copy,
   Check,
   QrCode,
+  Calendar,
 } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { Button } from "@/components/ui/button";
@@ -208,8 +209,8 @@ export default function TicketDetailPage({
           )}
         </div>
 
-        {/* Status Badge */}
-        <div className="flex items-center gap-2 mb-6">
+        {/* Status Badge + Acquired Date */}
+        <div className="flex flex-wrap items-center gap-2 mb-6">
           <Badge
             variant={isUsed ? "secondary" : "default"}
             className={`text-sm px-4 py-1.5 ${isUsed ? "" : "bg-accent text-accent-foreground"
@@ -227,6 +228,16 @@ export default function TicketDetailPage({
               </span>
             )}
           </Badge>
+          {nft?.acquiredAt && (
+            <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Calendar className="w-4 h-4" />
+              取得日: {new Date(nft.acquiredAt).toLocaleDateString("ja-JP", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </span>
+          )}
         </div>
 
         {/* QR Code Section */}
@@ -370,7 +381,7 @@ export default function TicketDetailPage({
               </div>
             )}
             {attributes
-              .filter(attr => !['Status', 'Used_At'].includes(attr.trait_type))
+              .filter(attr => !['Status', 'Used_At', 'TemplateID', 'templateId'].includes(attr.trait_type))
               .map((attr) => (
                 <div
                   key={attr.trait_type}
