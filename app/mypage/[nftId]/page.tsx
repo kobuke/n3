@@ -14,8 +14,8 @@ import {
   Share2,
   Copy,
   Check,
-  QrCode,
   Calendar,
+  LogIn,
 } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { CheckinMogiri } from "@/components/checkin-mogiri";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -43,28 +44,7 @@ export default function TicketDetailPage({
   const [isTransferring, setIsTransferring] = useState(false);
   const [transferLink, setTransferLink] = useState("");
   const [copied, setCopied] = useState(false);
-  const [showQr, setShowQr] = useState(false);
-
-  // Swipe detection
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const minSwipeDistance = 50;
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => setTouchEnd(e.targetTouches[0].clientX);
-
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    const isRightSwipe = distance < -minSwipeDistance;
-    if (isRightSwipe) {
-      router.push("/mypage");
-    }
-  };
+  const [showCheckin, setShowCheckin] = useState(false);
 
   const handleCreateTransferLink = async () => {
     try {
@@ -160,9 +140,6 @@ export default function TicketDetailPage({
   return (
     <div
       className="min-h-screen bg-background pb-10 overflow-x-hidden"
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
     >
       <AppHeader email={session.email} showLogout={false} />
 
@@ -240,49 +217,41 @@ export default function TicketDetailPage({
           )}
         </div>
 
-        {/* QR Code Section */}
+        {/* Check-in Section */}
         {!isUsed ? (
           <>
-            <Card className="shadow-lg border-border/50 mb-6 bg-gradient-to-b from-card to-muted/20">
-              <CardContent className="p-6 flex flex-col items-center gap-4">
-                {!showQr ? (
-                  <div className="w-full flex flex-col items-center gap-3">
-                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-1">
-                      <QrCode className="w-8 h-8 text-primary" />
-                    </div>
-                    <p className="text-sm font-medium text-foreground text-center">
-                      会場入り口でQRコードを提示して入場できます
-                    </p>
-                    <Button onClick={() => setShowQr(true)} size="lg" className="w-full font-bold mt-2 shadow-sm">
-                      入場用QRコードを表示する
-                    </Button>
+            {!showCheckin ? (
+              <Card className="shadow-lg border-border/50 mb-6 bg-gradient-to-b from-card to-muted/20">
+                <CardContent className="p-6 flex flex-col items-center gap-3">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-1">
+                    <LogIn className="w-8 h-8 text-primary" />
                   </div>
-                ) : (
-                  <div className="w-full flex flex-col items-center gap-5 animate-in fade-in zoom-in duration-300">
-                    <p className="text-sm font-bold text-foreground text-center bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 px-4 py-2 rounded-full mb-1">
-                      このQRコードをスタッフに提示
-                    </p>
-                    <div className="bg-white p-5 rounded-3xl border-4 border-primary/20 shadow-xl">
-                      <QRCodeSVG
-                        value={qrValue}
-                        size={240}
-                        level="H"
-                        includeMargin={false}
-                        bgColor="transparent"
-                        fgColor="#000000"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
-                      <MapPin className="w-4 h-4" />
-                      会場入口で提示してください
-                    </div>
-                    <Button variant="ghost" className="text-muted-foreground" onClick={() => setShowQr(false)}>
-                      QRコードを隠す
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  <p className="text-sm font-medium text-foreground text-center">
+                    会場入り口でチケットを提示して入場できます
+                  </p>
+                  <Button
+                    onClick={() => setShowCheckin(true)}
+                    size="lg"
+                    className="w-full font-bold mt-2 shadow-sm"
+                  >
+                    チェックインする
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="mb-6 animate-in fade-in zoom-in-95 duration-300">
+                <CheckinMogiri
+                  nftId={nftId}
+                  contractAddress={contract || process.env.NEXT_PUBLIC_COLLECTION_ID || ""}
+                  walletAddress={session?.walletAddress || ""}
+                  onComplete={() => {
+                    // リロードして使用済み状態を反映
+                    window.location.reload();
+                  }}
+                  onCancel={() => setShowCheckin(false)}
+                />
+              </div>
+            )}
 
             {/* Transfer Section */}
             <Card className="shadow-sm border-border/50 mb-6">

@@ -271,7 +271,7 @@ function MyPageContent() {
                   const meta = nft.metadata ?? {};
                   return (
                     <TicketCard
-                      key={id}
+                      key={`${nft.contractAddress}-${id}`}
                       nftId={id}
                       name={meta.name ?? nft.name ?? "NFT Ticket"}
                       image={meta.image ?? nft.image}

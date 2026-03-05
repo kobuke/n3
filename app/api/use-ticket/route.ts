@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { getContract } from "thirdweb";
 import { client } from "@/lib/thirdweb";
 import { polygon, polygonAmoy } from "thirdweb/chains";
+import { getSession } from "@/lib/session";
 
 import { cookies } from "next/headers";
 
@@ -11,20 +12,34 @@ export async function POST(req: Request) {
         const body = await req.json();
         const tokenId = body.tokenId || body.nftId;
         const walletAddress = body.walletAddress;
-
-        const cookieStore = await cookies();
-        const staffSecret = cookieStore.get("nanjo_staff_secret")?.value || body.staffSecret;
+        const isSelfCheckin = body.selfCheckin === true;
 
         const contractAddress = body.contractAddress || process.env.NEXT_PUBLIC_COLLECTION_ID;
 
-        // 1. Verify Staff Secret
-        if (staffSecret !== process.env.STAFF_SECRET) {
-            return NextResponse.json({ error: "Invalid staff secret" }, { status: 403 });
+        // 認証: もぎり（ユーザー自身）またはスタッフ
+        if (isSelfCheckin) {
+            // ユーザーセッションから本人確認
+            const session = await getSession();
+            if (!session?.walletAddress || !session.authenticated) {
+                return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
+            }
+            // セッションのウォレットとリクエストのウォレットが一致するか検証
+            if (session.walletAddress.toLowerCase() !== walletAddress?.toLowerCase()) {
+                return NextResponse.json({ error: "本人確認に失敗しました" }, { status: 403 });
+            }
+        } else {
+            // スタッフ認証（従来方式）
+            const cookieStore = await cookies();
+            const staffSecret = cookieStore.get("nanjo_staff_secret")?.value || body.staffSecret;
+            if (staffSecret !== process.env.STAFF_SECRET) {
+                return NextResponse.json({ error: "Invalid staff secret" }, { status: 403 });
+            }
         }
 
         if (!tokenId || !walletAddress || !contractAddress) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
+
 
         const supabase = createAdminClient();
 
