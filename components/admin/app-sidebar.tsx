@@ -13,6 +13,7 @@ import {
   LogOut,
   Shield,
   Send,
+  MapPin,
 } from "lucide-react"
 
 import {
@@ -49,6 +50,11 @@ const navItems = [
     title: "手動配布 (Airdrop)",
     href: "/staff/distribute",
     icon: Send,
+  },
+  {
+    title: "配布スポット",
+    href: "/staff/spots",
+    icon: MapPin,
   },
   {
     title: "商品マッピング",
