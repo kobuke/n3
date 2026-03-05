@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getNFTsForWallet } from "@/lib/thirdweb";
+import { createAdminClient } from "@/lib/supabase/server";
+import { getSession } from "@/lib/session";
+import {
+  resolveIpfsUrl,
+  mergeUsageStatus,
+  extractTemplateId,
+} from "@/lib/nft-helpers";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,11 +22,9 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // 1. Get wallet address
-    const { createAdminClient } = await import("@/lib/supabase/server");
     const supabase = createAdminClient();
 
-    const { getSession } = await import("@/lib/session");
+    // 1. ウォレットアドレスの取得（セッション優先、なければDBから検索）
     const session = await getSession();
     let walletAddress = session?.walletAddress;
 
@@ -30,18 +35,13 @@ export async function GET(req: NextRequest) {
         .eq("email", email)
         .maybeSingle();
 
-      if (user?.walletaddress) {
-        walletAddress = user.walletaddress;
-      } else {
+      walletAddress = user?.walletaddress || null;
+      if (!walletAddress) {
         return NextResponse.json({ nfts: [] });
       }
     }
 
-    if (!walletAddress) {
-      return NextResponse.json({ error: "Invalid wallet address" }, { status: 400 });
-    }
-
-    // 2. Get all contract addresses from nft_templates + fallback to env var
+    // 2. コントラクトアドレスの収集
     const { data: templates } = await supabase
       .from("nft_templates")
       .select("contract_address")
@@ -49,12 +49,9 @@ export async function GET(req: NextRequest) {
       .not("contract_address", "eq", "");
 
     const contractAddresses = new Set<string>();
-    if (templates) {
-      for (const t of templates) {
-        if (t.contract_address) contractAddresses.add(t.contract_address);
-      }
-    }
-    // Fallback: also check env var
+    templates?.forEach((t) => {
+      if (t.contract_address) contractAddresses.add(t.contract_address);
+    });
     const envCollection = process.env.NEXT_PUBLIC_COLLECTION_ID;
     if (envCollection) contractAddresses.add(envCollection);
 
@@ -62,139 +59,137 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ nfts: [] });
     }
 
-    // 2.5 Fetch local usages (Status: Used) from DB
-    const { data: usages } = await supabase
-      .from("ticket_usages")
-      .select("token_id, contract_address, used_at, status")
-      .eq("wallet_address", walletAddress)
-      .eq("status", "used");
+    // 3. 関連データの一括取得（使用ログ、譲渡、ミントログ、配布請求）
+    const [usagesResult, transfersResult, mintLogsResult, claimsResult] =
+      await Promise.all([
+        supabase
+          .from("ticket_usages")
+          .select("token_id, contract_address, used_at, status")
+          .eq("wallet_address", walletAddress)
+          .eq("status", "used"),
+        supabase
+          .from("transfer_links")
+          .select("tokenid")
+          .eq("giveraddress", walletAddress)
+          .eq("status", "CLAIMED"),
+        supabase
+          .from("mint_logs")
+          .select("token_id, contract_address, template_id, created_at")
+          .ilike("recipient_wallet", walletAddress)
+          .eq("status", "success"),
+        supabase
+          .from("airdrop_claims")
+          .select("template_id, created_at")
+          .eq("wallet_address", walletAddress),
+      ]);
 
-    const usagesMap = new Map();
-    if (usages) {
-      usages.forEach(u => {
-        usagesMap.set(`${u.contract_address.toLowerCase()}-${u.token_id}`, u);
-      });
-    }
+    // 使用ログのMap化
+    const usagesMap = new Map<string, any>();
+    usagesResult.data?.forEach((u) => {
+      usagesMap.set(`${u.contract_address.toLowerCase()}-${u.token_id}`, u);
+    });
 
-    // 2.7 Fetch transfers out (Status: CLAIMED)
-    const { data: transfersOut } = await supabase
-      .from("transfer_links")
-      .select("tokenid")
-      .eq("giveraddress", walletAddress)
-      .eq("status", "CLAIMED");
+    // 譲渡済みトークンID
+    const hiddenTokenIds = new Set(
+      transfersResult.data?.map((t) => t.tokenid) || []
+    );
 
-    const hiddenTokenIds = new Set(transfersOut?.map(t => t.tokenid) || []);
+    // ミントログのMap化
+    const mintLogsMap = new Map<string, string>();
+    mintLogsResult.data?.forEach((ml) => {
+      if (ml.token_id && ml.contract_address) {
+        mintLogsMap.set(
+          `${ml.contract_address.toLowerCase()}-${ml.token_id}`,
+          ml.created_at
+        );
+      }
+      if (ml.template_id) {
+        mintLogsMap.set(`temp-${ml.template_id}`, ml.created_at);
+      }
+    });
 
-    // 2.9 Fetch Mint Logs and Airdrop Claims to get acquisition dates
-    // Using select("*") to be safer if column names vary slightly, then filtering in JS
-    const { data: mintLogs } = await supabase
-      .from("mint_logs")
-      .select("token_id, contract_address, template_id, created_at, recipient_wallet")
-      .ilike("recipient_wallet", walletAddress)
-      .eq("status", "success");
+    // 配布請求のMap化
+    const claimsMap = new Map<string, string>();
+    claimsResult.data?.forEach((c) => {
+      claimsMap.set(c.template_id, c.created_at);
+    });
 
-
-    const { data: claims } = await supabase
-      .from("airdrop_claims")
-      .select("template_id, created_at")
-      .eq("wallet_address", walletAddress);
-
-    const mintLogsMap = new Map();
-    if (mintLogs) {
-      mintLogs.forEach(ml => {
-        // Match by token_id + contract
-        if (ml.token_id && ml.contract_address) {
-          mintLogsMap.set(`${ml.contract_address.toLowerCase()}-${ml.token_id}`, ml.created_at);
-        }
-        // Match by template_id
-        if (ml.template_id) {
-          mintLogsMap.set(`temp-${ml.template_id}`, ml.created_at);
-        }
-      });
-    }
-
-    const claimsMap = new Map();
-    if (claims) {
-      claims.forEach(c => {
-        claimsMap.set(c.template_id, c.created_at);
-      });
-    }
-
-
-    // 3. Fetch NFTs from all contracts
+    // 4. ブロックチェーンからNFT取得＆ローカルデータのマージ
     const allNfts: any[] = [];
     for (const contractAddress of contractAddresses) {
       try {
-        const ownedNfts = await getNFTsForWallet(contractAddress, walletAddress);
+        const ownedNfts = await getNFTsForWallet(
+          contractAddress,
+          walletAddress
+        );
+
         for (const nft of ownedNfts) {
           const nftIdStr = nft.id.toString();
-          if (hiddenTokenIds.has(nftIdStr)) {
-            continue; // Hide NFTs that have been transferred out
-          }
+
+          // 譲渡済みは非表示
+          if (hiddenTokenIds.has(nftIdStr)) continue;
 
           const metadata = nft.metadata || {};
-          let attributes = ((metadata as any).attributes || []).map((a: any) => ({ ...a })); // Deep clone each attribute object
+          let attributes = ((metadata as any).attributes || []).map(
+            (a: any) => ({ ...a })
+          );
 
-          const usageLog = usagesMap.get(`${contractAddress.toLowerCase()}-${nft.id.toString()}`);
-          if (usageLog) {
-            const hasStatus = attributes.some((a: any) => a.trait_type === "Status");
-            if (!hasStatus) {
-              attributes.push({ trait_type: "Status", value: "Used" });
-              attributes.push({ trait_type: "Used_At", value: usageLog.used_at });
-            } else {
-              const statusAttr = attributes.find((a: any) => a.trait_type === "Status");
-              if (statusAttr) statusAttr.value = "Used";
-              const usedAtAttr = attributes.find((a: any) => a.trait_type === "Used_At");
-              if (usedAtAttr) usedAtAttr.value = usageLog.used_at;
-              else attributes.push({ trait_type: "Used_At", value: usageLog.used_at });
-            }
-          }
+          // 使用ステータスのマージ
+          const usageLog = usagesMap.get(
+            `${contractAddress.toLowerCase()}-${nftIdStr}`
+          );
+          attributes = mergeUsageStatus(attributes, usageLog);
 
-          // Try to find acquisition date
-          // TODO: 【要改善】現在 mint_logs の token_id が null のケースがある（Thirdweb Engine が非同期でミントするため）。
-          // その場合、template_id でフォールバック照合を行うが、同じテンプレートのNFTを複数保有している場合、
-          // すべてのNFTに同一（最初の1件）の取得日が表示されてしまうリスクがある。
-          // 根本解決：Thirdweb Engine の Webhook を利用して、ミント完了後に token_id を mint_logs へ後から書き込む仕組みを実装する。
-          let acquiredAt = mintLogsMap.get(`${contractAddress.toLowerCase()}-${nft.id.toString()}`);
+          // 取得日の照合
+          // TODO: 【要改善】mint_logs の token_id が null のケースがある（Thirdweb Engine が非同期ミントのため）。
+          // 同じテンプレートのNFTを複数保有している場合、すべてに同一の取得日が表示されるリスクがある。
+          // 根本解決：Thirdweb Engine Webhook で token_id を後から書き込む仕組みを実装する。
+          let acquiredAt = mintLogsMap.get(
+            `${contractAddress.toLowerCase()}-${nftIdStr}`
+          );
 
-          // token_id でヒットしなかった場合、template_id でフォールバック（上記リスクあり）
           if (!acquiredAt) {
-            const templateIdAttr = attributes.find((a: any) => a.trait_type === "TemplateID" || a.trait_type === "templateId");
-            if (templateIdAttr) {
-              acquiredAt = claimsMap.get(templateIdAttr.value) || mintLogsMap.get(`temp-${templateIdAttr.value}`);
+            const templateId = extractTemplateId(attributes);
+            if (templateId) {
+              acquiredAt =
+                claimsMap.get(templateId) ||
+                mintLogsMap.get(`temp-${templateId}`);
             }
           }
 
-          let imageUrl = (metadata as any).image || "";
-          if (imageUrl && imageUrl.startsWith("ipfs://")) {
-            imageUrl = imageUrl.replace("ipfs://", "https://ipfs.io/ipfs/");
-          }
+          const imageUrl = resolveIpfsUrl((metadata as any).image);
 
           allNfts.push({
-            id: nft.id.toString(),
-            tokenId: nft.id.toString(),
-            contractAddress: contractAddress,
-            name: (metadata as any).name || `Ticket #${nft.id.toString()}`,
+            id: nftIdStr,
+            tokenId: nftIdStr,
+            contractAddress,
+            name:
+              (metadata as any).name || `Ticket #${nftIdStr}`,
             description: (metadata as any).description || "",
             image: imageUrl,
             acquiredAt: acquiredAt || null,
-            supply: (nft as any).supply ? Number((nft as any).supply) : ((nft as any).quantityOwned ? Number((nft as any).quantityOwned) : 1),
+            supply: (nft as any).supply
+              ? Number((nft as any).supply)
+              : (nft as any).quantityOwned
+                ? Number((nft as any).quantityOwned)
+                : 1,
             metadata: {
               name: (metadata as any).name,
               description: (metadata as any).description,
               image: imageUrl,
-              attributes: attributes,
+              attributes,
             },
           });
         }
       } catch (contractErr: any) {
-        console.warn(`[NFT] Failed to fetch from ${contractAddress}:`, contractErr.message);
-        // Continue to next contract
+        console.warn(
+          `[NFT] Failed to fetch from ${contractAddress}:`,
+          contractErr.message
+        );
       }
     }
 
     return NextResponse.json({ nfts: allNfts });
-
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("NFT fetch error:", message);

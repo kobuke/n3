@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getNFTById } from "@/lib/thirdweb";
+import { createAdminClient } from "@/lib/supabase/server";
+import { getSession } from "@/lib/session";
+import { resolveIpfsUrl, mergeUsageStatus } from "@/lib/nft-helpers";
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ nftId: string }> }
 ) {
   const { nftId } = await params;
-  const contractAddress = _req.nextUrl.searchParams.get("contract") || process.env.NEXT_PUBLIC_COLLECTION_ID;
+  const contractAddress =
+    _req.nextUrl.searchParams.get("contract") ||
+    process.env.NEXT_PUBLIC_COLLECTION_ID;
 
   if (!contractAddress) {
     return NextResponse.json(
@@ -16,6 +21,7 @@ export async function GET(
   }
 
   try {
+    // 1. ブロックチェーンからNFT取得
     let nft: any;
     try {
       nft = await getNFTById(contractAddress, nftId);
@@ -28,39 +34,27 @@ export async function GET(
       return NextResponse.json({ error: "NFT not found" }, { status: 404 });
     }
 
-    const { createAdminClient } = await import("@/lib/supabase/server");
     const supabase = createAdminClient();
+
+    // 2. 使用ステータスの取得＆マージ
     const { data: usageLog } = await supabase
-      .from('ticket_usages')
-      .select('status, used_at')
-      .eq('token_id', nftId)
-      .ilike('contract_address', contractAddress)
-      .eq('status', 'used')
+      .from("ticket_usages")
+      .select("status, used_at")
+      .eq("token_id", nftId)
+      .ilike("contract_address", contractAddress)
+      .eq("status", "used")
       .maybeSingle();
 
-    let attributes = (nft.metadata?.attributes || []).map((a: any) => ({ ...a }));
-    if (usageLog) {
-      const hasStatus = attributes.some((a: any) => a.trait_type === "Status");
-      if (!hasStatus) {
-        attributes.push({ trait_type: "Status", value: "Used" });
-        attributes.push({ trait_type: "Used_At", value: usageLog.used_at });
-      } else {
-        const statusAttr = attributes.find((a: any) => a.trait_type === "Status");
-        if (statusAttr) statusAttr.value = "Used";
-        const usedAtAttr = attributes.find((a: any) => a.trait_type === "Used_At");
-        if (usedAtAttr) usedAtAttr.value = usageLog.used_at;
-        else attributes.push({ trait_type: "Used_At", value: usageLog.used_at });
-      }
-    }
+    let attributes = (nft.metadata?.attributes || []).map((a: any) => ({
+      ...a,
+    }));
+    attributes = mergeUsageStatus(attributes, usageLog);
 
-    let imageUrl = nft.metadata?.image || "";
-    if (imageUrl.startsWith("ipfs://")) {
-      imageUrl = imageUrl.replace("ipfs://", "https://ipfs.io/ipfs/");
-    }
+    const imageUrl = resolveIpfsUrl(nft.metadata?.image);
 
     const formattedNft: any = {
       tokenId: nft.id.toString(),
-      contractAddress: contractAddress,
+      contractAddress,
       name: nft.metadata?.name || `NFT #${nft.id.toString()}`,
       description: nft.metadata?.description || "",
       image: imageUrl,
@@ -68,12 +62,11 @@ export async function GET(
         name: nft.metadata?.name || "",
         description: nft.metadata?.description || "",
         image: imageUrl,
-        attributes: attributes
-      }
+        attributes,
+      },
     };
 
-    // Add acquisition date from session and logs
-    const { getSession } = await import("@/lib/session");
+    // 3. 取得日の照合（ログインユーザーのミントログから）
     const session = await getSession();
     const walletAddress = session?.walletAddress;
 
@@ -88,15 +81,12 @@ export async function GET(
         .order("created_at", { ascending: true })
         .maybeSingle();
 
-
       if (mintLog) {
         formattedNft.acquiredAt = mintLog.created_at;
       }
     }
 
     return NextResponse.json(formattedNft);
-
-
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("NFT detail error:", message);

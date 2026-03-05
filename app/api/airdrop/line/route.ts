@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/server";
 import { mintTo } from "@/lib/thirdweb";
+import { buildMintLogEntry } from "@/lib/nft-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -115,16 +116,16 @@ export async function POST(req: NextRequest) {
         const mintResult = await mintTo(chain, contractAddress, session.walletAddress, metadata);
 
         // 8. Log
-        await supabase.from("mint_logs").insert({
-            recipient_wallet: session.walletAddress,
-            contract_address: contractAddress,
-            token_id: mintResult?.result?.tokenId?.toString() || null,
-            template_id: templateId,
-            status: "success",
-            metadata: metadata,
-            transaction_hash: mintResult?.result?.transactionHash || null,
-            shopify_order_id: `line-airdrop-${templateId}`,
+        const mintLogEntry = buildMintLogEntry({
+            walletAddress: session.walletAddress,
+            contractAddress,
+            tokenId: mintResult?.result?.tokenId?.toString(),
+            templateId: templateId,
+            transactionHash: mintResult?.result?.transactionHash,
+            source: `line-airdrop-${templateId}`,
         });
+        mintLogEntry.metadata = metadata;
+        await supabase.from("mint_logs").insert(mintLogEntry);
 
 
         return NextResponse.json({
