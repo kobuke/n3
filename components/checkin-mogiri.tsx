@@ -261,8 +261,8 @@ export function CheckinMogiri({
     return (
         <Card
             className={`shadow-xl transition-all duration-500 ${isSwipeable
-                    ? "border-green-500/50 bg-gradient-to-b from-green-500/5 to-green-500/10"
-                    : "border-border/50 bg-gradient-to-b from-card to-muted/20"
+                ? "border-green-500/50 bg-gradient-to-b from-green-500/5 to-green-500/10"
+                : "border-border/50 bg-gradient-to-b from-card to-muted/20"
                 }`}
         >
             <CardContent className="p-6 flex flex-col items-center gap-5">
@@ -291,9 +291,9 @@ export function CheckinMogiri({
                                     cy="60"
                                     r="54"
                                     fill="none"
-                                    stroke="currentColor"
+                                    stroke="#d1d5db"
                                     strokeWidth="4"
-                                    className="text-border/30"
+                                    opacity={0.4}
                                 />
                                 {/* プログレスリング */}
                                 <circle
@@ -301,20 +301,20 @@ export function CheckinMogiri({
                                     cy="60"
                                     r="54"
                                     fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                    strokeDasharray={`${2 * Math.PI * 54}`}
-                                    strokeDashoffset={`${2 * Math.PI * 54 * (1 - holdProgress)}`}
+                                    stroke="#3b82f6"
+                                    strokeWidth="5"
+                                    strokeDasharray={2 * Math.PI * 54}
+                                    strokeDashoffset={2 * Math.PI * 54 * (1 - holdProgress)}
                                     strokeLinecap="round"
-                                    className="text-primary transition-all duration-100"
                                     transform="rotate(-90 60 60)"
+                                    style={{ transition: 'none' }}
                                 />
                             </svg>
                             {/* 指紋アイコン（タッチ対象） */}
                             <button
                                 className={`absolute inset-0 flex items-center justify-center rounded-full transition-all duration-200 ${step === "holding"
-                                        ? "scale-95 text-primary"
-                                        : "text-muted-foreground hover:text-primary"
+                                    ? "scale-95 text-primary"
+                                    : "text-muted-foreground hover:text-primary"
                                     }`}
                                 onTouchStart={(e) => {
                                     e.preventDefault();
