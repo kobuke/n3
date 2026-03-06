@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import liff from "@line/liff";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -423,9 +424,48 @@ function MyPageContent() {
               <span className="text-xs text-foreground">LINE連携済み</span>
             </div>
           ) : (
-            <a href="/api/auth/line/connect" className="flex items-center justify-center gap-2 h-10 px-4 rounded-md bg-[#06C755] hover:bg-[#05b04c] text-white text-sm font-medium transition-colors w-full">
+            <button
+              onClick={async () => {
+                try {
+                  const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
+                  if (!liffId) throw new Error("LIFF ID is not configured");
+
+                  // liffが未初期化なら初期化
+                  if (!liff.isLoggedIn()) {
+                    await liff.init({ liffId });
+                    if (!liff.isLoggedIn()) {
+                      liff.login();
+                      return;
+                    }
+                  }
+
+                  // プロファイル取得
+                  const profile = await liff.getProfile();
+                  const lineId = profile.userId;
+
+                  // APIへ送信
+                  const res = await fetch("/api/auth/line", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ lineId }),
+                  });
+
+                  if (res.ok) {
+                    toast.success(`LINE連携完了！ ${profile.displayName}`);
+                    setTimeout(() => window.location.reload(), 1000);
+                  } else {
+                    const data = await res.json();
+                    toast.error(`LINE連携エラー: ${data.error || "不明なエラー"}`);
+                  }
+                } catch (err: any) {
+                  console.error("LINE Link Error:", err);
+                  toast.error(`LINE連携エラー: ${err.message || "不明なエラー"}`);
+                }
+              }}
+              className="flex items-center justify-center gap-2 h-10 px-4 rounded-md bg-[#06C755] hover:bg-[#05b04c] text-white text-sm font-medium transition-colors w-full"
+            >
               LINEアカウントを連携する
-            </a>
+            </button>
           )}
         </div>
       </main>
