@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Waves, LogOut, Copy } from "lucide-react";
+import { Waves, LogOut, Copy, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { toast } from "sonner";
 
 interface AppHeaderProps {
@@ -59,6 +60,13 @@ export function AppHeader({
             <span className="text-xs text-muted-foreground hidden sm:inline truncate max-w-32">
               {email}
             </span>
+          )}
+          {showLogout && (
+            <Link href="/mypage/notifications">
+              <Button variant="ghost" size="sm" className="relative text-muted-foreground hover:text-foreground">
+                <Bell className="w-5 h-5" />
+              </Button>
+            </Link>
           )}
           {showLogout && (
             <Button

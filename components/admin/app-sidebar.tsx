@@ -14,6 +14,8 @@ import {
   Shield,
   Send,
   MapPin,
+  Bell,
+  ClipboardCheck,
 } from "lucide-react"
 
 import {
@@ -80,6 +82,16 @@ const navItems = [
     title: "設定",
     href: "/staff/settings",
     icon: Settings,
+  },
+  {
+    title: "お知らせ管理",
+    href: "/staff/notifications",
+    icon: Bell,
+  },
+  {
+    title: "アンケート管理",
+    href: "/staff/surveys",
+    icon: ClipboardCheck,
   },
 ]
 
