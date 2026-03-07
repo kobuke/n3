@@ -84,30 +84,49 @@ export async function POST(request: Request) {
             }, { status: 403 })
         }
 
-        // 4. NFT Ownership Check
+        // 4. NFT Ownership & TokenId Resolution Check
+        let targetTokenId: string | null = null;
         if (quest.base_nft_template_id) {
-            const TW_ENGINE_URL = process.env.THIRDWEB_ENGINE_URL;
-            const TW_ACCESS_TOKEN = process.env.THIRDWEB_ENGINE_ACCESS_TOKEN;
-            const CHAIN = process.env.NEXT_PUBLIC_CHAIN_NAME || "polygon-amoy";
-            const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_COLLECTION_ID;
+            console.log(`[QuestScan] Resolving tokenId for base NFT template: ${quest.base_nft_template_id}...`);
 
-            const { data: templateInfo } = await supabase.from('nft_templates').select('token_id').eq('id', quest.base_nft_template_id).single();
+            const { data: templateInfo } = await supabase
+                .from('nft_templates')
+                .select('contract_address')
+                .eq('id', quest.base_nft_template_id)
+                .single();
 
-            if (templateInfo && templateInfo.token_id !== null) {
-                console.log(`[QuestScan] Checking ownership for tokenId: ${templateInfo.token_id}...`);
-                const balRes = await fetch(`https://${TW_ENGINE_URL}/contract/${CHAIN}/${CONTRACT_ADDRESS}/erc1155/balance-of?walletAddress=${userWallet}&tokenId=${templateInfo.token_id}`, {
-                    headers: { 'Authorization': `Bearer ${TW_ACCESS_TOKEN}` }
+            if (!templateInfo) {
+                console.error("[QuestScan] Base NFT template not found in DB.");
+                return NextResponse.json({ error: "ベースNFTのテンプレート情報が見つかりません。" }, { status: 404 });
+            }
+
+            const contractAddress = templateInfo.contract_address || process.env.NEXT_PUBLIC_COLLECTION_ID;
+
+            try {
+                const { getNFTsForWallet } = await import("@/lib/thirdweb");
+                const { extractTemplateId } = await import("@/lib/nft-helpers");
+
+                const ownedNfts = await getNFTsForWallet(contractAddress!, userWallet);
+
+                const matchingNft = ownedNfts.find(nft => {
+                    const attributes = (nft.metadata as any)?.attributes || [];
+                    const tid = extractTemplateId(attributes);
+                    return tid === quest.base_nft_template_id;
                 });
-                if (balRes.ok) {
-                    const balData = await balRes.json();
-                    if (parseInt(balData.result || "0", 10) === 0) {
-                        console.warn("[QuestScan] User does not own the required NFT.");
-                        return NextResponse.json({
-                            error: `スタンプラリーに参加するには『${quest.nft_templates?.name || '参加証NFT'}』が必要です。ストアまたは運営より取得してください。`
-                        }, { status: 403 });
-                    }
-                    console.log("[QuestScan] Ownership verified.");
+
+                if (!matchingNft) {
+                    console.warn(`[QuestScan] User ${userWallet} does not own any NFT of template ${quest.base_nft_template_id}`);
+                    return NextResponse.json({
+                        error: `スタンプラリーに参加するには『${quest.nft_templates?.name || '参加証NFT'}』が必要です。ストアまたは運営より取得してください。`
+                    }, { status: 403 });
                 }
+
+                targetTokenId = matchingNft.id.toString();
+                console.log(`[QuestScan] Resolved tokenId: ${targetTokenId} for user.`);
+
+            } catch (err) {
+                console.error("[QuestScan] Error resolving tokenId via blockchain: ", err);
+                return NextResponse.json({ error: "NFTの所有確認中にエラーが発生しました。" }, { status: 500 });
             }
         }
 
@@ -201,11 +220,11 @@ export async function POST(request: Request) {
             console.log("[QuestScan] Quest Complete! Triggering final updates...");
             isComplete = true;
 
-            if (quest.clear_metadata_uri && quest.base_nft_template_id) {
-                isLevelUp = await doMetadataUpdate(quest.clear_metadata_uri, quest.base_nft_template_id);
+            if (quest.clear_metadata_uri && targetTokenId) {
+                isLevelUp = await doMetadataUpdate(quest.clear_metadata_uri, targetTokenId, quest.base_nft_template_id);
             }
-            else if (location.levelup_metadata_uri && quest.base_nft_template_id) {
-                isLevelUp = await doMetadataUpdate(location.levelup_metadata_uri, quest.base_nft_template_id);
+            else if (location.levelup_metadata_uri && targetTokenId) {
+                isLevelUp = await doMetadataUpdate(location.levelup_metadata_uri, targetTokenId, quest.base_nft_template_id);
             }
 
             // Handle additional reward NFT (Mint logic)
@@ -247,8 +266,8 @@ export async function POST(request: Request) {
             }
         } else {
             console.log("[QuestScan] Quest progress updated. Leveling up NFT...");
-            if (location.levelup_metadata_uri && quest.base_nft_template_id) {
-                isLevelUp = await doMetadataUpdate(location.levelup_metadata_uri, quest.base_nft_template_id);
+            if (location.levelup_metadata_uri && targetTokenId) {
+                isLevelUp = await doMetadataUpdate(location.levelup_metadata_uri, targetTokenId, quest.base_nft_template_id);
             }
         }
 
