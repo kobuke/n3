@@ -17,11 +17,16 @@ export async function POST(request: Request) {
     const siteUrl = process.env.URL || process.env.NEXT_PUBLIC_APP_URL || 'https://n3-nanjo-nft.netlify.app'
     const bgFunctionUrl = `${siteUrl}/.netlify/functions/process-shopify-order-background`
 
-    fetch(bgFunctionUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rawBody }),
-    }).catch(err => console.error('[Webhook] Failed to trigger background function:', err))
+    try {
+        await fetch(bgFunctionUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rawBody }),
+        });
+        console.log('[Webhook] Successfully queued background function.');
+    } catch (err) {
+        console.error('[Webhook] Failed to trigger background function:', err);
+    }
 
     // Shopifyに即座に200を返す
     return NextResponse.json({ received: true })
