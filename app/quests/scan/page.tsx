@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { MapPin, CheckCircle, ShieldAlert, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-export default function QuestScanPage() {
+function QuestScanInner() {
     const searchParams = useSearchParams()
     const router = useRouter()
     const locationId = searchParams.get("locationId")
@@ -98,66 +98,79 @@ export default function QuestScanPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-            <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden p-6 md:p-8 space-y-8 text-center">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden p-6 md:p-8 space-y-8 text-center">
 
-                <div className="mx-auto w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-6">
-                    <MapPin className="w-10 h-10 text-blue-600" />
-                </div>
-
-                <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                    クエスト・チェックイン
-                </h1>
-
-                <p className="text-gray-600">
-                    現在地を送信して地点への到達を記録します。<br />
-                    位置情報の提供を許可してください。
-                </p>
-
-                {status === "idle" && (
-                    <Button onClick={handleCheckIn} size="lg" className="w-full h-14 text-lg font-bold rounded-xl shadow-lg">
-                        現在地を取得してチェックイン
-                    </Button>
-                )}
-
-                {(status === "locating" || status === "checking") && (
-                    <div className="flex flex-col items-center space-y-4 text-blue-600 animate-pulse">
-                        <Loader2 className="w-12 h-12 animate-spin" />
-                        <p className="font-medium text-lg">{message}</p>
-                    </div>
-                )}
-
-                {status === "success" && (
-                    <div className="space-y-6">
-                        <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                            <CheckCircle className="w-8 h-8 text-green-600" />
-                        </div>
-                        <p className="whitespace-pre-line font-bold text-lg text-green-800 bg-green-50 p-4 rounded-xl">
-                            {message}
-                        </p>
-                        <Button onClick={() => router.push("/mypage")} variant="outline" className="w-full">
-                            マイページへ戻る
-                        </Button>
-                    </div>
-                )}
-
-                {status === "error" && (
-                    <div className="space-y-6">
-                        <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-                            <ShieldAlert className="w-8 h-8 text-red-600" />
-                        </div>
-                        <p className="text-red-600 font-medium bg-red-50 p-4 rounded-xl text-left text-sm leading-relaxed">
-                            {message}
-                        </p>
-                        <Button onClick={() => setStatus("idle")} variant="outline" className="w-full">
-                            もう一度試す
-                        </Button>
-                        <Button onClick={() => router.push("/mypage")} variant="ghost" className="w-full">
-                            マイページへ戻る
-                        </Button>
-                    </div>
-                )}
+            <div className="mx-auto w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-6">
+                <MapPin className="w-10 h-10 text-blue-600" />
             </div>
+
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                クエスト・チェックイン
+            </h1>
+
+            <p className="text-gray-600">
+                現在地を送信して地点への到達を記録します。<br />
+                位置情報の提供を許可してください。
+            </p>
+
+            {status === "idle" && (
+                <Button onClick={handleCheckIn} size="lg" className="w-full h-14 text-lg font-bold rounded-xl shadow-lg">
+                    現在地を取得してチェックイン
+                </Button>
+            )}
+
+            {(status === "locating" || status === "checking") && (
+                <div className="flex flex-col items-center space-y-4 text-blue-600 animate-pulse">
+                    <Loader2 className="w-12 h-12 animate-spin" />
+                    <p className="font-medium text-lg">{message}</p>
+                </div>
+            )}
+
+            {status === "success" && (
+                <div className="space-y-6">
+                    <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                        <CheckCircle className="w-8 h-8 text-green-600" />
+                    </div>
+                    <p className="whitespace-pre-line font-bold text-lg text-green-800 bg-green-50 p-4 rounded-xl">
+                        {message}
+                    </p>
+                    <Button onClick={() => router.push("/mypage")} variant="outline" className="w-full">
+                        マイページへ戻る
+                    </Button>
+                </div>
+            )}
+
+            {status === "error" && (
+                <div className="space-y-6">
+                    <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                        <ShieldAlert className="w-8 h-8 text-red-600" />
+                    </div>
+                    <p className="text-red-600 font-medium bg-red-50 p-4 rounded-xl text-left text-sm leading-relaxed">
+                        {message}
+                    </p>
+                    <Button onClick={() => setStatus("idle")} variant="outline" className="w-full">
+                        もう一度試す
+                    </Button>
+                    <Button onClick={() => router.push("/mypage")} variant="ghost" className="w-full">
+                        マイページへ戻る
+                    </Button>
+                </div>
+            )}
+        </div>
+    )
+}
+
+export default function QuestScanPage() {
+    return (
+        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+            <Suspense fallback={
+                <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-6 text-center animate-pulse">
+                    <Loader2 className="w-12 h-12 animate-spin mx-auto text-blue-600 mb-4" />
+                    <p>読み込み中...</p>
+                </div>
+            }>
+                <QuestScanInner />
+            </Suspense>
         </div>
     )
 }
