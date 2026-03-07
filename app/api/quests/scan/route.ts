@@ -273,30 +273,100 @@ export async function POST(request: Request) {
 
             // Reward NFT
             if (quest.reward_nft_template_id) {
-                const { data: rewardTemplateInfo } = await supabase.from('nft_templates').select('token_id, contract_address').eq('id', quest.reward_nft_template_id).single();
-                if (rewardTemplateInfo && rewardTemplateInfo.token_id !== null) {
-                    const TW_ENGINE_URL = process.env.THIRDWEB_ENGINE_URL;
-                    const TW_ACCESS_TOKEN = process.env.THIRDWEB_ENGINE_ACCESS_TOKEN;
-                    const BACKEND_WALLET = process.env.THIRDWEB_ENGINE_BACKEND_WALLET;
-                    const CHAIN = process.env.NEXT_PUBLIC_CHAIN_NAME;
-                    const contractAddress = rewardTemplateInfo.contract_address || process.env.NEXT_PUBLIC_COLLECTION_ID;
+                try {
+                    const { data: rewardTemplate } = await supabase
+                        .from('nft_templates')
+                        .select('id, token_id, contract_address, name, description, image_url, type')
+                        .eq('id', quest.reward_nft_template_id)
+                        .single();
 
-                    const res = await fetch(`https://${TW_ENGINE_URL}/contract/${CHAIN}/${contractAddress}/erc1155/mint-to`, {
-                        method: "POST",
-                        headers: {
-                            "Authorization": `Bearer ${TW_ACCESS_TOKEN}`,
-                            "Content-Type": "application/json",
-                            "x-backend-wallet-address": BACKEND_WALLET || "",
-                        },
-                        body: JSON.stringify({
-                            receiver: userWallet,
-                            metadataWithSupply: {
-                                supply: "1",
-                                metadata: { id: rewardTemplateInfo.token_id.toString() }
-                            }
-                        })
-                    });
-                    rewardMinted = res.ok;
+                    if (rewardTemplate) {
+                        const TW_ENGINE_URL = process.env.THIRDWEB_ENGINE_URL;
+                        const TW_ACCESS_TOKEN = process.env.THIRDWEB_ENGINE_ACCESS_TOKEN;
+                        const BACKEND_WALLET = process.env.THIRDWEB_ENGINE_BACKEND_WALLET;
+                        const CHAIN = process.env.NEXT_PUBLIC_CHAIN_NAME;
+                        const rewardContractAddress = rewardTemplate.contract_address || process.env.NEXT_PUBLIC_COLLECTION_ID;
+
+                        let rewardRes: Response;
+
+                        if (rewardTemplate.token_id !== null && rewardTemplate.token_id !== undefined) {
+                            // 既存トークンの追加サプライをミント（ユーザーに配布）
+                            console.log(`[QuestScan] Minting additional supply of token ${rewardTemplate.token_id} to ${userWallet}`);
+                            rewardRes = await fetch(
+                                `https://${TW_ENGINE_URL}/contract/${CHAIN}/${rewardContractAddress}/erc1155/mint-additional-supply-to`,
+                                {
+                                    method: "POST",
+                                    headers: {
+                                        "Authorization": `Bearer ${TW_ACCESS_TOKEN}`,
+                                        "Content-Type": "application/json",
+                                        "x-backend-wallet-address": BACKEND_WALLET || "",
+                                    },
+                                    body: JSON.stringify({
+                                        receiver: userWallet,
+                                        tokenId: rewardTemplate.token_id.toString(),
+                                        additionalSupply: "1",
+                                    }),
+                                }
+                            );
+                        } else {
+                            // token_id が無い場合は新規ミント
+                            console.log(`[QuestScan] Minting new reward NFT to ${userWallet}`);
+                            const metadata = {
+                                name: rewardTemplate.name || "Quest Reward",
+                                description: rewardTemplate.description || "Quest completion reward",
+                                image: rewardTemplate.image_url || undefined,
+                                attributes: [
+                                    { trait_type: "Type", value: rewardTemplate.type || "reward" },
+                                    { trait_type: "Source", value: "Quest Reward" },
+                                    { trait_type: "QuestID", value: quest.id },
+                                    { trait_type: "TemplateID", value: rewardTemplate.id },
+                                ],
+                            };
+                            rewardRes = await fetch(
+                                `https://${TW_ENGINE_URL}/contract/${CHAIN}/${rewardContractAddress}/erc1155/mint-to`,
+                                {
+                                    method: "POST",
+                                    headers: {
+                                        "Authorization": `Bearer ${TW_ACCESS_TOKEN}`,
+                                        "Content-Type": "application/json",
+                                        "x-backend-wallet-address": BACKEND_WALLET || "",
+                                    },
+                                    body: JSON.stringify({
+                                        receiver: userWallet,
+                                        metadataWithSupply: {
+                                            metadata,
+                                            supply: "1",
+                                        },
+                                    }),
+                                }
+                            );
+                        }
+
+                        if (rewardRes.ok) {
+                            console.log("[QuestScan] Reward NFT minted successfully.");
+                            rewardMinted = true;
+
+                            // mint_logs に記録
+                            const rewardMintData = await rewardRes.json();
+                            const queueId = rewardMintData.result?.queueId || null;
+                            await supabase.from("mint_logs").insert({
+                                shopify_order_id: `quest-reward-${quest.id}-${Date.now()}`,
+                                product_name: `[Quest Reward] ${rewardTemplate.name || 'Reward'}`,
+                                status: "success",
+                                recipient_email: session.email || null,
+                                recipient_wallet: userWallet,
+                                transaction_hash: queueId,
+                                contract_address: rewardContractAddress,
+                                template_id: rewardTemplate.id,
+                                token_id: rewardTemplate.token_id?.toString() || null,
+                            });
+                        } else {
+                            const errorText = await rewardRes.text();
+                            console.error("[QuestScan] Reward NFT mint FAILED:", errorText);
+                        }
+                    }
+                } catch (rewardErr: any) {
+                    console.error("[QuestScan] Reward NFT mint error:", rewardErr.message);
                 }
             }
         } else {
