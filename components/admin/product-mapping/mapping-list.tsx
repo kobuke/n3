@@ -6,12 +6,11 @@ import { Card, CardContent } from "@/components/admin/ui/card"
 import { Badge } from "@/components/admin/ui/badge"
 import { Button } from "@/components/admin/ui/button"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/admin/ui/select"
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/admin/ui/dropdown-menu"
 import { Link2, Unlink, Save, ShoppingBag, Hexagon, Loader2, RefreshCw, ImageIcon } from "lucide-react"
 
 type ShopifyProduct = {
@@ -38,10 +37,10 @@ type Mapping = {
 export function MappingList() {
   const [products, setProducts] = useState<ShopifyProduct[]>([])
   const [templates, setTemplates] = useState<ContractTemplate[]>([])
-  const [mappings, setMappings] = useState<Record<string, string>>({}) // productId -> templateId
+  const [mappings, setMappings] = useState<Record<string, string[]>>({}) // productId -> templateIds[]
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [pendingChanges, setPendingChanges] = useState<Record<string, string | null>>({})
+  const [pendingChanges, setPendingChanges] = useState<Record<string, string[]>>({})
 
   useEffect(() => {
     async function fetchData() {
@@ -59,10 +58,11 @@ export function MappingList() {
         setProducts(productsData)
         setTemplates(templatesData)
 
-        const mappingMap: Record<string, string> = {}
+        const mappingMap: Record<string, string[]> = {}
         if (Array.isArray(mappingsData)) {
           mappingsData.forEach((m: any) => {
-            mappingMap[m.shopify_product_id] = m.nft_template_id
+            const ids = m.nft_template_ids || (m.nft_template_id ? [m.nft_template_id] : [])
+            mappingMap[m.shopify_product_id] = ids
           })
         }
         setMappings(mappingMap)
@@ -75,29 +75,32 @@ export function MappingList() {
     fetchData()
   }, [])
 
-  function handleTemplateChange(productId: string, templateId: string | null) {
-    setPendingChanges(prev => ({ ...prev, [productId]: templateId }))
+  function handleTemplateToggle(productId: string, templateId: string) {
+    setPendingChanges(prev => {
+      const currentIds = prev[productId] !== undefined ? prev[productId] : (mappings[productId] || [])
+      const newIds = currentIds.includes(templateId)
+        ? currentIds.filter(id => id !== templateId)
+        : [...currentIds, templateId]
+      return { ...prev, [productId]: newIds }
+    })
   }
 
   async function handleSave() {
     setSaving(true)
-    const promises = Object.entries(pendingChanges).map(([productId, templateId]) => {
-      if (templateId) {
-        return fetch('/api/mappings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ shopify_product_id: productId, nft_template_id: templateId })
-        })
-      }
-      return Promise.resolve()
+    const promises = Object.entries(pendingChanges).map(([productId, templateIds]) => {
+      return fetch('/api/mappings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shopify_product_id: productId, nft_template_ids: templateIds })
+      })
     })
 
     await Promise.all(promises)
 
     setMappings(prev => {
       const next = { ...prev }
-      Object.entries(pendingChanges).forEach(([pid, tid]) => {
-        if (tid) next[pid] = tid
+      Object.entries(pendingChanges).forEach(([pid, tids]) => {
+        next[pid] = tids
       })
       return next
     })
@@ -108,7 +111,7 @@ export function MappingList() {
   if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>
 
   const currentMappings = { ...mappings, ...pendingChanges }
-  const activeCount = Object.values(currentMappings).filter(Boolean).length
+  const activeCount = Object.values(currentMappings).filter(ids => ids.length > 0).length
 
   return (
     <div className="flex flex-col gap-6">
@@ -138,9 +141,9 @@ export function MappingList() {
       {/* Mapping cards */}
       <div className="flex flex-col gap-4">
         {products.map((product) => {
-          const currentTemplateId = pendingChanges[product.id] !== undefined ? pendingChanges[product.id] : mappings[product.id]
-          const isLinked = !!currentTemplateId
-          const selectedTemplate = templates.find(t => t.id === currentTemplateId)
+          const currentTemplateIds = pendingChanges[product.id] !== undefined ? pendingChanges[product.id] : (mappings[product.id] || [])
+          const isLinked = currentTemplateIds.length > 0
+          const selectedTemplates = templates.filter(t => currentTemplateIds.includes(t.id))
 
           return (
             <Card
@@ -215,47 +218,53 @@ export function MappingList() {
 
                   {/* NFT template selector */}
                   <div className="flex items-center gap-3">
-                    <div className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-secondary overflow-hidden border border-border/50">
-                      {selectedTemplate && (selectedTemplate as any).image_url ? (
-                        <Image
-                          src={(selectedTemplate as any).image_url}
-                          alt={selectedTemplate.name}
-                          width={56}
-                          height={56}
-                          className="w-full h-full object-cover"
-                          unoptimized
-                        />
+                    <div className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-secondary overflow-hidden border border-border/50 relative">
+                      {selectedTemplates.length > 0 && (selectedTemplates[0] as any).image_url ? (
+                        <>
+                          <Image
+                            src={(selectedTemplates[0] as any).image_url}
+                            alt={selectedTemplates[0].name}
+                            width={56}
+                            height={56}
+                            className="w-full h-full object-cover"
+                            unoptimized
+                          />
+                          {selectedTemplates.length > 1 && (
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-xs font-bold">
+                              +{selectedTemplates.length - 1}
+                            </div>
+                          )}
+                        </>
                       ) : (
                         <Hexagon className="size-5 text-muted-foreground" />
                       )}
                     </div>
                     <div className="flex flex-col gap-1">
                       <span className="text-xs font-medium text-muted-foreground">
-                        NFTテンプレート
+                        NFTテンプレート ({currentTemplateIds.length}選択中)
                       </span>
-                      <Select
-                        value={currentTemplateId || "none"}
-                        onValueChange={(value) =>
-                          handleTemplateChange(
-                            product.id,
-                            value === "none" ? null : value
-                          )
-                        }
-                      >
-                        <SelectTrigger className="w-56">
-                          <SelectValue placeholder="テンプレートを選択..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">
-                            未紐付け
-                          </SelectItem>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" className="w-56 justify-start text-left font-normal border-border/60 hover:bg-muted/50">
+                            {currentTemplateIds.length === 0 ? (
+                              <span className="text-muted-foreground">テンプレートを選択...</span>
+                            ) : (
+                              <span className="truncate">{selectedTemplates.map(t => t.name).join(", ")}</span>
+                            )}
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56 max-h-64 overflow-y-auto">
                           {templates.map((template) => (
-                            <SelectItem key={template.id} value={template.id}>
+                            <DropdownMenuCheckboxItem
+                              key={template.id}
+                              checked={currentTemplateIds.includes(template.id)}
+                              onCheckedChange={() => handleTemplateToggle(product.id, template.id)}
+                            >
                               {template.name}
-                            </SelectItem>
+                            </DropdownMenuCheckboxItem>
                           ))}
-                        </SelectContent>
-                      </Select>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 </div>

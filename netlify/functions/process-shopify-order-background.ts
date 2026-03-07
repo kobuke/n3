@@ -43,54 +43,22 @@ const handler: Handler = async (event) => {
         // 1. マッピング確認
         const { data: mapping, error: mappingError } = await supabase
             .from("mappings")
-            .select("nft_template_id, contract_address")
+            .select("nft_template_id, nft_template_ids, contract_address")
             .eq("shopify_product_id", productId)
             .maybeSingle();
 
         console.log(`[BG] Mapping for ${productId}:`, JSON.stringify({ mapping, error: mappingError }));
 
-        if (!mapping || (!mapping.nft_template_id && !mapping.contract_address)) {
+        const templateIdsToProcess = (mapping && mapping.nft_template_ids && mapping.nft_template_ids.length > 0)
+            ? mapping.nft_template_ids
+            : (mapping?.nft_template_id ? [mapping.nft_template_id] : [null]);
+
+        if (!mapping || (templateIdsToProcess[0] === null && !mapping.contract_address)) {
             console.log(`[BG] No mapping found for product: ${productName} (${productId})`);
             continue;
         }
 
-        // 1.5 テンプレート詳細取得
-        let templateData: any = null;
-        let contractAddressToUse = mapping.contract_address;
-
-        if (mapping.nft_template_id) {
-            const { data: tmpl } = await supabase
-                .from("nft_templates")
-                .select("*")
-                .eq("id", mapping.nft_template_id)
-                .single();
-            templateData = tmpl;
-            if (tmpl?.contract_address) {
-                contractAddressToUse = tmpl.contract_address;
-            }
-        }
-
-        if (!contractAddressToUse) {
-            contractAddressToUse = process.env.NEXT_PUBLIC_COLLECTION_ID;
-        }
-
-        console.log(`[BG] Using contract: ${contractAddressToUse}, template: ${templateData?.name || "none"}`);
-
-        // 2. 冪等性チェック（二重ミント防止）
-        const { data: existingLog } = await supabase
-            .from("mint_logs")
-            .select("id")
-            .eq("shopify_order_id", orderId)
-            .eq("shopify_product_id", productId)
-            .eq("status", "success")
-            .maybeSingle();
-
-        if (existingLog) {
-            console.log(`[BG] Already minted order ${orderId} for product ${productId}, skipping.`);
-            continue;
-        }
-
-        // 3. ウォレットアドレスの決定
+        // 2. ウォレットアドレスの決定（アイテムごとにキャッシュ可能だがここでは都度チェック）
         let recipientWallet: string | null = null;
         const noteAttributes = payload.note_attributes || [];
         const walletAttr = noteAttributes.find(
@@ -159,96 +127,130 @@ const handler: Handler = async (event) => {
             continue;
         }
 
-        // 4. NFTミント
-        console.log(`[BG] Minting NFT to ${recipientWallet}...`);
-        try {
-            const metadata = {
-                name: templateData?.name || productName,
-                description: templateData?.description || "Minted via Shopify Webhook",
-                image: templateData?.image_url || undefined,
-                attributes: [
-                    { trait_type: "Type", value: templateData?.type || "product" },
-                    { trait_type: "Order ID", value: orderId },
-                    { trait_type: "TemplateID", value: mapping.nft_template_id },
-                ],
-            };
+        // 3. 各テンプレートごとにMint処理
+        for (const templateId of templateIdsToProcess) {
+            // 冪等性チェック（二重ミント防止）
+            const checkQuery = supabase
+                .from("mint_logs")
+                .select("id")
+                .eq("shopify_order_id", orderId)
+                .eq("shopify_product_id", productId)
+                .eq("status", "success");
 
-
-            // Thirdweb Engine でミント
-            const chain = process.env.NEXT_PUBLIC_CHAIN_NAME || "polygon";
-            const mintUrl = `https://${process.env.THIRDWEB_ENGINE_URL}/contract/${chain}/${contractAddressToUse}/erc1155/mint-to`;
-            console.log(`[BG] Calling mint endpoint: ${mintUrl}`);
-
-            const mintRes = await fetch(mintUrl, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${process.env.THIRDWEB_ENGINE_ACCESS_TOKEN}`,
-                    "x-backend-wallet-address": process.env.THIRDWEB_ENGINE_BACKEND_WALLET!,
-                },
-                body: JSON.stringify({
-                    receiver: recipientWallet,
-                    metadataWithSupply: {
-                        metadata: metadata,
-                        supply: "1",
-                    },
-                }),
-            });
-
-            const mintData = await mintRes.json();
-            console.log(`[BG] Mint response:`, JSON.stringify(mintData));
-
-            if (!mintRes.ok) {
-                throw new Error(`Mint failed: ${JSON.stringify(mintData)}`);
-            }
-
-            const txHash = mintData.result?.queueId || null;
-
-            // 5. 成功ログ
-            const { error: insertSuccessError } = await supabase.from("mint_logs").insert({
-                shopify_order_id: orderId,
-                shopify_product_id: productId,
-                product_name: templateData?.name || productName,
-                status: "success",
-                recipient_email: customerEmail,
-                recipient_wallet: recipientWallet,
-                transaction_hash: txHash,
-                contract_address: contractAddressToUse,
-                template_id: mapping.nft_template_id
-            });
-
-
-            if (insertSuccessError) {
-                console.error("[BG] ⚠️ Failed to insert success log:", insertSuccessError.message);
+            if (templateId) {
+                checkQuery.eq("template_id", templateId);
             } else {
-                console.log(`[BG] ✅ Mint SUCCESS for order ${orderId}`);
+                checkQuery.is("template_id", null);
             }
 
-            // 成功メール送信
-            if (customerEmail) {
-                const appUrl = (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost'))
-                    ? process.env.NEXT_PUBLIC_APP_URL
-                    : 'https://n3-nanjo-nft.netlify.app'
-                await resend.emails.send({
-                    from: "N3 NFT System <updates@resend.nomadresort.jp>",
-                    to: customerEmail,
-                    subject: `Your NFT is ready!`,
-                    html: `<p>Your NFT for ${templateData?.name || productName} has been minted to your wallet (${recipientWallet}).</p><p><a href="${appUrl}">Log in to view your NFT</a></p>`,
+            const { data: existingLog } = await checkQuery.maybeSingle();
+
+            if (existingLog) {
+                console.log(`[BG] Already minted template ${templateId} for order ${orderId}, skipping.`);
+                continue;
+            }
+
+            // テンプレート詳細取得
+            let templateData: any = null;
+            let contractAddressToUse = mapping.contract_address || process.env.NEXT_PUBLIC_COLLECTION_ID;
+
+            if (templateId) {
+                const { data: tmpl } = await supabase
+                    .from("nft_templates")
+                    .select("*")
+                    .eq("id", templateId)
+                    .single();
+                templateData = tmpl;
+                if (tmpl?.contract_address) {
+                    contractAddressToUse = tmpl.contract_address;
+                }
+            }
+
+            console.log(`[BG] Using contract: ${contractAddressToUse}, template: ${templateData?.name || "none"}`);
+
+            // 4. NFTミント
+            console.log(`[BG] Minting NFT to ${recipientWallet}...`);
+            try {
+                const metadata = {
+                    name: templateData?.name || productName,
+                    description: templateData?.description || "Minted via Shopify Webhook",
+                    image: templateData?.image_url || undefined,
+                    attributes: [
+                        { trait_type: "Type", value: templateData?.type || "product" },
+                        { trait_type: "Order ID", value: orderId },
+                        { trait_type: "TemplateID", value: templateId || undefined },
+                    ],
+                };
+
+                const chain = process.env.NEXT_PUBLIC_CHAIN_NAME || "polygon";
+                const mintUrl = `https://${process.env.THIRDWEB_ENGINE_URL}/contract/${chain}/${contractAddressToUse}/erc1155/mint-to`;
+
+                const mintRes = await fetch(mintUrl, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${process.env.THIRDWEB_ENGINE_ACCESS_TOKEN}`,
+                        "x-backend-wallet-address": process.env.THIRDWEB_ENGINE_BACKEND_WALLET!,
+                    },
+                    body: JSON.stringify({
+                        receiver: recipientWallet,
+                        metadataWithSupply: {
+                            metadata: metadata,
+                            supply: "1",
+                        },
+                    }),
                 });
-                console.log(`[BG] Confirmation email sent to ${customerEmail}`);
-            }
-        } catch (error: any) {
-            console.error("[BG] ❌ Minting FAILED:", error.message);
 
-            await supabase.from("mint_logs").insert({
-                shopify_order_id: orderId,
-                shopify_product_id: productId,
-                product_name: templateData?.name || productName,
-                status: "error",
-                recipient_email: customerEmail,
-                recipient_wallet: recipientWallet,
-                error_message: error.message,
-            });
+                const mintData = await mintRes.json();
+                if (!mintRes.ok) {
+                    throw new Error(`Mint failed: ${JSON.stringify(mintData)}`);
+                }
+
+                const txHash = mintData.result?.queueId || null;
+
+                // 成功ログ
+                const { error: insertSuccessError } = await supabase.from("mint_logs").insert({
+                    shopify_order_id: orderId,
+                    shopify_product_id: productId,
+                    product_name: templateData?.name || productName,
+                    status: "success",
+                    recipient_email: customerEmail,
+                    recipient_wallet: recipientWallet,
+                    transaction_hash: txHash,
+                    contract_address: contractAddressToUse,
+                    template_id: templateId || null
+                });
+
+                if (insertSuccessError) {
+                    console.error("[BG] ⚠️ Failed to insert success log:", insertSuccessError.message);
+                } else {
+                    console.log(`[BG] ✅ Mint SUCCESS for order ${orderId}, template ${templateId}`);
+                }
+
+                if (customerEmail) {
+                    const appUrl = (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost'))
+                        ? process.env.NEXT_PUBLIC_APP_URL
+                        : 'https://n3-nanjo-nft.netlify.app';
+                    await resend.emails.send({
+                        from: "N3 NFT System <updates@resend.nomadresort.jp>",
+                        to: customerEmail,
+                        subject: `Your NFT is ready!`,
+                        html: `<p>Your NFT for ${templateData?.name || productName} has been minted to your wallet (${recipientWallet}).</p><p><a href="${appUrl}">Log in to view your NFT</a></p>`,
+                    });
+                }
+            } catch (error: any) {
+                console.error("[BG] ❌ Minting FAILED:", error.message);
+                await supabase.from("mint_logs").insert({
+                    shopify_order_id: orderId,
+                    shopify_product_id: productId,
+                    product_name: templateData?.name || productName,
+                    status: "error",
+                    recipient_email: customerEmail,
+                    recipient_wallet: recipientWallet,
+                    error_message: error.message,
+                    template_id: templateId || null
+                });
+            }
         }
     }
 
