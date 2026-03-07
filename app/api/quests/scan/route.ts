@@ -178,8 +178,8 @@ export async function POST(request: Request) {
             console.log(`[QuestScan] Starting metadata update for tokenId: ${tokenId}...`);
             let metadataPayload: any = rawUri;
             try {
-                // If it's a JSON string, parse it. If it's a CID, keep it as is or wrap it.
-                if (rawUri.trim().startsWith('{')) {
+                // If it's a JSON string, parse it.
+                if (typeof rawUri === 'string' && rawUri.trim().startsWith('{')) {
                     metadataPayload = JSON.parse(rawUri);
                 }
             } catch (e) {
@@ -188,6 +188,35 @@ export async function POST(request: Request) {
 
             const { data: templateInfo } = await supabase.from('nft_templates').select('contract_address').eq('id', templateId).single();
             const contractAddress = templateInfo?.contract_address || process.env.NEXT_PUBLIC_COLLECTION_ID;
+
+            // 既存のメタデータをマージするために取得する
+            let mergedMetadata = metadataPayload;
+            try {
+                const { getNFTById } = await import("@/lib/thirdweb");
+                const currentNft = await getNFTById(contractAddress!, tokenId);
+                if (currentNft && currentNft.metadata) {
+                    const currentAttributes = (currentNft.metadata as any).attributes || [];
+
+                    if (typeof metadataPayload === 'object' && metadataPayload !== null) {
+                        mergedMetadata = {
+                            ...metadataPayload,
+                            attributes: currentAttributes // 既存のattributes（TemplateIDなど）を強制的に引き継ぐ
+                        };
+                    } else if (typeof metadataPayload === 'string') {
+                        // 文字列（URL等）の場合は、attributesを含めるためオブジェクトに変換するか、
+                        // もしくは第三者へのリクエストでオブジェクトとして送る必要がある。
+                        // Thirdweb Engine は URI 文字列を受け入れるか object を受け入れるかの両方対応しているが
+                        // ここでは既存のデータを含めたメタデータオブジェクトとして上書きすることを優先する
+                        mergedMetadata = {
+                            ...(currentNft.metadata as any), // 古いプロパティを引継ぎ
+                            image: metadataPayload,          // 文字列ならとりあえず画像URLとして更新してみる
+                            attributes: currentAttributes
+                        };
+                    }
+                }
+            } catch (e) {
+                console.warn("[QuestScan] Failed to fetch current NFT metadata for merging. Proceeding with raw payload.", e);
+            }
 
             const TW_ENGINE_URL = process.env.THIRDWEB_ENGINE_URL;
             const TW_ACCESS_TOKEN = process.env.THIRDWEB_ENGINE_ACCESS_TOKEN;
@@ -205,7 +234,7 @@ export async function POST(request: Request) {
                 },
                 body: JSON.stringify({
                     "tokenId": tokenId,
-                    "metadata": metadataPayload
+                    "metadata": mergedMetadata
                 })
             });
 
