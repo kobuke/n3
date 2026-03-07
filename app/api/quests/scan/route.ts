@@ -200,17 +200,19 @@ export async function POST(request: Request) {
                     if (typeof metadataPayload === 'object' && metadataPayload !== null) {
                         mergedMetadata = {
                             ...metadataPayload,
-                            attributes: currentAttributes // 既存のattributes（TemplateIDなど）を強制的に引き継ぐ
+                            attributes: [
+                                ...currentAttributes,
+                                { trait_type: "LastUpdatedTokenID", value: tokenId } // どのNFTを更新したかの目印を追加
+                            ]
                         };
                     } else if (typeof metadataPayload === 'string') {
-                        // 文字列（URL等）の場合は、attributesを含めるためオブジェクトに変換するか、
-                        // もしくは第三者へのリクエストでオブジェクトとして送る必要がある。
-                        // Thirdweb Engine は URI 文字列を受け入れるか object を受け入れるかの両方対応しているが
-                        // ここでは既存のデータを含めたメタデータオブジェクトとして上書きすることを優先する
                         mergedMetadata = {
                             ...(currentNft.metadata as any), // 古いプロパティを引継ぎ
                             image: metadataPayload,          // 文字列ならとりあえず画像URLとして更新してみる
-                            attributes: currentAttributes
+                            attributes: [
+                                ...currentAttributes,
+                                { trait_type: "LastUpdatedTokenID", value: tokenId }
+                            ]
                         };
                     }
                 }

@@ -153,10 +153,16 @@ export async function GET(req: NextRequest) {
 
           // キャッシュ遅延対策: `user_quest_progress` に `pending_metadata` があれば優先的に使用（上書き）
           if (templateIdFromAttr && pendingMetadataMap.has(templateIdFromAttr)) {
-            metadata = pendingMetadataMap.get(templateIdFromAttr);
-            attributes = ((metadata as any).attributes || []).map(
-              (a: any) => ({ ...a })
-            );
+            const pending = pendingMetadataMap.get(templateIdFromAttr);
+            const pendingTokenId = (pending?.attributes || []).find((a: any) => a.trait_type === "LastUpdatedTokenID")?.value;
+
+            // 自分自身のTokenIDに対する更新データがある場合のみ上書きする
+            if (pendingTokenId === nftIdStr) {
+              metadata = pending;
+              attributes = ((metadata as any).attributes || []).map(
+                (a: any) => ({ ...a })
+              );
+            }
           }
 
           // 使用ステータスのマージ

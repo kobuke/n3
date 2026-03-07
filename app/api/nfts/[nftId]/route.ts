@@ -34,9 +34,34 @@ export async function GET(
       return NextResponse.json({ error: "NFT not found" }, { status: 404 });
     }
 
+    const session = await getSession();
+    const walletAddress = session?.walletAddress;
+
     const supabase = createAdminClient();
 
-    // 2. 使用ステータスの取得＆マージ
+    // 2. 超重要：キャッシュ遅延対策（オプティミスティック更新）
+    // Thirdwebのキャッシュが更新されるまでの間、Supabaseに保存した最新メタデータを優先する
+    const { data: progressMetadata } = await supabase
+      .from("user_quest_progress")
+      .select("pending_metadata")
+      .eq("user_wallet", walletAddress || "")
+      .not("pending_metadata", "is", null)
+      .order("scanned_at", { ascending: false });
+
+    let finalMetadata = nft.metadata || {};
+    if (progressMetadata && progressMetadata.length > 0) {
+      // 取得した進行状況の中から、このNFT（TokenID）に該当する更新データがあるか探す
+      for (const p of progressMetadata) {
+        const pending = p.pending_metadata as any;
+        const pendingTokenId = (pending?.attributes || []).find((a: any) => a.trait_type === "LastUpdatedTokenID")?.value;
+        if (pendingTokenId === nftId) {
+          finalMetadata = pending;
+          break;
+        }
+      }
+    }
+
+    // 3. 使用ステータスの取得＆マージ
     const { data: usageLog } = await supabase
       .from("ticket_usages")
       .select("status, used_at")
@@ -45,31 +70,28 @@ export async function GET(
       .eq("status", "used")
       .maybeSingle();
 
-    let attributes = (nft.metadata?.attributes || []).map((a: any) => ({
+    let attributes = (finalMetadata.attributes || []).map((a: any) => ({
       ...a,
     }));
     attributes = mergeUsageStatus(attributes, usageLog);
 
-    const imageUrl = resolveIpfsUrl(nft.metadata?.image);
+    const imageUrl = resolveIpfsUrl(finalMetadata.image);
 
     const formattedNft: any = {
       tokenId: nft.id.toString(),
       contractAddress,
-      name: nft.metadata?.name || `NFT #${nft.id.toString()}`,
-      description: nft.metadata?.description || "",
+      name: finalMetadata.name || `NFT #${nft.id.toString()}`,
+      description: finalMetadata.description || "",
       image: imageUrl,
       metadata: {
-        name: nft.metadata?.name || "",
-        description: nft.metadata?.description || "",
+        name: finalMetadata.name || "",
+        description: finalMetadata.description || "",
         image: imageUrl,
         attributes,
       },
     };
 
     // 3. 取得日の照合（ログインユーザーのミントログから）
-    const session = await getSession();
-    const walletAddress = session?.walletAddress;
-
     if (walletAddress) {
       const { data: mintLog } = await supabase
         .from("mint_logs")
