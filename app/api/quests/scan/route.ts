@@ -19,8 +19,10 @@ function getDistanceFromLatLonInM(lat1: number, lon1: number, lat2: number, lon2
 
 export async function POST(request: Request) {
     try {
+        console.log("[QuestScan] Processing new check-in request...");
         const session = await getSession()
         if (!session || !session.walletAddress) {
+            console.error("[QuestScan] Error: No valid session or wallet address.");
             return NextResponse.json({ error: "ウォレットが接続されていません。ログインしてください。" }, { status: 401 })
         }
 
@@ -28,11 +30,13 @@ export async function POST(request: Request) {
         const { locationId, lat, lng } = body
 
         if (!locationId || lat === undefined || lng === undefined) {
+            console.error("[QuestScan] Error: Missing required locationId or GPS coords.");
             return NextResponse.json({ error: "必要な情報（位置情報など）が欠落しています。" }, { status: 400 })
         }
 
         const supabase = createAdminClient()
         const userWallet = session.walletAddress
+        console.log(`[QuestScan] User: ${userWallet}, Location: ${locationId}`);
 
         // 1. Fetch Location and Quest data
         const { data: location, error: locError } = await supabase
@@ -48,11 +52,13 @@ export async function POST(request: Request) {
             .single()
 
         if (locError || !location) {
+            console.error("[QuestScan] Error: Location not found.", locError);
             return NextResponse.json({ error: "存在しないQRコード（地点）です。" }, { status: 404 })
         }
 
         const quest = location.quests;
         if (!quest.is_active) {
+            console.warn("[QuestScan] Warning: Quest is not active.");
             return NextResponse.json({ error: "このクエストは現在非公開または終了しています。" }, { status: 403 })
         }
 
@@ -65,11 +71,13 @@ export async function POST(request: Request) {
             .single()
 
         if (existingScan) {
+            console.log("[QuestScan] User already checked in to this location.");
             return NextResponse.json({ error: "既にこの地点はチェックイン済みです！" }, { status: 409 })
         }
 
         // 3. Distance Validation
         const distance = getDistanceFromLatLonInM(lat, lng, location.lat, location.lng)
+        console.log(`[QuestScan] Distance to target: ${Math.round(distance)}m (Max allowed: ${location.radius_meters}m)`);
         if (distance > location.radius_meters) {
             return NextResponse.json({
                 error: `指定地点から離れすぎています。（現在地から約${Math.round(distance)}m離れています。${location.radius_meters}m以内に近づいてください）`
@@ -77,48 +85,34 @@ export async function POST(request: Request) {
         }
 
         // 4. NFT Ownership Check
-        // If the quest requires a base NFT, check user's held tokens.
-        // For N3, we could check the local DB or directly via Thirdweb Engine.
-        // Assuming we have user_nfts or we can call engine API:
-        // Here we do a simplified mock check via DB if we have a tracking table, 
-        // OR we can rely on `walletAddress` to fetch from Engine.
         if (quest.base_nft_template_id) {
-            // Ideally call `fetch("/api/nfts")` for user or Engine directly.
-            // For now, let's assume we have an internal check or we get user's NFTs
-            const { data: userTokens } = await supabase
-                .from('user_nfts') // Assuming this exists or similar tracking exists, else rely on Thirdweb
-                .select('*')
-                .eq('wallet_address', userWallet)
-                .eq('template_id', quest.base_nft_template_id)
-
-            // Note: Since N3 doesn't strictly have user_nfts in schema previously shown,
-            // We should use the Engine API to get `balanceOf` for the template.
-            const TW_ENGINE_URL = process.env.NEXT_PUBLIC_THIRDWEB_ENGINE_URL;
+            const TW_ENGINE_URL = process.env.THIRDWEB_ENGINE_URL;
             const TW_ACCESS_TOKEN = process.env.THIRDWEB_ENGINE_ACCESS_TOKEN;
-            const CHAIN = process.env.NEXT_PUBLIC_CHAIN || "mumbai";
-            const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
+            const CHAIN = process.env.NEXT_PUBLIC_CHAIN_NAME || "polygon-amoy";
+            const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_COLLECTION_ID;
 
-            // We need the token_id of the required NFT template.
             const { data: templateInfo } = await supabase.from('nft_templates').select('token_id').eq('id', quest.base_nft_template_id).single();
 
-            if (templateInfo) {
-                const balRes = await fetch(`${TW_ENGINE_URL}/contract/${CHAIN}/${CONTRACT_ADDRESS}/erc1155/balance-of?walletAddress=${userWallet}&tokenId=${templateInfo.token_id}`, {
+            if (templateInfo && templateInfo.token_id !== null) {
+                console.log(`[QuestScan] Checking ownership for tokenId: ${templateInfo.token_id}...`);
+                const balRes = await fetch(`https://${TW_ENGINE_URL}/contract/${CHAIN}/${CONTRACT_ADDRESS}/erc1155/balance-of?walletAddress=${userWallet}&tokenId=${templateInfo.token_id}`, {
                     headers: { 'Authorization': `Bearer ${TW_ACCESS_TOKEN}` }
                 });
                 if (balRes.ok) {
                     const balData = await balRes.json();
                     if (parseInt(balData.result || "0", 10) === 0) {
+                        console.warn("[QuestScan] User does not own the required NFT.");
                         return NextResponse.json({
                             error: `スタンプラリーに参加するには『${quest.nft_templates?.name || '参加証NFT'}』が必要です。ストアまたは運営より取得してください。`
                         }, { status: 403 });
                     }
+                    console.log("[QuestScan] Ownership verified.");
                 }
             }
         }
 
         // 5. Sequence Validation
         if (quest.is_sequential) {
-            // Must have scanned all previous locations in order
             const { data: priorLocations } = await supabase
                 .from('quest_locations')
                 .select('id')
@@ -134,6 +128,7 @@ export async function POST(request: Request) {
                     .in('location_id', priorIds);
 
                 if (!priorScans || priorScans.length < priorLocations.length) {
+                    console.warn("[QuestScan] Sequence violation detected.");
                     return NextResponse.json({ error: "前の地点をクリアしていません。決められた順序で回ってください。" }, { status: 403 })
                 }
             }
@@ -148,7 +143,11 @@ export async function POST(request: Request) {
                 user_wallet: userWallet
             }]);
 
-        if (insertError) throw insertError;
+        if (insertError) {
+            console.error("[QuestScan] DB Insert Error: ", insertError);
+            throw insertError;
+        }
+        console.log("[QuestScan] Success: Check-in saved for user.");
 
         // 7. Check for Quest Complete & Determine Metadata Update
         const { data: allLocations } = await supabase.from('quest_locations').select('id').eq('quest_id', quest.id);
@@ -162,17 +161,18 @@ export async function POST(request: Request) {
 
         // Helper to perform the Thirdweb metadata update
         const doMetadataUpdate = async (rawUri: string, templateId: string) => {
+            console.log(`[QuestScan] Starting metadata update for templateId: ${templateId}...`);
             let metadataPayload: any = rawUri;
             try { metadataPayload = JSON.parse(rawUri); } catch (e) { /* ignore */ }
 
             const { data: templateInfo } = await supabase.from('nft_templates').select('token_id').eq('id', templateId).single();
             if (templateInfo && templateInfo.token_id !== null) {
-                const TW_ENGINE_URL = process.env.NEXT_PUBLIC_THIRDWEB_ENGINE_URL;
+                const TW_ENGINE_URL = process.env.THIRDWEB_ENGINE_URL;
                 const TW_ACCESS_TOKEN = process.env.THIRDWEB_ENGINE_ACCESS_TOKEN;
-                const CHAIN = process.env.NEXT_PUBLIC_CHAIN;
-                const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
+                const CHAIN = process.env.NEXT_PUBLIC_CHAIN_NAME;
+                const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_COLLECTION_ID;
 
-                await fetch(`${TW_ENGINE_URL}/contract/${CHAIN}/${CONTRACT_ADDRESS}/erc1155/metadata/update`, {
+                const res = await fetch(`https://${TW_ENGINE_URL}/contract/${CHAIN}/${CONTRACT_ADDRESS}/erc1155/metadata/update`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${TW_ACCESS_TOKEN}`,
@@ -183,34 +183,43 @@ export async function POST(request: Request) {
                         "metadata": metadataPayload
                     })
                 });
-                return true;
+
+                if (res.ok) {
+                    console.log("[QuestScan] NFT Metadata updated successfully.");
+                    return true;
+                } else {
+                    const errorText = await res.text();
+                    console.error("[QuestScan] Thirdweb Engine Error (Metadata Update): ", errorText);
+                    return false;
+                }
             }
+            console.error("[QuestScan] Missing template tokenId for metadata update.");
             return false;
         };
 
         if (isLastScan) {
+            console.log("[QuestScan] Quest Complete! Triggering final updates...");
             isComplete = true;
 
-            // Priority 1: Quest 'clear_metadata_uri'
             if (quest.clear_metadata_uri && quest.base_nft_template_id) {
                 isLevelUp = await doMetadataUpdate(quest.clear_metadata_uri, quest.base_nft_template_id);
             }
-            // Priority 2: Fallback to this Location's 'levelup_metadata_uri' if no clear metadata exists
             else if (location.levelup_metadata_uri && quest.base_nft_template_id) {
                 isLevelUp = await doMetadataUpdate(location.levelup_metadata_uri, quest.base_nft_template_id);
             }
 
             // Handle additional reward NFT (Mint logic)
             if (quest.reward_nft_template_id) {
+                console.log(`[QuestScan] Minting reward NFT: ${quest.reward_nft_template_id}...`);
                 const { data: rewardTemplateInfo } = await supabase.from('nft_templates').select('token_id').eq('id', quest.reward_nft_template_id).single();
                 if (rewardTemplateInfo && rewardTemplateInfo.token_id !== null) {
-                    const TW_ENGINE_URL = process.env.NEXT_PUBLIC_THIRDWEB_ENGINE_URL;
+                    const TW_ENGINE_URL = process.env.THIRDWEB_ENGINE_URL;
                     const TW_ACCESS_TOKEN = process.env.THIRDWEB_ENGINE_ACCESS_TOKEN;
-                    const BACKEND_WALLET = process.env.BACKEND_WALLET_ADDRESS;
-                    const CHAIN = process.env.NEXT_PUBLIC_CHAIN;
-                    const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
+                    const BACKEND_WALLET = process.env.THIRDWEB_ENGINE_BACKEND_WALLET;
+                    const CHAIN = process.env.NEXT_PUBLIC_CHAIN_NAME;
+                    const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_COLLECTION_ID;
 
-                    await fetch(`${TW_ENGINE_URL}/contract/${CHAIN}/${CONTRACT_ADDRESS}/erc1155/mint-to`, {
+                    const res = await fetch(`https://${TW_ENGINE_URL}/contract/${CHAIN}/${CONTRACT_ADDRESS}/erc1155/mint-to`, {
                         method: "POST",
                         headers: {
                             "Authorization": `Bearer ${TW_ACCESS_TOKEN}`,
@@ -227,11 +236,17 @@ export async function POST(request: Request) {
                             }
                         })
                     });
-                    rewardMinted = true;
+                    if (res.ok) {
+                        rewardMinted = true;
+                        console.log("[QuestScan] Reward NFT minted successfully.");
+                    } else {
+                        const errorText = await res.text();
+                        console.error("[QuestScan] Thirdweb Engine Error (Mint): ", errorText);
+                    }
                 }
             }
         } else {
-            // Not complete yet, normal location level up
+            console.log("[QuestScan] Quest progress updated. Leveling up NFT...");
             if (location.levelup_metadata_uri && quest.base_nft_template_id) {
                 isLevelUp = await doMetadataUpdate(location.levelup_metadata_uri, quest.base_nft_template_id);
             }
@@ -246,7 +261,7 @@ export async function POST(request: Request) {
         })
 
     } catch (error: any) {
-        console.error("Scan Error: ", error);
+        console.error("[QuestScan] Critical Server Error: ", error);
         return NextResponse.json({ error: "サーバーエラーが発生しました。" }, { status: 500 })
     }
 }
