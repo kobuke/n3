@@ -191,6 +191,7 @@ export async function POST(request: Request) {
 
             const TW_ENGINE_URL = process.env.THIRDWEB_ENGINE_URL;
             const TW_ACCESS_TOKEN = process.env.THIRDWEB_ENGINE_ACCESS_TOKEN;
+            const BACKEND_WALLET = process.env.THIRDWEB_ENGINE_BACKEND_WALLET;
             const CHAIN = process.env.NEXT_PUBLIC_CHAIN_NAME;
 
             console.log(`[QuestScan] Requesting Engine update: Contract ${contractAddress}, Token ${tokenId}`);
@@ -199,7 +200,8 @@ export async function POST(request: Request) {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${TW_ACCESS_TOKEN}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'x-backend-wallet-address': BACKEND_WALLET || ""
                 },
                 body: JSON.stringify({
                     "tokenId": tokenId,
