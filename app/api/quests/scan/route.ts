@@ -195,7 +195,7 @@ export async function POST(request: Request) {
 
             console.log(`[QuestScan] Requesting Engine update: Contract ${contractAddress}, Token ${tokenId}`);
 
-            const res = await fetch(`https://${TW_ENGINE_URL}/contract/${CHAIN}/${contractAddress}/erc1155/metadata/update`, {
+            const res = await fetch(`https://${TW_ENGINE_URL}/contract/${CHAIN}/${contractAddress}/erc1155/token/update`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${TW_ACCESS_TOKEN}`,
