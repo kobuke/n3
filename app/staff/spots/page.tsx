@@ -352,15 +352,12 @@ export default function SpotsPage() {
 
                             {formData.is_location_restricted && (
                                 <div className="pt-4 border-t space-y-4 animate-in fade-in slide-in-from-top-2">
-                                    <div className="h-[300px] w-full rounded-md border overflow-hidden relative">
+                                    <div className="h-[350px] w-full rounded-md border overflow-hidden relative">
                                         <MapPicker
                                             center={[formData.latitude || 35.658034, formData.longitude || 139.701636]}
                                             radius={formData.radius_meters || 100}
                                             onLocationChange={(lat, lng) => setFormData({ ...formData, latitude: lat, longitude: lng })}
                                         />
-                                        <div className="absolute top-2 left-2 z-[400] bg-white/90 px-3 py-1.5 text-xs font-medium rounded shadow-sm border pointer-events-none">
-                                            地図をクリックしてマーカーを移動
-                                        </div>
                                     </div>
 
                                     <div className="grid grid-cols-3 gap-4">

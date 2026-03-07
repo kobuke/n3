@@ -16,6 +16,10 @@ import {
   MapPin,
   Bell,
   ClipboardCheck,
+  Users,
+  Image as ImageIcon,
+  Ticket,
+  BellRing,
 } from "lucide-react"
 
 import {
@@ -89,9 +93,14 @@ const navItems = [
     icon: Bell,
   },
   {
-    title: "アンケート管理",
+    title: "アンケート",
     href: "/staff/surveys",
     icon: ClipboardCheck,
+  },
+  {
+    title: "クエスト (スタンプラリー)",
+    href: "/staff/quests",
+    icon: MapPin,
   },
 ]
 
