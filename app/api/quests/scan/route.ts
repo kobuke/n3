@@ -112,14 +112,35 @@ export async function POST(request: Request) {
 
             // If multiple exists OR user hasn't selected yet, return choice to UI
             if (!targetTokenId) {
+                // pending_metadata を取得して、進化後の画像・名前を反映する
+                const { data: pendingRows } = await supabase
+                    .from('user_quest_progress')
+                    .select('pending_metadata')
+                    .eq('user_wallet', userWallet)
+                    .eq('quest_id', quest.id)
+                    .not('pending_metadata', 'is', null)
+                    .order('scanned_at', { ascending: false });
+
+                // TokenID -> pending_metadata のマップを作成
+                const pendingMap = new Map<string, any>();
+                pendingRows?.forEach(row => {
+                    const pm = row.pending_metadata as any;
+                    const tid = (pm?.attributes || []).find((a: any) => a.trait_type === 'LastUpdatedTokenID')?.value;
+                    if (tid && pm) pendingMap.set(tid, pm);
+                });
+
                 return NextResponse.json({
                     selectionRequired: true,
-                    eligibleNfts: eligibleNfts.map(n => ({
-                        tokenId: n.id.toString(),
-                        name: n.metadata.name,
-                        image: n.metadata.image,
-                        description: n.metadata.description
-                    }))
+                    eligibleNfts: eligibleNfts.map(n => {
+                        const nftIdStr = n.id.toString();
+                        const pending = pendingMap.get(nftIdStr);
+                        return {
+                            tokenId: nftIdStr,
+                            name: pending?.name || n.metadata.name,
+                            image: pending?.image || n.metadata.image,
+                            description: pending?.description || n.metadata.description
+                        };
+                    })
                 });
             }
 
@@ -263,6 +284,8 @@ export async function POST(request: Request) {
             }
         };
 
+        console.log(`[QuestScan] isLastScan: ${isLastScan}, allLocations: ${allLocations?.length}, allScans: ${allScans?.length}`);
+
         if (isLastScan) {
             isComplete = true;
             if (quest.clear_metadata_uri && targetTokenId) {
@@ -272,6 +295,7 @@ export async function POST(request: Request) {
             }
 
             // Reward NFT
+            console.log(`[QuestScan] reward_nft_template_id: ${quest.reward_nft_template_id}`);
             if (quest.reward_nft_template_id) {
                 try {
                     const { data: rewardTemplate } = await supabase
@@ -280,7 +304,62 @@ export async function POST(request: Request) {
                         .eq('id', quest.reward_nft_template_id)
                         .single();
 
-                    if (rewardTemplate) {
+                    if (!rewardTemplate) {
+                        console.error(`[QuestScan] Reward template NOT FOUND in nft_templates! ID: ${quest.reward_nft_template_id}. Falling back to new mint.`);
+                        // テンプレートがDBに無い場合、クエスト情報から直接ミントを試みる
+                        const TW_ENGINE_URL = process.env.THIRDWEB_ENGINE_URL;
+                        const TW_ACCESS_TOKEN = process.env.THIRDWEB_ENGINE_ACCESS_TOKEN;
+                        const BACKEND_WALLET = process.env.THIRDWEB_ENGINE_BACKEND_WALLET;
+                        const CHAIN = process.env.NEXT_PUBLIC_CHAIN_NAME;
+                        const fallbackContract = process.env.NEXT_PUBLIC_COLLECTION_ID;
+
+                        const fallbackMetadata = {
+                            name: `${quest.title} - 達成報酬`,
+                            description: `クエスト「${quest.title}」の達成報酬NFTです。`,
+                            attributes: [
+                                { trait_type: "Type", value: "reward" },
+                                { trait_type: "Source", value: "Quest Reward" },
+                                { trait_type: "QuestID", value: quest.id },
+                                { trait_type: "TemplateID", value: quest.reward_nft_template_id },
+                            ],
+                        };
+
+                        console.log(`[QuestScan] Fallback: Minting new reward NFT to ${userWallet}`);
+                        const fallbackRes = await fetch(
+                            `https://${TW_ENGINE_URL}/contract/${CHAIN}/${fallbackContract}/erc1155/mint-to`,
+                            {
+                                method: "POST",
+                                headers: {
+                                    "Authorization": `Bearer ${TW_ACCESS_TOKEN}`,
+                                    "Content-Type": "application/json",
+                                    "x-backend-wallet-address": BACKEND_WALLET || "",
+                                },
+                                body: JSON.stringify({
+                                    receiver: userWallet,
+                                    metadataWithSupply: { metadata: fallbackMetadata, supply: "1" },
+                                }),
+                            }
+                        );
+
+                        if (fallbackRes.ok) {
+                            console.log("[QuestScan] Fallback reward NFT minted successfully.");
+                            rewardMinted = true;
+                            const fbData = await fallbackRes.json();
+                            await supabase.from("mint_logs").insert({
+                                shopify_order_id: `quest-reward-${quest.id}-${Date.now()}`,
+                                product_name: `[Quest Reward] ${quest.title}`,
+                                status: "success",
+                                recipient_email: session.email || null,
+                                recipient_wallet: userWallet,
+                                transaction_hash: fbData.result?.queueId || null,
+                                contract_address: fallbackContract,
+                                template_id: quest.reward_nft_template_id,
+                            });
+                        } else {
+                            const errorText = await fallbackRes.text();
+                            console.error("[QuestScan] Fallback reward mint FAILED:", errorText);
+                        }
+                    } else {
                         const TW_ENGINE_URL = process.env.THIRDWEB_ENGINE_URL;
                         const TW_ACCESS_TOKEN = process.env.THIRDWEB_ENGINE_ACCESS_TOKEN;
                         const BACKEND_WALLET = process.env.THIRDWEB_ENGINE_BACKEND_WALLET;
