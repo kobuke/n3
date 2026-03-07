@@ -175,9 +175,16 @@ export async function POST(request: Request) {
         const isLastScan = (allLocations && allScans && allScans.length >= allLocations.length);
 
         const doMetadataUpdate = async (rawUri: string, tokenId: string, templateId: string) => {
-            console.log(`[QuestScan] Updating metadata for tokenId: ${tokenId}`);
+            console.log(`[QuestScan] Starting metadata update for tokenId: ${tokenId}...`);
             let metadataPayload: any = rawUri;
-            try { metadataPayload = JSON.parse(rawUri); } catch (e) { /* ignore */ }
+            try {
+                // If it's a JSON string, parse it. If it's a CID, keep it as is or wrap it.
+                if (rawUri.trim().startsWith('{')) {
+                    metadataPayload = JSON.parse(rawUri);
+                }
+            } catch (e) {
+                console.warn("[QuestScan] Metadata URI is not a JSON string, sending as raw value.");
+            }
 
             const { data: templateInfo } = await supabase.from('nft_templates').select('contract_address').eq('id', templateId).single();
             const contractAddress = templateInfo?.contract_address || process.env.NEXT_PUBLIC_COLLECTION_ID;
@@ -185,6 +192,8 @@ export async function POST(request: Request) {
             const TW_ENGINE_URL = process.env.THIRDWEB_ENGINE_URL;
             const TW_ACCESS_TOKEN = process.env.THIRDWEB_ENGINE_ACCESS_TOKEN;
             const CHAIN = process.env.NEXT_PUBLIC_CHAIN_NAME;
+
+            console.log(`[QuestScan] Requesting Engine update: Contract ${contractAddress}, Token ${tokenId}`);
 
             const res = await fetch(`https://${TW_ENGINE_URL}/contract/${CHAIN}/${contractAddress}/erc1155/metadata/update`, {
                 method: 'POST',
@@ -197,7 +206,15 @@ export async function POST(request: Request) {
                     "metadata": metadataPayload
                 })
             });
-            return res.ok;
+
+            if (res.ok) {
+                console.log("[QuestScan] NFT Metadata updated successfully on Engine.");
+                return true;
+            } else {
+                const errorText = await res.text();
+                console.error("[QuestScan] Thirdweb Engine Error (Metadata Update): ", errorText);
+                return false;
+            }
         };
 
         if (isLastScan) {
