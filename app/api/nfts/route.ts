@@ -59,8 +59,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ nfts: [] });
     }
 
-    // 3. 関連データの一括取得（使用ログ、譲渡、ミントログ、配布請求）
-    const [usagesResult, transfersResult, mintLogsResult, claimsResult] =
+    // 3. 関連データの一括取得（使用ログ、譲渡、ミントログ、配布請求、クエスト進行からのメタデータ）
+    const [usagesResult, transfersResult, mintLogsResult, claimsResult, questProgressResult] =
       await Promise.all([
         supabase
           .from("ticket_usages")
@@ -81,6 +81,11 @@ export async function GET(req: NextRequest) {
           .from("airdrop_claims")
           .select("template_id, created_at")
           .eq("wallet_address", walletAddress),
+        supabase
+          .from("user_quest_progress")
+          .select("quest_id, pending_metadata, quests(base_nft_template_id)")
+          .eq("user_wallet", walletAddress)
+          .not("pending_metadata", "is", null)
       ]);
 
     // 使用ログのMap化
@@ -114,6 +119,16 @@ export async function GET(req: NextRequest) {
       claimsMap.set(c.template_id, c.created_at);
     });
 
+    // pending_metadata のMap化 (Key: Template ID)
+    const pendingMetadataMap = new Map<string, any>();
+    questProgressResult.data?.forEach((qp) => {
+      const templateId = (qp.quests as any)?.base_nft_template_id;
+      if (templateId && qp.pending_metadata) {
+        // 最も新しい（もしくは任意の順番の）進行状況が上書きされる
+        pendingMetadataMap.set(templateId, qp.pending_metadata);
+      }
+    });
+
     // 4. ブロックチェーンからNFT取得＆ローカルデータのマージ
     const allNfts: any[] = [];
     for (const contractAddress of contractAddresses) {
@@ -129,10 +144,20 @@ export async function GET(req: NextRequest) {
           // 譲渡済みは非表示
           if (hiddenTokenIds.has(nftIdStr)) continue;
 
-          const metadata = nft.metadata || {};
+          let metadata = nft.metadata || {};
           let attributes = ((metadata as any).attributes || []).map(
             (a: any) => ({ ...a })
           );
+
+          const templateIdFromAttr = extractTemplateId(attributes);
+
+          // キャッシュ遅延対策: `user_quest_progress` に `pending_metadata` があれば優先的に使用（上書き）
+          if (templateIdFromAttr && pendingMetadataMap.has(templateIdFromAttr)) {
+            metadata = pendingMetadataMap.get(templateIdFromAttr);
+            attributes = ((metadata as any).attributes || []).map(
+              (a: any) => ({ ...a })
+            );
+          }
 
           // 使用ステータスのマージ
           const usageLog = usagesMap.get(

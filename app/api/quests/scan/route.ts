@@ -240,6 +240,19 @@ export async function POST(request: Request) {
 
             if (res.ok) {
                 console.log("[QuestScan] NFT Metadata updated successfully on Engine.");
+
+                // キャッシュ遅延対策: 一時的な最新メタデータをDBに保存し、UIで即時反映できるようにする
+                const { error: updateError } = await supabase
+                    .from('user_quest_progress')
+                    .update({ pending_metadata: mergedMetadata })
+                    .eq('quest_id', quest.id)
+                    .eq('location_id', location.id)
+                    .eq('user_wallet', userWallet);
+
+                if (updateError) {
+                    console.warn("[QuestScan] Failed to save pending_metadata to DB:", updateError);
+                }
+
                 return true;
             } else {
                 const errorText = await res.text();
