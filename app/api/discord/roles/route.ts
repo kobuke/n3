@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getGuildRoles } from "@/lib/discord";
+import { requireStaffAuth } from "@/lib/staff-auth";
 
 /**
  * GET /api/discord/roles
  * Returns available Discord roles from the guild + current role mappings from DB.
  */
 export async function GET(req: NextRequest) {
-    // Verify staff auth
-    const staffSecret = req.cookies.get("nanjo_staff_secret")?.value;
-    if (!staffSecret || staffSecret !== process.env.STAFF_SECRET) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const authError = await requireStaffAuth(req);
+    if (authError) return authError;
 
     try {
         // Fetch guild roles from Discord
@@ -50,10 +48,8 @@ export async function GET(req: NextRequest) {
  * Create or update a role mapping.
  */
 export async function POST(req: NextRequest) {
-    const staffSecret = req.cookies.get("nanjo_staff_secret")?.value;
-    if (!staffSecret || staffSecret !== process.env.STAFF_SECRET) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const authError = await requireStaffAuth(req);
+    if (authError) return authError;
 
     try {
         const body = await req.json();
@@ -106,10 +102,8 @@ export async function POST(req: NextRequest) {
  * Remove a role mapping.
  */
 export async function DELETE(req: NextRequest) {
-    const staffSecret = req.cookies.get("nanjo_staff_secret")?.value;
-    if (!staffSecret || staffSecret !== process.env.STAFF_SECRET) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const authError = await requireStaffAuth(req);
+    if (authError) return authError;
 
     try {
         const { id } = await req.json();

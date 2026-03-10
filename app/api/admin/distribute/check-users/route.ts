@@ -1,15 +1,12 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
-import { cookies } from 'next/headers'
+import { requireStaffAuth } from '@/lib/staff-auth'
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+    const authError = await requireStaffAuth(req);
+    if (authError) return authError;
+
     try {
-        const cookieStore = await cookies()
-        const staffSecret = cookieStore.get("nanjo_staff_secret")?.value
-
-        if (staffSecret !== process.env.STAFF_SECRET) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-        }
 
         const body = await req.json()
         const { emails } = body

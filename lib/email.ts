@@ -55,10 +55,10 @@ export async function sendNftDeliveryEmail({
                         <div class="message">
                             南城市「N3」NFTシステムをご利用いただきありがとうございます。<br><br>
                             ご購入いただいた <span class="highlight">「${nftName}」</span> のNFTが、お客様のウォレットへ配布されました。<br><br>
-                            下記のボタンよりマイページにログインして、取得したNFTをご確認ください。
+                            下記のボタンよりNFT一覧にアクセスして、取得したNFTをご確認ください。
                         </div>
                         <div class="btn-wrapper">
-                            <a href="${finalAppUrl}" class="btn">マイページで確認する</a>
+                            <a href="${finalAppUrl}/mypage/nfts" class="btn">確認する</a>
                         </div>
                         <div class="address-box">
                             受取ウォレット: ${recipientWallet}

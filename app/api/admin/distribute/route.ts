@@ -1,15 +1,13 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
-import { cookies } from 'next/headers'
+import { requireStaffAuth } from '@/lib/staff-auth'
+import { mintTo } from '@/lib/thirdweb'
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+    const authError = await requireStaffAuth(req);
+    if (authError) return authError;
+
     try {
-        const cookieStore = await cookies()
-        const staffSecret = cookieStore.get("nanjo_staff_secret")?.value
-
-        if (staffSecret !== process.env.STAFF_SECRET) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-        }
 
         const body = await req.json()
         const { templateId, emails } = body
@@ -67,33 +65,10 @@ export async function POST(req: Request) {
                 ],
             }
 
-            // Mint
+            // Mint via lib/thirdweb.ts
             const chain = process.env.NEXT_PUBLIC_CHAIN_NAME || "polygon"
-            const mintUrl = `https://${process.env.THIRDWEB_ENGINE_URL}/contract/${chain}/${contractAddress}/erc1155/mint-to`
-
             try {
-                const mintRes = await fetch(mintUrl, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${process.env.THIRDWEB_ENGINE_ACCESS_TOKEN}`,
-                        "x-backend-wallet-address": process.env.THIRDWEB_ENGINE_BACKEND_WALLET!,
-                    },
-                    body: JSON.stringify({
-                        receiver: recipientWallet,
-                        metadataWithSupply: {
-                            metadata: metadata,
-                            supply: "1",
-                        },
-                    }),
-                })
-
-                const mintData = await mintRes.json()
-
-                if (!mintRes.ok) {
-                    throw new Error(mintData.error?.message || "Mint engine failed")
-                }
-
+                const mintData = await mintTo(chain, contractAddress, recipientWallet, metadata)
                 const queueId = mintData.result?.queueId || null
                 let minedTokenId = null;
 
