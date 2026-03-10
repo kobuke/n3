@@ -28,11 +28,12 @@ import {
 import { Switch } from "@/components/admin/ui/switch"
 
 const TYPE_LABELS: Record<string, string> = {
-    ticket: "チケット・特典",
-    tour: "ツアーパス",
-    resident_card: "デジタル住民証",
-    artwork: "アート作品",
     certificate: "証明書",
+    more: "モア",
+    experience: "体験チケット",
+    asset: "デジタル資産",
+    art: "アート",
+    other: "その他",
 }
 
 export function TemplateList() {
@@ -53,7 +54,7 @@ export function TemplateList() {
     // Form State
     const [name, setName] = useState("")
     const [description, setDescription] = useState("")
-    const [type, setType] = useState("ticket")
+    const [type, setType] = useState("certificate")
     const [imageUrl, setImageUrl] = useState("")
     const [isTransferable, setIsTransferable] = useState(true)
     const [maxSupply, setMaxSupply] = useState("")
@@ -92,7 +93,7 @@ export function TemplateList() {
         setName("")
         setDescription("")
         setImageUrl("")
-        setType("ticket")
+        setType("certificate")
         setIsTransferable(true)
         setMaxSupply("")
         setIsInfinite(true)
@@ -265,11 +266,12 @@ export function TemplateList() {
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="ticket">チケット・特典</SelectItem>
-                                                <SelectItem value="tour">ツアーパス</SelectItem>
-                                                <SelectItem value="resident_card">デジタル住民証</SelectItem>
-                                                <SelectItem value="artwork">アート作品</SelectItem>
                                                 <SelectItem value="certificate">証明書</SelectItem>
+                                                <SelectItem value="more">モア</SelectItem>
+                                                <SelectItem value="experience">体験チケット</SelectItem>
+                                                <SelectItem value="asset">デジタル資産</SelectItem>
+                                                <SelectItem value="art">アート</SelectItem>
+                                                <SelectItem value="other">その他</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>

@@ -147,16 +147,44 @@ function MyPageContent() {
   const activities: any[] = activityData?.activities ?? [];
 
   const getCategory = (nft: any) => {
+    // 優先: attributesの中のType
+    const attributes = nft.metadata?.attributes || nft.attributes || [];
+    const typeAttr = attributes.find((a: any) => a.trait_type === "Type" || a.trait_type === "type");
+    if (typeAttr && typeAttr.value) {
+      const val = String(typeAttr.value).toLowerCase();
+      // 旧・新タイプからマッピング
+      if (val === "certificate" || val === "resident_card") return "certificate";
+      if (val === "more" || val === "ticket") return "more";
+      if (val === "experience" || val === "tour") return "experience";
+      if (val === "asset") return "asset";
+      if (val === "art" || val === "artwork") return "art";
+      if (val === "other" || val === "product") return "other";
+      if (["certificate", "more", "experience", "asset", "art", "other"].includes(val)) return val;
+    }
+
     const name = (nft.name || nft.metadata?.name || "").toLowerCase();
 
-    // 証明書・自身専用のSBT関連
-    if (name.includes("市民") || name.includes("証明") || name.includes("住民") || name.includes("アート") || name.includes("支援") || name.includes("ドネーション") || name.includes("名誉")) {
-      return "cert";
+    // 1. 証明書
+    if (name.includes("証明") || name.includes("住民") || name.includes("市民") || name.includes("名誉")) {
+      return "certificate";
     }
-    // チケット・通貨・特典系（譲渡可能）
-    if (name.includes("モア") || name.includes("チケット") || name.includes("おすそ分け") || name.includes("クーポン") || name.includes("セレモニー") || name.includes("観察") || name.includes("エイサー") || name.includes("泡盛")) {
-      return "ticket";
+    // 3. 体験チケット
+    if (name.includes("体験") || name.includes("ツアー") || name.includes("観察") || name.includes("エイサー")) {
+      return "experience";
     }
+    // 4. デジタル資産
+    if (name.includes("資産") || name.includes("オーナー") || name.includes("泡盛")) {
+      return "asset";
+    }
+    // 5. アート
+    if (name.includes("アート")) {
+      return "art";
+    }
+    // 2. モア (体験系以外のチケットなど)
+    if (name.includes("モア") || name.includes("チケット") || name.includes("おすそ分け") || name.includes("クーポン") || name.includes("セレモニー")) {
+      return "more";
+    }
+
     return "other";
   };
 
@@ -221,20 +249,44 @@ function MyPageContent() {
                 すべて {nfts.length > 0 && `(${nfts.length})`}
               </Button>
               <Button
-                variant={categoryFilter === "ticket" ? "default" : "outline"}
+                variant={categoryFilter === "certificate" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setCategoryFilter("ticket")}
+                onClick={() => setCategoryFilter("certificate")}
                 className="rounded-full text-xs h-8 whitespace-nowrap"
               >
-                チケット・特典
+                証明書
               </Button>
               <Button
-                variant={categoryFilter === "cert" ? "default" : "outline"}
+                variant={categoryFilter === "more" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setCategoryFilter("cert")}
+                onClick={() => setCategoryFilter("more")}
                 className="rounded-full text-xs h-8 whitespace-nowrap"
               >
-                証明書・アート
+                モア
+              </Button>
+              <Button
+                variant={categoryFilter === "experience" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCategoryFilter("experience")}
+                className="rounded-full text-xs h-8 whitespace-nowrap"
+              >
+                体験チケット
+              </Button>
+              <Button
+                variant={categoryFilter === "asset" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCategoryFilter("asset")}
+                className="rounded-full text-xs h-8 whitespace-nowrap"
+              >
+                デジタル資産
+              </Button>
+              <Button
+                variant={categoryFilter === "art" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCategoryFilter("art")}
+                className="rounded-full text-xs h-8 whitespace-nowrap"
+              >
+                アート
               </Button>
               <Button
                 variant={categoryFilter === "other" ? "default" : "outline"}
