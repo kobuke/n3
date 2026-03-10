@@ -42,16 +42,18 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 2. コントラクトアドレスの収集
+    // 2. コントラクトアドレスの収集 + テンプレート情報の一括取得
     const { data: templates } = await supabase
       .from("nft_templates")
-      .select("contract_address")
+      .select("id, contract_address, validity_days, shopify_product_url, is_transferable")
       .not("contract_address", "is", null)
       .not("contract_address", "eq", "");
 
     const contractAddresses = new Set<string>();
+    const templateMap = new Map<string, any>();
     templates?.forEach((t) => {
       if (t.contract_address) contractAddresses.add(t.contract_address);
+      templateMap.set(t.id, t);
     });
     const envCollection = process.env.NEXT_PUBLIC_COLLECTION_ID;
     if (envCollection) contractAddresses.add(envCollection);
@@ -107,13 +109,13 @@ export async function GET(req: NextRequest) {
       transfersResult.data?.map((t) => t.tokenid) || []
     );
 
-    // ミントログのMap化
-    const mintLogsMap = new Map<string, string>();
+    // ミントログのMap化（取得日 + テンプレートID）
+    const mintLogsMap = new Map<string, { created_at: string; template_id: string | null }>();
     mintLogsResult.data?.forEach((ml) => {
       if (ml.token_id && ml.contract_address) {
         mintLogsMap.set(
           `${ml.contract_address.toLowerCase()}-${ml.token_id}`,
-          ml.created_at
+          { created_at: ml.created_at, template_id: ml.template_id }
         );
       }
     });
@@ -157,9 +159,10 @@ export async function GET(req: NextRequest) {
           attributes = mergeUsageStatus(attributes, usageLog);
 
           // 取得日の照合（Webhookによりtoken_idが保存されるようになったため、正確に照合可能）
-          let acquiredAt = mintLogsMap.get(
-            `${contractAddress.toLowerCase()}-${nftIdStr}`
-          );
+          const mintLogKey = `${contractAddress.toLowerCase()}-${nftIdStr}`;
+          const mintLogEntry = mintLogsMap.get(mintLogKey);
+          let acquiredAt = mintLogEntry?.created_at;
+          const mintTemplateId = mintLogEntry?.template_id || null;
 
           if (!acquiredAt) {
             // mintLogsに存在しない場合（過去のデータ等）のフォールバックとして、
@@ -167,6 +170,25 @@ export async function GET(req: NextRequest) {
             const templateId = extractTemplateId(attributes);
             if (templateId) {
               acquiredAt = claimsMap.get(templateId);
+            }
+          }
+
+          // 有効期限の計算
+          let expiresAt: string | null = null;
+          let isExpired = false;
+          let shopifyProductUrl: string | null = null;
+
+          const resolvedTemplateId = mintTemplateId || extractTemplateId(attributes);
+          if (resolvedTemplateId) {
+            const tmpl = templateMap.get(resolvedTemplateId);
+            if (tmpl && tmpl.validity_days && acquiredAt) {
+              const expDate = new Date(acquiredAt);
+              expDate.setDate(expDate.getDate() + tmpl.validity_days);
+              expiresAt = expDate.toISOString();
+              isExpired = new Date() > expDate;
+            }
+            if (tmpl?.shopify_product_url) {
+              shopifyProductUrl = tmpl.shopify_product_url;
             }
           }
 
@@ -181,6 +203,9 @@ export async function GET(req: NextRequest) {
             description: (metadata as any).description || "",
             image: imageUrl,
             acquiredAt: acquiredAt || null,
+            expiresAt,
+            isExpired,
+            shopifyProductUrl,
             supply: (nft as any).supply
               ? Number((nft as any).supply)
               : (nft as any).quantityOwned

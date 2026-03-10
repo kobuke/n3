@@ -14,6 +14,8 @@ import {
   Calendar,
   LogIn,
   Send,
+  RefreshCw,
+  AlertTriangle,
 } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { BottomNav } from "@/components/bottom-nav";
@@ -138,6 +140,12 @@ function TicketDetailContent({
   const categoryLabel = typeAttr ? (TYPE_LABELS[typeAttr.value] ?? typeAttr.value) : null;
   const isMogiriAllowed = typeAttr && ["experience", "asset", "more", "体験チケット", "デジタル資産", "モア"].includes(typeAttr.value);
 
+  // 有効期限
+  const isExpired = nft?.isExpired === true;
+  const expiresAt = nft?.expiresAt;
+  const shopifyProductUrl = nft?.shopifyProductUrl;
+  const isInactive = isUsed || isExpired;
+
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const identifier = nft?.uuid || nftId;
 
@@ -206,12 +214,16 @@ function TicketDetailContent({
         {/* Status badge + acquired date */}
         <div className="flex flex-wrap items-center gap-2 mb-6">
           <div
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border ${isUsed
-              ? "bg-slate-100 text-slate-500 border-slate-200"
-              : "bg-primary/10 text-primary border-primary/20"
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border ${isExpired
+              ? "bg-amber-50 text-amber-600 border-amber-200"
+              : isUsed
+                ? "bg-slate-100 text-slate-500 border-slate-200"
+                : "bg-primary/10 text-primary border-primary/20"
               }`}
           >
-            {isUsed ? (
+            {isExpired ? (
+              <><AlertTriangle className="w-3.5 h-3.5" />有効期限切れ</>
+            ) : isUsed ? (
               <><CheckCircle2 className="w-3.5 h-3.5" />使用済み</>
             ) : (
               <><Clock className="w-3.5 h-3.5" />未使用 - 利用可能</>
@@ -227,10 +239,47 @@ function TicketDetailContent({
               })}
             </span>
           )}
+          {expiresAt && (
+            <span className={`flex items-center gap-1.5 text-xs ${isExpired ? "text-amber-500" : "text-slate-400"}`}>
+              <Calendar className="w-3.5 h-3.5" />
+              {isExpired ? "期限切れ: " : "有効期限: "}
+              {new Date(expiresAt).toLocaleDateString("ja-JP", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </span>
+          )}
         </div>
 
-        {/* Check-in / mogiri section — existing logic preserved */}
-        {!isUsed ? (
+        {/* Check-in / mogiri section */}
+        {isExpired ? (
+          /* 有効期限切れの場合: 更新ボタンを表示 */
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-8 text-center flex flex-col items-center gap-3 mb-5">
+            <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center">
+              <AlertTriangle className="w-7 h-7 text-amber-500" />
+            </div>
+            <p className="font-bold text-slate-700 text-base">このSBTの有効期限が切れています</p>
+            <p className="text-sm text-slate-500">
+              下のボタンから商品を再購入すると、有効期限が延長されます。
+            </p>
+            {shopifyProductUrl ? (
+              <a
+                href={shopifyProductUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 w-full"
+              >
+                <Button size="lg" className="w-full font-bold gap-2 bg-amber-500 hover:bg-amber-600">
+                  <RefreshCw className="w-4 h-4" />
+                  更新する
+                </Button>
+              </a>
+            ) : (
+              <p className="text-xs text-slate-400 mt-2">更新用のURLがまだ設定されていません。</p>
+            )}
+          </div>
+        ) : !isUsed ? (
           <>
             {isMogiriAllowed && (
               !showCheckin ? (

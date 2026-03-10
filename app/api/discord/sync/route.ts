@@ -54,6 +54,32 @@ export async function POST(req: NextRequest) {
             usages?.map((u: any) => `${u.contract_address.toLowerCase()}-${u.token_id}`) || []
         );
 
+        // 3c. Fetch mint logs for validity period checking
+        const { data: mintLogs } = await supabase
+            .from("mint_logs")
+            .select("token_id, contract_address, template_id, created_at")
+            .ilike("recipient_wallet", session.walletAddress)
+            .eq("status", "success");
+        const mintLogsMap = new Map<string, { template_id: string | null; created_at: string }>();
+        mintLogs?.forEach((ml: any) => {
+            if (ml.token_id && ml.contract_address) {
+                mintLogsMap.set(
+                    `${ml.contract_address.toLowerCase()}-${ml.token_id}`,
+                    { template_id: ml.template_id, created_at: ml.created_at }
+                );
+            }
+        });
+
+        // 3d. Fetch templates with validity_days
+        const { data: allTemplates } = await supabase
+            .from("nft_templates")
+            .select("id, validity_days")
+            .not("validity_days", "is", null);
+        const templateValidityMap = new Map<string, number>();
+        allTemplates?.forEach((t: any) => {
+            if (t.validity_days) templateValidityMap.set(t.id, t.validity_days);
+        });
+
         // 4. Calculate expected roles
         const expectedRoles = new Set<string>();
 
@@ -65,9 +91,20 @@ export async function POST(req: NextRequest) {
                 const nfts = await getNFTsForWallet(collection, session.walletAddress);
                 const validNfts = nfts.filter((nft: any) => {
                     const tokenIdStr = nft.id.toString();
+                    const tokenKey = `${collection.toLowerCase()}-${tokenIdStr}`;
                     // 除外: 譲渡済み OR 使用済み(もぎり済み)
                     if (hiddenTokenIds.has(tokenIdStr)) return false;
-                    if (usedTokenKeys.has(`${collection.toLowerCase()}-${tokenIdStr}`)) return false;
+                    if (usedTokenKeys.has(tokenKey)) return false;
+                    // 除外: 有効期限切れ
+                    const mintLog = mintLogsMap.get(tokenKey);
+                    if (mintLog?.template_id) {
+                        const validityDays = templateValidityMap.get(mintLog.template_id);
+                        if (validityDays) {
+                            const expDate = new Date(mintLog.created_at);
+                            expDate.setDate(expDate.getDate() + validityDays);
+                            if (new Date() > expDate) return false;
+                        }
+                    }
                     return true;
                 });
 

@@ -54,15 +54,23 @@ export async function POST(req: NextRequest) {
             const recipientWallet = userRecord.walletaddress
 
             // Prepare metadata
+            const mintedAt = new Date()
+            const metadataAttributes: any[] = [
+                { trait_type: "Type", value: templateData.type || "airdrop" },
+                { trait_type: "Source", value: "Manual Distribution" },
+                { trait_type: "TemplateID", value: templateId },
+            ]
+            if (templateData.validity_days) {
+                const exp = new Date(mintedAt)
+                exp.setDate(exp.getDate() + templateData.validity_days)
+                metadataAttributes.push({ trait_type: "Expires_At", value: exp.toISOString() })
+            }
+
             const metadata = {
                 name: templateData.name,
                 description: templateData.description || "Minted via Staff Airdrop",
                 image: templateData.image_url || undefined,
-                attributes: [
-                    { trait_type: "Type", value: templateData.type || "airdrop" },
-                    { trait_type: "Source", value: "Manual Distribution" },
-                    { trait_type: "TemplateID", value: templateId },
-                ],
+                attributes: metadataAttributes,
             }
 
             // Mint via lib/thirdweb.ts

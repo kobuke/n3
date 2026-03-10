@@ -59,6 +59,8 @@ export function TemplateList() {
     const [isTransferable, setIsTransferable] = useState(true)
     const [maxSupply, setMaxSupply] = useState("")
     const [isInfinite, setIsInfinite] = useState(true)
+    const [validityDays, setValidityDays] = useState("")
+    const [shopifyProductUrl, setShopifyProductUrl] = useState("")
 
     // QR State
     const [qrTemplate, setQrTemplate] = useState<any>(null)
@@ -97,6 +99,8 @@ export function TemplateList() {
         setIsTransferable(true)
         setMaxSupply("")
         setIsInfinite(true)
+        setValidityDays("")
+        setShopifyProductUrl("")
     }
 
     function handleEdit(t: any, e: React.MouseEvent) {
@@ -110,6 +114,8 @@ export function TemplateList() {
         setIsTransferable(t.is_transferable)
         setMaxSupply(t.max_supply ? t.max_supply.toString() : "")
         setIsInfinite(t.max_supply === null)
+        setValidityDays(t.validity_days ? t.validity_days.toString() : "")
+        setShopifyProductUrl(t.shopify_product_url || "")
         setIsDialogOpen(true)
     }
 
@@ -129,7 +135,9 @@ export function TemplateList() {
                     type,
                     is_transferable: isTransferable,
                     contract_address: process.env.NEXT_PUBLIC_COLLECTION_ID || "",
-                    max_supply: isInfinite ? null : maxSupply
+                    max_supply: isInfinite ? null : maxSupply,
+                    validity_days: !isTransferable && validityDays ? validityDays : null,
+                    shopify_product_url: !isTransferable && shopifyProductUrl ? shopifyProductUrl : null,
                 })
             })
 
@@ -371,6 +379,35 @@ export function TemplateList() {
                                             </Label>
                                         </div>
                                     </div>
+
+                                    {/* SBT専用: 有効期限 & Shopify更新URL */}
+                                    {!isTransferable && (
+                                        <div className="flex flex-col gap-4 mt-2 border-t pt-4">
+                                            <div className="flex flex-col gap-2">
+                                                <Label htmlFor="validityDays">有効期限（日数）</Label>
+                                                <Input
+                                                    id="validityDays"
+                                                    type="number"
+                                                    min="1"
+                                                    placeholder="例: 365（空欄 = 無期限）"
+                                                    value={validityDays}
+                                                    onChange={e => setValidityDays(e.target.value)}
+                                                />
+                                                <p className="text-[11px] text-muted-foreground">配布日から起算。空欄の場合は無期限です。</p>
+                                            </div>
+                                            <div className="flex flex-col gap-2">
+                                                <Label htmlFor="shopifyUrl">更新購入用Shopify URL</Label>
+                                                <Input
+                                                    id="shopifyUrl"
+                                                    type="url"
+                                                    placeholder="https://your-shop.myshopify.com/products/..."
+                                                    value={shopifyProductUrl}
+                                                    onChange={e => setShopifyProductUrl(e.target.value)}
+                                                />
+                                                <p className="text-[11px] text-muted-foreground">期限切れ時に「更新する」ボタンから遷移する先です。</p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

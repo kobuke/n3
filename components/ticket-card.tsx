@@ -17,6 +17,8 @@ interface TicketCardProps {
   attributes?: NFTAttribute[];
   contractAddress?: string;
   acquiredAt?: string;
+  expiresAt?: string | null;
+  isExpired?: boolean;
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -42,10 +44,13 @@ export function TicketCard({
   attributes = [],
   contractAddress,
   acquiredAt,
+  expiresAt,
+  isExpired = false,
 }: TicketCardProps) {
   const statusAttr = attributes.find((a) => a.trait_type === "Status");
   const status = statusAttr?.value ?? "Unused";
   const isUsed = status === "Used";
+  const isInactive = isUsed || isExpired;
   const usedAt = attributes.find((a) => a.trait_type === "Used_At")?.value;
   const typeAttr = attributes.find((a) => a.trait_type === "Type" || a.trait_type === "type");
 
@@ -70,7 +75,7 @@ export function TicketCard({
   return (
     <Link href={href} className="flex flex-col gap-3 group">
       <div
-        className={`relative p-1.5 bg-gradient-to-br from-[#1392ec] to-[#a5d8ff] rounded-[1.1rem] shadow-lg shadow-[#1392ec]/5 group-hover:shadow-[#1392ec]/20 transition-all ${isUsed ? "opacity-75 grayscale-[0.3]" : ""
+        className={`relative p-1.5 bg-gradient-to-br from-[#1392ec] to-[#a5d8ff] rounded-[1.1rem] shadow-lg shadow-[#1392ec]/5 group-hover:shadow-[#1392ec]/20 transition-all ${isInactive ? "opacity-75 grayscale-[0.3]" : ""
           }`}
       >
         <div className="w-full aspect-square relative rounded-lg overflow-hidden bg-slate-100">
@@ -79,7 +84,7 @@ export function TicketCard({
               src={image}
               alt={name}
               fill
-              className={`object-cover transition-transform duration-500 group-hover:scale-105 ${isUsed ? "grayscale" : ""
+              className={`object-cover transition-transform duration-500 group-hover:scale-105 ${isInactive ? "grayscale" : ""
                 }`}
               sizes="(max-width: 600px) 100vw, 600px"
               unoptimized
@@ -94,7 +99,9 @@ export function TicketCard({
       <div className="px-1">
         <div className="flex justify-between items-start mb-1 gap-1">
           <p className="text-slate-900 text-sm font-bold truncate">{name}</p>
-          {isUsed ? (
+          {isExpired ? (
+            <span className="shrink-0 bg-amber-100 text-amber-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">期限切れ</span>
+          ) : isUsed ? (
             <span className="shrink-0 bg-slate-100 text-slate-500 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">使用済み</span>
           ) : (
             <span className="shrink-0 bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">有効</span>

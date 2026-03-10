@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getNFTById } from "@/lib/thirdweb";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getSession } from "@/lib/session";
-import { resolveIpfsUrl, mergeUsageStatus, computeDynamicMetadata } from "@/lib/nft-helpers";
+import { resolveIpfsUrl, mergeUsageStatus, computeDynamicMetadata, extractTemplateId } from "@/lib/nft-helpers";
 
 export async function GET(
   _req: NextRequest,
@@ -89,20 +89,40 @@ export async function GET(
       },
     };
 
-    // 3. 取得日の照合（ログインユーザーのミントログから）
+    // 4. 取得日・有効期限の照合（ログインユーザーのミントログから）
     if (walletAddress) {
       const { data: mintLog } = await supabase
         .from("mint_logs")
-        .select("created_at")
+        .select("created_at, template_id")
         .eq("token_id", nftId)
         .ilike("contract_address", contractAddress)
         .ilike("recipient_wallet", walletAddress)
         .eq("status", "success")
-        .order("created_at", { ascending: true })
+        .order("created_at", { ascending: false })
         .maybeSingle();
 
       if (mintLog) {
         formattedNft.acquiredAt = mintLog.created_at;
+
+        // 有効期限の計算
+        const resolvedTemplateId = mintLog.template_id || extractTemplateId(attributes);
+        if (resolvedTemplateId) {
+          const { data: tmpl } = await supabase
+            .from("nft_templates")
+            .select("validity_days, shopify_product_url")
+            .eq("id", resolvedTemplateId)
+            .maybeSingle();
+
+          if (tmpl?.validity_days) {
+            const expDate = new Date(mintLog.created_at);
+            expDate.setDate(expDate.getDate() + tmpl.validity_days);
+            formattedNft.expiresAt = expDate.toISOString();
+            formattedNft.isExpired = new Date() > expDate;
+          }
+          if (tmpl?.shopify_product_url) {
+            formattedNft.shopifyProductUrl = tmpl.shopify_product_url;
+          }
+        }
       }
     }
 

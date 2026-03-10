@@ -51,6 +51,32 @@ export async function mintTo(
 }
 
 /**
+ * Update on-chain metadata for an existing ERC1155 token via thirdweb Engine
+ */
+export async function updateTokenMetadata(
+  chain: string,
+  contractAddress: string,
+  tokenId: string,
+  metadata: any
+) {
+  const url = `https://${ENGINE_URL}/contract/${chain}/${contractAddress}/erc1155/token/${tokenId}/metadata`;
+
+  const res = await fetch(url, {
+    method: "PUT",
+    headers,
+    body: JSON.stringify({ metadata }),
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error(`[thirdweb Engine Metadata Update Error] Status: ${res.status}, Response: ${errorText}`);
+    throw new Error(`Engine metadata update error: ${res.status} ${errorText}`);
+  }
+
+  return res.json();
+}
+
+/**
  * Transfer NFT via thirdweb Engine (Backend Wallet)
  * Used mainly for Escrow transfer (Backend Wallet -> Claimer)
  */

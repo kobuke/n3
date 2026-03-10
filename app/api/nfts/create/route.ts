@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server'
 export async function POST(request: Request) {
     try {
         const payload = await request.json()
-        const { id, name, description, image_url, type, is_transferable, contract_address, max_supply } = payload
+        const { id, name, description, image_url, type, is_transferable, contract_address, max_supply, validity_days, shopify_product_url } = payload
 
         if (!name || !type) {
             return NextResponse.json({ error: 'Name and type are required' }, { status: 400 })
@@ -18,7 +18,9 @@ export async function POST(request: Request) {
             type,
             is_transferable,
             contract_address,
-            max_supply: max_supply === '' || max_supply === null ? null : parseInt(max_supply)
+            max_supply: max_supply === '' || max_supply === null ? null : parseInt(max_supply),
+            validity_days: validity_days === '' || validity_days === null || validity_days === undefined ? null : parseInt(validity_days),
+            shopify_product_url: shopify_product_url || null,
         }
 
         if (id) {

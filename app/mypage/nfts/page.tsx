@@ -216,6 +216,8 @@ function MyNFTsContent() {
                                     attributes={meta.attributes ?? []}
                                     contractAddress={nft.contractAddress}
                                     acquiredAt={nft.acquiredAt}
+                                    expiresAt={nft.expiresAt}
+                                    isExpired={nft.isExpired}
                                 />
                             );
                         })}
