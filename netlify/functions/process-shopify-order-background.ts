@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { sendNftDeliveryEmail } from "../../lib/email";
 import { mintTo, updateTokenMetadata } from "../../lib/thirdweb";
 import { buildMintLogEntry } from "../../lib/nft-helpers";
+import { computeMintExpiresAt } from "../../lib/sbt";
 
 const handler: Handler = async (event) => {
     console.log("[BG] process-shopify-order-background invoked");
@@ -244,13 +245,7 @@ const handler: Handler = async (event) => {
             try {
                 // 有効期限の計算（SBTテンプレートで validity_days が設定されている場合）
                 const mintedAt = new Date();
-                const expiresAtStr = templateData?.validity_days
-                    ? (() => {
-                        const exp = new Date(mintedAt);
-                        exp.setDate(exp.getDate() + templateData.validity_days);
-                        return exp.toISOString();
-                    })()
-                    : undefined;
+                const expiresAtStr = computeMintExpiresAt(templateData?.validity_days, mintedAt);
 
                 const metadataAttributes: any[] = [
                     { trait_type: "Type", value: templateData?.type || "product" },

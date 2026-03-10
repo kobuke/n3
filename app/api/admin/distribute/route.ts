@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireStaffAuth } from '@/lib/staff-auth'
 import { mintTo } from '@/lib/thirdweb'
+import { computeMintExpiresAt } from '@/lib/sbt'
 
 export async function POST(req: NextRequest) {
     const authError = await requireStaffAuth(req);
@@ -60,10 +61,9 @@ export async function POST(req: NextRequest) {
                 { trait_type: "Source", value: "Manual Distribution" },
                 { trait_type: "TemplateID", value: templateId },
             ]
-            if (templateData.validity_days) {
-                const exp = new Date(mintedAt)
-                exp.setDate(exp.getDate() + templateData.validity_days)
-                metadataAttributes.push({ trait_type: "Expires_At", value: exp.toISOString() })
+            const expiresAtStr = computeMintExpiresAt(templateData.validity_days, mintedAt)
+            if (expiresAtStr) {
+                metadataAttributes.push({ trait_type: "Expires_At", value: expiresAtStr })
             }
 
             const metadata = {

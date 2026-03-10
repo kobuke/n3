@@ -3,6 +3,7 @@ import { getNFTById } from "@/lib/thirdweb";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getSession } from "@/lib/session";
 import { resolveIpfsUrl, mergeUsageStatus, computeDynamicMetadata, extractTemplateId } from "@/lib/nft-helpers";
+import { computeExpiryInfo } from "@/lib/sbt";
 
 export async function GET(
   _req: NextRequest,
@@ -113,15 +114,10 @@ export async function GET(
             .eq("id", resolvedTemplateId)
             .maybeSingle();
 
-          if (tmpl?.validity_days) {
-            const expDate = new Date(mintLog.created_at);
-            expDate.setDate(expDate.getDate() + tmpl.validity_days);
-            formattedNft.expiresAt = expDate.toISOString();
-            formattedNft.isExpired = new Date() > expDate;
-          }
-          if (tmpl?.shopify_product_url) {
-            formattedNft.shopifyProductUrl = tmpl.shopify_product_url;
-          }
+          const { expiresAt, isExpired, shopifyProductUrl } = computeExpiryInfo(mintLog.created_at, tmpl);
+          if (expiresAt) formattedNft.expiresAt = expiresAt;
+          if (isExpired) formattedNft.isExpired = isExpired;
+          if (shopifyProductUrl) formattedNft.shopifyProductUrl = shopifyProductUrl;
         }
       }
     }

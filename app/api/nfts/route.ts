@@ -8,6 +8,7 @@ import {
   extractTemplateId,
   computeDynamicMetadata
 } from "@/lib/nft-helpers";
+import { computeExpiryInfo } from "@/lib/sbt";
 
 export const dynamic = "force-dynamic";
 
@@ -174,23 +175,9 @@ export async function GET(req: NextRequest) {
           }
 
           // 有効期限の計算
-          let expiresAt: string | null = null;
-          let isExpired = false;
-          let shopifyProductUrl: string | null = null;
-
           const resolvedTemplateId = mintTemplateId || extractTemplateId(attributes);
-          if (resolvedTemplateId) {
-            const tmpl = templateMap.get(resolvedTemplateId);
-            if (tmpl && tmpl.validity_days && acquiredAt) {
-              const expDate = new Date(acquiredAt);
-              expDate.setDate(expDate.getDate() + tmpl.validity_days);
-              expiresAt = expDate.toISOString();
-              isExpired = new Date() > expDate;
-            }
-            if (tmpl?.shopify_product_url) {
-              shopifyProductUrl = tmpl.shopify_product_url;
-            }
-          }
+          const tmpl = resolvedTemplateId ? templateMap.get(resolvedTemplateId) : null;
+          const { expiresAt, isExpired, shopifyProductUrl } = computeExpiryInfo(acquiredAt, tmpl);
 
           const imageUrl = resolveIpfsUrl((metadata as any).image);
 
