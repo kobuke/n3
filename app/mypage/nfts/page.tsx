@@ -99,10 +99,16 @@ function MyNFTsContent() {
         return "other";
     };
 
-    const filteredNfts = nfts.filter((nft) => {
-        if (categoryFilter === "all") return true;
-        return getCategory(nft) === categoryFilter;
-    });
+    const filteredNfts = nfts
+        .filter((nft) => {
+            if (categoryFilter === "all") return true;
+            return getCategory(nft) === categoryFilter;
+        })
+        .sort((a: any, b: any) => {
+            const dateA = a.acquiredAt ? new Date(a.acquiredAt).getTime() : 0;
+            const dateB = b.acquiredAt ? new Date(b.acquiredAt).getTime() : 0;
+            return dateB - dateA; // 新しい順
+        });
 
     const handleRefresh = async () => {
         setIsRefreshing(true);
@@ -154,8 +160,16 @@ function MyNFTsContent() {
 
                 {/* Loading */}
                 {nftLoading && (
-                    <div className="flex flex-col gap-4">
-                        {[1, 2, 3].map((i) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}
+                    <div className="grid grid-cols-2 gap-4">
+                        {[1, 2, 3, 4].map((i) => (
+                            <div key={i} className="flex flex-col gap-3">
+                                <Skeleton className="w-full aspect-square rounded-[1.1rem]" />
+                                <div className="px-1">
+                                    <Skeleton className="h-4 w-3/4 mb-2" />
+                                    <Skeleton className="h-3 w-1/2" />
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 )}
 
@@ -188,7 +202,7 @@ function MyNFTsContent() {
 
                 {/* NFT List */}
                 {!nftLoading && !nftError && filteredNfts.length > 0 && (
-                    <div className="flex flex-col gap-3">
+                    <div className="grid grid-cols-2 gap-4">
                         {filteredNfts.map((nft: any) => {
                             const id = nft.id ?? nft.tokenId ?? nft.nftId;
                             const meta = nft.metadata ?? {};

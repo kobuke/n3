@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nanjo NFT Wallet - Collection</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1392ec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101a22",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .dot-grid {
+            background-image: radial-gradient(circle, #1392ec22 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .nft-frame {
+            position: relative;
+            padding: 4px;
+            background: linear-gradient(135deg, #1392ec 0%, #a5d8ff 100%);
+            border-radius: 1.1rem;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Subtle Dot Grid Background -->
+<div class="fixed inset-0 dot-grid pointer-events-none opacity-40"></div>
+<!-- Header Component -->
+<header class="sticky top-0 z-50 w-full bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-primary/10">
+<div class="flex items-center justify-between p-4 max-w-5xl mx-auto">
+<div class="flex items-center gap-3">
+<div class="bg-primary p-2 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-white">wallet</span>
+</div>
+<div>
+<h1 class="text-lg font-bold leading-tight tracking-tight">Nanjo Wallet</h1>
+<p class="text-[10px] font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">0x1234...5678</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 text-slate-600 dark:text-slate-400 hover:bg-primary/10 rounded-full transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-background-light"></span>
+</button>
+<button class="p-2 text-slate-600 dark:text-slate-400 hover:bg-primary/10 rounded-full transition-colors">
+<span class="material-symbols-outlined">logout</span>
+</button>
+</div>
+</div>
+</header>
+<main class="flex-1 w-full max-w-5xl mx-auto relative z-10">
+<!-- Filter Tabs -->
+<div class="px-4 pt-6">
+<div class="flex border-b border-primary/10 gap-8">
+<a class="flex flex-col items-center justify-center border-b-[3px] border-primary text-slate-900 dark:text-slate-100 pb-3 pt-2 group" href="#">
+<p class="text-sm font-bold tracking-wide">All</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-transparent text-slate-500 dark:text-slate-400 pb-3 pt-2 hover:text-primary transition-colors" href="#">
+<p class="text-sm font-bold tracking-wide">Tickets</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-transparent text-slate-500 dark:text-slate-400 pb-3 pt-2 hover:text-primary transition-colors" href="#">
+<p class="text-sm font-bold tracking-wide">Souvenirs</p>
+</a>
+</div>
+</div>
+<!-- NFT Grid -->
+<div class="grid grid-cols-2 gap-4 p-4 md:grid-cols-3 lg:grid-cols-4">
+<!-- NFT Card 1 -->
+<div class="flex flex-col gap-3 group">
+<div class="nft-frame shadow-lg shadow-primary/5 group-hover:shadow-primary/20 transition-all">
+<div class="w-full aspect-square bg-cover bg-center rounded-lg overflow-hidden" data-alt="Abstract vibrant digital beast portrait NFT" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDyscYeOssEaM8YNPBlid1hQxx-jt_D5yzIdx1-64UNFTQg3ICd6uu3O1w3gnUS0pgLUQCAUGiAvkkF_QzUSP3cJVpEAXoWpg5hzoY4ElixJiB1tuNcmDFqXZjMLGVKPPYqMdw4HfP3GvJnNyKmBrUioT5WvQuCpMRhH-ol02FkCE9AkM6jXYJscqjvWME5CVg9Y8GfAlAeSCcydwUhsr1qAlFrQGFB-mXd-OQTK51u9oWoRRtMetr05c4E-m8KfeJDqGh25sg7b3Q');">
+</div>
+</div>
+<div class="px-1">
+<div class="flex justify-between items-start mb-1">
+<p class="text-slate-900 dark:text-slate-100 text-sm font-bold truncate">Beast #5416</p>
+<span class="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Valid</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-[11px] font-medium">Minted: 2023-10-12</p>
+</div>
+</div>
+<!-- NFT Card 2 -->
+<div class="flex flex-col gap-3 group">
+<div class="nft-frame shadow-lg shadow-primary/5 group-hover:shadow-primary/20 transition-all">
+<div class="w-full aspect-square bg-cover bg-center rounded-lg overflow-hidden" data-alt="Cyberpunk character with glowing neon accents NFT" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD8oJrX62s2ZQTbMCSR4Rt5sjCICBhoWvbw44O0iTAwvBJOCFLb0z14ZIcLrKO4Knvj2W3p9eTF3u5qdXB2eqHFZ2D-2P7bNtt2WzrW9n7oQgaxn4SG_9O0ipy4Axr67WdeEpjMAgm9hltXgrrw9Nvjyl1L7b1GQZ8n-P3PNu7V26A5lcFjIaPpwchxVsV_bRG2tPL1n8TyRLCYQkooL6TMLk5rB-kaceNRAs9c3qsVupjzMt01BLJTGU1qCHRZ7teuIjyF1BvGXuA');">
+</div>
+</div>
+<div class="px-1">
+<div class="flex justify-between items-start mb-1">
+<p class="text-slate-900 dark:text-slate-100 text-sm font-bold truncate">Cyber Punk #102</p>
+<span class="bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-500 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Used</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-[11px] font-medium">Minted: 2023-09-05</p>
+</div>
+</div>
+<!-- NFT Card 3 -->
+<div class="flex flex-col gap-3 group">
+<div class="nft-frame shadow-lg shadow-primary/5 group-hover:shadow-primary/20 transition-all">
+<div class="w-full aspect-square bg-cover bg-center rounded-lg overflow-hidden" data-alt="Futuristic landscape with floating geometric shapes NFT" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAmBtRxsLWXozKuQTeXonllivrWc3xiYFnrUo3d2PEpIlsXWK7hzAVrcEciHjelPlKPQLSRk3f4qhjz-10SEylYdSL9FN06_GFN21lod_2VXSZVLjDbPQFh0fr2uZWTLYGYxurbeijP43ahjMkZp3TkcOhSOdeq7w8WoBchrbvIOiOSPDLiNqQXfwWmh_igfmlX_zVg63V7NuCn5PZ2ZfUinjFF7pP3I0dQ1MjSVoZy8-X0R73eQLtjwXrR20wi5zcYmjnHsPiv7ZM');">
+</div>
+</div>
+<div class="px-1">
+<div class="flex justify-between items-start mb-1">
+<p class="text-slate-900 dark:text-slate-100 text-sm font-bold truncate">Void Runner #99</p>
+<span class="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Valid</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-[11px] font-medium">Minted: 2023-11-20</p>
+</div>
+</div>
+<!-- NFT Card 4 -->
+<div class="flex flex-col gap-3 group">
+<div class="nft-frame shadow-lg shadow-primary/5 group-hover:shadow-primary/20 transition-all">
+<div class="w-full aspect-square bg-cover bg-center rounded-lg overflow-hidden" data-alt="Neon ethereal ghost figure in digital space NFT" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBA217Toba-7W8qoeJLKmvibM_HoTkFr98V3nGR2_wbCP2LPzVKPcQc6QBxmv8C09rcCYiBCanMZYYfR7RIXHdUUnNWDUMHUC9xVUXMxdVaJaG9L4L60kespeLyey6m44x_cqL7IuNmZBHEDlLZ0VvoHPPy7GgMnFwgKERNblAMfgWQps396MromsZMuqdtaJXg8P5t6sKpnPs428EE_HJqd5XeIu6TZhtF2ACntrKSe6sjOSCvtIb2lhdXR6pk19nDtCdZ-E3DqX8');">
+</div>
+</div>
+<div class="px-1">
+<div class="flex justify-between items-start mb-1">
+<p class="text-slate-900 dark:text-slate-100 text-sm font-bold truncate">Neon Ghost #44</p>
+<span class="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Valid</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-[11px] font-medium">Minted: 2023-08-15</p>
+</div>
+</div>
+<!-- NFT Card 5 -->
+<div class="flex flex-col gap-3 group">
+<div class="nft-frame shadow-lg shadow-primary/5 group-hover:shadow-primary/20 transition-all">
+<div class="w-full aspect-square bg-cover bg-center rounded-lg overflow-hidden" data-alt="Digital art of abstract cosmic shapes NFT" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDs5gDSmn72JhECWWQuk35RSm4ZM7V55DkceUy0cftdeMemVSi8rmc1Rzfn28MUZPLjqNULhpXvqX6c_1G4lCnPNNdO5G6_rCkFnb08tNZMgMFXErpT_Kus2i5MjM6uu-lN7Xr7jPn5ReE57t9TjpEOoN5Ju7ag8KOq_vvPPNEIWgi9Cl3_A9JW3tPwdp0NhE76qubyb3vEIcj0GjZFqs0pXKJHueEOJAp5Cjwg8IVvfoV6TNiGfI-8MI8U8OLTjwPWs-S5bVuxygY');">
+</div>
+</div>
+<div class="px-1">
+<div class="flex justify-between items-start mb-1">
+<p class="text-slate-900 dark:text-slate-100 text-sm font-bold truncate">Nova #882</p>
+<span class="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Valid</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-[11px] font-medium">Minted: 2024-01-02</p>
+</div>
+</div>
+<!-- NFT Card 6 -->
+<div class="flex flex-col gap-3 group">
+<div class="nft-frame shadow-lg shadow-primary/5 group-hover:shadow-primary/20 transition-all">
+<div class="w-full aspect-square bg-cover bg-center rounded-lg overflow-hidden" data-alt="Geometric diamond pattern in blue gradients NFT" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCmPo6wbFD5lQMCdS1RnQiYY2YZhUWs7GKKSiza2C2HWX6q5-Aicsgx7WDTD6S2ynI5pT1qMY655qnDkHV__V7WXesmJ_9-k-71T8UAtfTri1a1J54X8TUlvRnMms03B-pYelJjBBGi15PT18sO3JigC5OKUvkclm2fkugTOqZXi9X8i2CjB2ACiXcGT0s8VW025qGv7nBSW1opcaN6Nd0DwNxbwPwKcPPWDSvlSTdxTSSiBOCSBunUZQQmZOB2fpxPVA5VDgViaD8');">
+</div>
+</div>
+<div class="px-1">
+<div class="flex justify-between items-start mb-1">
+<p class="text-slate-900 dark:text-slate-100 text-sm font-bold truncate">Prism Ticket #01</p>
+<span class="bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-500 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Used</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-[11px] font-medium">Minted: 2023-12-12</p>
+</div>
+</div>
+</div>
+<div class="h-24"></div>
+</main>
+<!-- Bottom Navigation Component -->
+<nav class="fixed bottom-0 left-0 right-0 z-50 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-lg border-t border-primary/10">
+<div class="flex max-w-lg mx-auto h-20 items-stretch px-6">
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl">person</span>
+<span class="text-[10px] font-bold uppercase tracking-wider">My Page</span>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-primary relative" href="#">
+<div class="absolute -top-1 w-12 h-1 bg-primary rounded-full"></div>
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1">grid_view</span>
+<span class="text-[10px] font-bold uppercase tracking-wider">My NFTs</span>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl">shopping_bag</span>
+<span class="text-[10px] font-bold uppercase tracking-wider">Shop</span>
+</a>
+</div>
+</nav>
+</body></html>

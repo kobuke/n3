@@ -113,7 +113,7 @@ function TicketDetailContent({
   if (sessionLoading || nftLoading) {
     return (
       <div className="min-h-screen bg-slate-50">
-        <AppHeader title="NFT詳細" showBack />
+        <AppHeader title="NFT詳細" showBack onBack={() => router.push("/mypage/nfts")} />
         <div className="max-w-lg mx-auto px-4 py-6 flex flex-col items-center gap-6">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-64 w-full rounded-2xl" />
@@ -166,7 +166,7 @@ function TicketDetailContent({
       <AppHeader
         title="NFT詳細"
         showBack
-        onBack={() => router.push("/mypage")}
+        onBack={() => router.push("/mypage/nfts")}
       />
 
       <main className="max-w-lg mx-auto px-4 py-4">
@@ -207,8 +207,8 @@ function TicketDetailContent({
         <div className="flex flex-wrap items-center gap-2 mb-6">
           <div
             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border ${isUsed
-                ? "bg-slate-100 text-slate-500 border-slate-200"
-                : "bg-primary/10 text-primary border-primary/20"
+              ? "bg-slate-100 text-slate-500 border-slate-200"
+              : "bg-primary/10 text-primary border-primary/20"
               }`}
           >
             {isUsed ? (
