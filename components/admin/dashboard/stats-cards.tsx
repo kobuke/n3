@@ -96,14 +96,6 @@ export function StatsCards() {
               {stat.value}
             </div>
             <div className="mt-1 flex items-center gap-1 text-xs">
-              {/* 
-              {stat.trend === "up" ? (
-                <ArrowUpRight className="size-3 text-success" />
-              ) : (
-                <ArrowDownRight className="size-3 text-success" />
-              )}
-              <span className="font-medium text-success">{stat.change}</span>
-              */}
               <span className="text-muted-foreground">{stat.description}</span>
             </div>
           </CardContent>

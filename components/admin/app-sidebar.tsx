@@ -58,6 +58,11 @@ const navItems = [
     icon: Send,
   },
   {
+    title: "もぎり (配布済み管理)",
+    href: "/staff/issued",
+    icon: Ticket,
+  },
+  {
     title: "配布スポット",
     href: "/staff/spots",
     icon: MapPin,
