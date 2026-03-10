@@ -127,6 +127,7 @@ NFTチケットの保有確認・使用（QRコードスキャン）に加え、
 │   └── Web3Provider.tsx        # WalletConnect/AppKit設定
 ├── lib/
 │   ├── discord.ts              # Discord API (OAuth2, ギルド/ロール管理)
+│   ├── email.ts                # メール送信処理共通化 (Resend)
 │   ├── nft-helpers.ts          # NFT共通ヘルパー (IPFS変換, 属性マージ, ログ構築)
 │   ├── session.ts              # セッション管理 (Cookie)
 │   ├── shopify.ts              # Shopify Webhook HMAC検証
