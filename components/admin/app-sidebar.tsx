@@ -9,7 +9,6 @@ import {
   FileText,
   Settings,
   Hexagon,
-  ScanLine,
   LogOut,
   Shield,
   Send,
@@ -41,11 +40,6 @@ const navItems = [
     title: "ダッシュボード",
     href: "/staff/dashboard",
     icon: LayoutDashboard,
-  },
-  {
-    title: "QRスキャン",
-    href: "/staff/scan",
-    icon: ScanLine,
   },
   {
     title: "NFTテンプレート",

@@ -97,6 +97,13 @@ function MyPageContent() {
       .catch(() => { });
   }, [session?.authenticated]);
 
+  // Discordロールのバックグラウンド同期
+  useEffect(() => {
+    if (session?.authenticated && discordStatus?.linked) {
+      fetch("/api/discord/sync", { method: "POST" }).catch(console.error);
+    }
+  }, [session?.authenticated, discordStatus?.linked]);
+
   const {
     data: nftData,
     isLoading: nftLoading,

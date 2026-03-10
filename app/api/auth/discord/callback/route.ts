@@ -68,40 +68,20 @@ export async function GET(req: NextRequest) {
             { onConflict: "wallet_address" }
         );
 
-        // 5. Look up role mappings — which roles should this user get?
-        const { data: roleMappings } = await supabase
-            .from("discord_role_mappings")
-            .select("*")
-            .eq("is_active", true);
+        // 5. Add user to guild (without roles initially, Sync API will handle it on Mypage load)
+        const syncResult = await addUserToGuildWithRoles(
+            tokens.access_token,
+            discordUser.id,
+            []
+        );
 
-        const roleIds = (roleMappings || []).map((m: any) => m.discord_role_id);
-
-        // 6. Add user to guild + assign roles
-        let syncResult = { status: 0, isNewMember: false };
-        if (roleIds.length > 0) {
-            syncResult = await addUserToGuildWithRoles(
-                tokens.access_token,
-                discordUser.id,
-                roleIds
-            );
-        } else {
-            // No role mappings configured, just add to guild without roles
-            syncResult = await addUserToGuildWithRoles(
-                tokens.access_token,
-                discordUser.id,
-                []
-            );
-        }
-
-        // 7. Log the sync
+        // 6. Log the join
         await supabase.from("discord_sync_logs").insert({
             discord_user_id: discordUser.id,
             wallet_address: walletAddress,
-            action: syncResult.isNewMember ? "guild_joined" : "role_added",
-            discord_role_id: roleIds.join(",") || null,
+            action: "guild_joined",
             details: {
                 username: discordUser.username,
-                roles_assigned: roleIds,
                 is_new_member: syncResult.isNewMember,
             },
         });

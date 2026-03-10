@@ -140,7 +140,6 @@ function TicketDetailContent({
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const identifier = nft?.uuid || nftId;
-  const qrValue = `${origin}/staff/scan?nftId=${identifier}&walletAddress=${session.walletAddress}${contract ? `&contract=${contract}` : ""}`;
 
   const ATTR_LABELS: Record<string, string> = {
     Status: "ステータス",
