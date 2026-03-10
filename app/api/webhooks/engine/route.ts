@@ -24,10 +24,13 @@ export async function POST(req: Request) {
         }
 
         const payload = JSON.parse(bodyText);
+        console.log(`[Engine Webhook] Received payload:`, JSON.stringify(payload));
+
+        const status = payload.status?.toLowerCase();
+        const queueId = payload.queueId;
 
         // Only process mined status (mint completed)
-        if (payload.status === 'mined') {
-            const queueId = payload.queueId;
+        if (status === 'mined') {
             const thirdwebTokenId = payload.result?.tokenId;
 
             if (queueId && thirdwebTokenId !== undefined && thirdwebTokenId !== null) {
