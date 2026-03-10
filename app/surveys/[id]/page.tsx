@@ -22,7 +22,7 @@ export default function SurveyPage({ params }: { params: Promise<{ id: string }>
     if (sessionLoading || !session?.authenticated) {
         return (
             <div className="min-h-screen bg-gray-50 flex flex-col">
-                <AppHeader />
+                <AppHeader showBack onBack={() => router.push("/mypage/notifications")} />
                 <main className="flex-1 flex justify-center items-center">
                     <span className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
                 </main>
@@ -32,7 +32,7 @@ export default function SurveyPage({ params }: { params: Promise<{ id: string }>
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
-            <AppHeader />
+            <AppHeader showBack onBack={() => router.push("/mypage/notifications")} />
             <main className="flex-1 py-6 px-4 sm:px-6">
                 <SurveyAnswerForm surveyId={unwrappedParams.id} />
             </main>
