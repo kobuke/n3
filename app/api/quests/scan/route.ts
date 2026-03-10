@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getSession } from '@/lib/session'
+import { computeDynamicMetadata } from '@/lib/nft-helpers'
 
 // Haversine formula to calculate distance between two coordinates in meters
 function getDistanceFromLatLonInM(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -112,33 +113,25 @@ export async function POST(request: Request) {
 
             // If multiple exists OR user hasn't selected yet, return choice to UI
             if (!targetTokenId) {
-                // pending_metadata を取得して、進化後の画像・名前を反映する
-                const { data: pendingRows } = await supabase
+                // ローカル情報の進行状況を取得して、NFTの見た目を動的に計算する
+                const { data: qpResult } = await supabase
                     .from('user_quest_progress')
-                    .select('pending_metadata')
+                    .select(`
+                        location_id, quest_id, 
+                        quests ( base_nft_template_id, clear_metadata_uri, quest_locations ( id, order_index, levelup_metadata_uri ) )
+                    `)
                     .eq('user_wallet', userWallet)
-                    .eq('quest_id', quest.id)
-                    .not('pending_metadata', 'is', null)
-                    .order('scanned_at', { ascending: false });
-
-                // TokenID -> pending_metadata のマップを作成
-                const pendingMap = new Map<string, any>();
-                pendingRows?.forEach(row => {
-                    const pm = row.pending_metadata as any;
-                    const tid = (pm?.attributes || []).find((a: any) => a.trait_type === 'LastUpdatedTokenID')?.value;
-                    if (tid && pm) pendingMap.set(tid, pm);
-                });
+                    .eq('quest_id', quest.id);
 
                 return NextResponse.json({
                     selectionRequired: true,
                     eligibleNfts: eligibleNfts.map(n => {
-                        const nftIdStr = n.id.toString();
-                        const pending = pendingMap.get(nftIdStr);
+                        const computed = computeDynamicMetadata(n.metadata, qpResult as any);
                         return {
-                            tokenId: nftIdStr,
-                            name: pending?.name || n.metadata.name,
-                            image: pending?.image || n.metadata.image,
-                            description: pending?.description || n.metadata.description
+                            tokenId: n.id.toString(),
+                            name: computed.name || n.metadata.name,
+                            image: computed.image || n.metadata.image,
+                            description: computed.description || n.metadata.description
                         };
                     })
                 });
@@ -263,19 +256,7 @@ export async function POST(request: Request) {
 
             if (res.ok) {
                 console.log("[QuestScan] NFT Metadata updated successfully on Engine.");
-
-                // キャッシュ遅延対策: 一時的な最新メタデータをDBに保存し、UIで即時反映できるようにする
-                const { error: updateError } = await supabase
-                    .from('user_quest_progress')
-                    .update({ pending_metadata: mergedMetadata })
-                    .eq('quest_id', quest.id)
-                    .eq('location_id', location.id)
-                    .eq('user_wallet', userWallet);
-
-                if (updateError) {
-                    console.warn("[QuestScan] Failed to save pending_metadata to DB:", updateError);
-                }
-
+                // DBの pending_metadata 書き込みは廃止。N3側は動的メタデータ計算を優先するため不要。
                 return true;
             } else {
                 const errorText = await res.text();

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getNFTById } from "@/lib/thirdweb";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getSession } from "@/lib/session";
-import { resolveIpfsUrl, mergeUsageStatus } from "@/lib/nft-helpers";
+import { resolveIpfsUrl, mergeUsageStatus, computeDynamicMetadata } from "@/lib/nft-helpers";
 
 export async function GET(
   _req: NextRequest,
@@ -39,26 +39,24 @@ export async function GET(
 
     const supabase = createAdminClient();
 
-    // 2. 超重要：キャッシュ遅延対策（オプティミスティック更新）
-    // Thirdwebのキャッシュが更新されるまでの間、Supabaseに保存した最新メタデータを優先する
+    // 2. 超重要：キャッシュ遅延対策（動的メタデータ計算）
+    // Thirdwebのキャッシュが更新されるまでの間、Supabaseに保存した最新のクエスト進行状況を優先する
     const { data: progressMetadata } = await supabase
       .from("user_quest_progress")
-      .select("pending_metadata")
-      .eq("user_wallet", walletAddress || "")
-      .not("pending_metadata", "is", null)
-      .order("scanned_at", { ascending: false });
+      .select(`
+        location_id,
+        quest_id,
+        quests (
+            base_nft_template_id,
+            clear_metadata_uri,
+            quest_locations ( id, order_index, levelup_metadata_uri )
+        )
+      `)
+      .eq("user_wallet", walletAddress || "");
 
     let finalMetadata = nft.metadata || {};
     if (progressMetadata && progressMetadata.length > 0) {
-      // 取得した進行状況の中から、このNFT（TokenID）に該当する更新データがあるか探す
-      for (const p of progressMetadata) {
-        const pending = p.pending_metadata as any;
-        const pendingTokenId = (pending?.attributes || []).find((a: any) => a.trait_type === "LastUpdatedTokenID")?.value;
-        if (pendingTokenId === nftId) {
-          finalMetadata = pending;
-          break;
-        }
-      }
+      finalMetadata = computeDynamicMetadata(finalMetadata, progressMetadata as any);
     }
 
     // 3. 使用ステータスの取得＆マージ
