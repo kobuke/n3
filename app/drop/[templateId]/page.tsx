@@ -112,14 +112,14 @@ export default function DropClaimPage({ params }: { params: Promise<{ templateId
                                 </div>
                                 <p className="text-sm text-muted-foreground leading-relaxed">
                                     デジタルチケットの受け取りが完了しました。<br />
-                                    マイページに表示されるまで、<br />
+                                    一覧に表示されるまで、<br />
                                     数十秒から数分かかる場合があります。
                                 </p>
                                 <Button
                                     className="w-full mt-2 text-base h-12"
-                                    onClick={() => router.push("/mypage")}
+                                    onClick={() => router.push("/mypage/nfts")}
                                 >
-                                    マイページで確認する
+                                    確認する
                                 </Button>
                             </div>
                         ) : (

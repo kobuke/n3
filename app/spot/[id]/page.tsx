@@ -150,14 +150,14 @@ export default function SpotDropPage({ params }: { params: Promise<{ id: string 
                                     <h3 className="font-bold text-xl">受け取り完了！</h3>
                                 </div>
                                 <p className="text-sm text-muted-foreground leading-relaxed">
-                                    マイページに表示されるまで、<br />
+                                    一覧に表示されるまで、<br />
                                     数十秒から数分かかる場合があります。
                                 </p>
                                 <Button
                                     className="w-full mt-2 text-base h-12"
-                                    onClick={() => router.push("/mypage")}
+                                    onClick={() => router.push("/mypage/nfts")}
                                 >
-                                    マイページで確認する
+                                    確認する
                                 </Button>
                             </div>
                         ) : (

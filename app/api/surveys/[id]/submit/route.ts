@@ -141,7 +141,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                         from: "N3 NFT System <updates@resend.nomadresort.jp>",
                         to: userEmail,
                         subject: `アンケートご回答完了＆NFT配布のお知らせ`,
-                        html: `<p>アンケートへのご協力ありがとうございました！</p><p>報酬のNFT（${templateData.name}）をあなたのウォレット（${userWallet}）へ配布しました。</p><p><a href="${appUrl}/mypage">マイページで確認する</a></p>`,
+                        html: `<p>アンケートへのご協力ありがとうございました！</p><p>報酬のNFT（${templateData.name}）をあなたのウォレット（${userWallet}）へ配布しました。</p><p><a href="${appUrl}/mypage/nfts">確認する</a></p>`,
                     })
 
                 } catch (mintError) {

@@ -14,6 +14,7 @@ function QuestScanInner() {
     const [status, setStatus] = useState<"idle" | "locating" | "selection" | "checking" | "success" | "error">("idle")
     const [message, setMessage] = useState("")
     const [gps, setGps] = useState<{ lat: number, lng: number } | null>(null)
+    const [checkedInTokenId, setCheckedInTokenId] = useState<string | null>(null)
     const [eligibleNfts, setEligibleNfts] = useState<any[]>([])
     const [requireNft, setRequireNft] = useState(false)
 
@@ -101,6 +102,7 @@ function QuestScanInner() {
             if (data.rewardMinted) successMsg += "\n🎁 追加の報酬NFTがウォレットに付与されました！"
 
             setMessage(successMsg)
+            if (tokenId) setCheckedInTokenId(tokenId)
 
         } catch (error) {
             setStatus("error")
@@ -184,8 +186,12 @@ function QuestScanInner() {
                     <p className="whitespace-pre-line font-bold text-lg text-green-800 bg-green-50 p-4 rounded-xl">
                         {message}
                     </p>
-                    <Button onClick={() => router.push("/mypage")} size="lg" className="w-full h-14 bg-green-600 hover:bg-green-700 text-lg font-bold rounded-xl shadow-lg">
-                        マイページで確認する
+                    <Button
+                        onClick={() => router.push(checkedInTokenId ? `/mypage/${checkedInTokenId}` : "/mypage/nfts")}
+                        size="lg"
+                        className="w-full h-14 bg-green-600 hover:bg-green-700 text-lg font-bold rounded-xl shadow-lg"
+                    >
+                        確認する
                     </Button>
                 </div>
             )}
@@ -212,8 +218,8 @@ function QuestScanInner() {
                                 もう一度試す
                             </Button>
                         )}
-                        <Button onClick={() => router.push("/mypage")} variant="ghost" className="w-full text-gray-500">
-                            マイページへ戻る
+                        <Button onClick={() => router.push("/mypage/nfts")} variant="ghost" className="w-full text-gray-500">
+                            一覧に戻る
                         </Button>
                     </div>
                 </div>
