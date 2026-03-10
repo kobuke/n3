@@ -1,20 +1,17 @@
-import { AppSidebar } from '@/components/admin/app-sidebar'
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { QuestLocationList } from '@/components/admin/quests/quest-location-list'
+import { PageHeader } from '@/components/admin/page-header'
 
 export default async function QuestLocationsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     return (
-        <SidebarProvider>
-            <div className="flex min-h-screen bg-gray-50 w-full">
-                <AppSidebar />
-                <main className="flex-1 p-8">
-                    <div className="flex items-center gap-4 mb-4">
-                        <SidebarTrigger />
-                    </div>
-                    <QuestLocationList questId={id} />
-                </main>
+        <div className="flex flex-col">
+            <PageHeader
+                title="チェックポイント(地点)管理"
+                description="クエストに含まれる各地点の設定とQRコードの発行を行います"
+            />
+            <div className="flex-1 p-6">
+                <QuestLocationList questId={id} />
             </div>
-        </SidebarProvider>
+        </div>
     )
 }

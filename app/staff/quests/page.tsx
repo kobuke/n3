@@ -1,20 +1,16 @@
-import { AppSidebar } from '@/components/admin/app-sidebar'
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { QuestList } from '@/components/admin/quests/quest-list'
+import { PageHeader } from '@/components/admin/page-header'
 
 export default function StaffQuestsPage() {
     return (
-        <SidebarProvider>
-            <div className="flex min-h-screen bg-gray-50 w-full">
-                <AppSidebar />
-                <main className="flex-1 p-8">
-                    <div className="flex items-center gap-4 mb-8">
-                        <SidebarTrigger />
-                        <h1 className="text-2xl font-bold">スタンプラリー（クエスト）管理</h1>
-                    </div>
-                    <QuestList />
-                </main>
+        <div className="flex flex-col">
+            <PageHeader
+                title="スタンプラリー（クエスト）管理"
+                description="ユーザーがQRをスキャンして回るクエストを作成・管理します"
+            />
+            <div className="flex-1 p-6">
+                <QuestList />
             </div>
-        </SidebarProvider>
+        </div>
     )
 }
