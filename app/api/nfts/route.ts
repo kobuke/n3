@@ -108,9 +108,6 @@ export async function GET(req: NextRequest) {
           ml.created_at
         );
       }
-      if (ml.template_id) {
-        mintLogsMap.set(`temp-${ml.template_id}`, ml.created_at);
-      }
     });
 
     // 配布請求のMap化
@@ -171,20 +168,17 @@ export async function GET(req: NextRequest) {
           );
           attributes = mergeUsageStatus(attributes, usageLog);
 
-          // 取得日の照合
-          // TODO: 【要改善】mint_logs の token_id が null のケースがある（Thirdweb Engine が非同期ミントのため）。
-          // 同じテンプレートのNFTを複数保有している場合、すべてに同一の取得日が表示されるリスクがある。
-          // 根本解決：Thirdweb Engine Webhook で token_id を後から書き込む仕組みを実装する。
+          // 取得日の照合（Webhookによりtoken_idが保存されるようになったため、正確に照合可能）
           let acquiredAt = mintLogsMap.get(
             `${contractAddress.toLowerCase()}-${nftIdStr}`
           );
 
           if (!acquiredAt) {
+            // mintLogsに存在しない場合（過去のデータ等）のフォールバックとして、
+            // airdrop_claims を参照するのみに留める
             const templateId = extractTemplateId(attributes);
             if (templateId) {
-              acquiredAt =
-                claimsMap.get(templateId) ||
-                mintLogsMap.get(`temp-${templateId}`);
+              acquiredAt = claimsMap.get(templateId);
             }
           }
 
