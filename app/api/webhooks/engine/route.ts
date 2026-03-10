@@ -31,7 +31,38 @@ export async function POST(req: Request) {
 
         // Only process mined status (mint completed)
         if (status === 'mined') {
-            const thirdwebTokenId = payload.result?.tokenId;
+            let thirdwebTokenId = payload.result?.tokenId;
+
+            if (queueId && thirdwebTokenId === undefined) {
+                // EngineからのWebhookペイロードに直接tokenIdが含まれていない場合、詳細を問い合わせる
+                console.log(`[Engine Webhook] TokenID missing in payload, fetching transaction details for queueId: ${queueId}`);
+                try {
+                    const engineUrl = process.env.THIRDWEB_ENGINE_URL;
+                    const accessToken = process.env.THIRDWEB_ENGINE_ACCESS_TOKEN;
+
+                    if (engineUrl && accessToken) {
+                        const urlStr = engineUrl.startsWith('http') ? engineUrl : `https://${engineUrl}`;
+                        const response = await fetch(`${urlStr}/transaction/status/${queueId}`, {
+                            headers: {
+                                "Authorization": `Bearer ${accessToken}`,
+                            }
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.result?.result?.tokenId !== undefined) {
+                                thirdwebTokenId = data.result.result.tokenId;
+                            } else if (data.result?.tokenId !== undefined) {
+                                thirdwebTokenId = data.result.tokenId;
+                            }
+                        } else {
+                            console.error(`[Engine Webhook] Failed to fetch transaction details: ${response.status}`);
+                        }
+                    }
+                } catch (err) {
+                    console.error('[Engine Webhook] Error fetching from Engine:', err);
+                }
+            }
 
             if (queueId && thirdwebTokenId !== undefined && thirdwebTokenId !== null) {
                 console.log(`[Engine Webhook] Process mined transaction: ${queueId}, parsed TokenID: ${thirdwebTokenId}`);
@@ -51,9 +82,13 @@ export async function POST(req: Request) {
                     console.log(`[Engine Webhook] Successfully updated mint_logs for queueId ${queueId} with token_id ${thirdwebTokenId}`);
                 }
             } else if (queueId) {
-                // If the transaction is mined but result does not include tokenId straight away, 
-                // we might need to query the engine or SDK for it as backup.
-                console.log(`[Engine Webhook] Mined transaction ${queueId} missing tokenId in payload. Engine might pass it differently depending on the contract call.`);
+                console.log(`[Engine Webhook] Mined transaction ${queueId} still missing tokenId after fallback fetch. Engine might pass it differently depending on the contract call.`);
+                // 成功ステータスのみ更新しておく
+                const supabase = createAdminClient();
+                await supabase
+                    .from('mint_logs')
+                    .update({ status: 'success' })
+                    .eq('transaction_hash', queueId);
             }
         } else if (payload.status === 'errored') {
             console.error(`[Engine Webhook] Transaction ${payload.queueId} errored: ${payload.errorMessage}`);
