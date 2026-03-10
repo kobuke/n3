@@ -31,72 +31,26 @@ export async function POST(req: Request) {
 
         // Only process mined status (mint completed)
         if (status === 'mined') {
-            let thirdwebTokenId = payload.result?.tokenId;
+            const thirdwebTokenId = await resolveTokenId(payload);
 
-            if (queueId && thirdwebTokenId === undefined) {
-                // EngineからのWebhookペイロードに直接tokenIdが含まれていない場合、詳細を問い合わせる
-                console.log(`[Engine Webhook] TokenID missing in payload, fetching transaction details for queueId: ${queueId}`);
-                try {
-                    const engineUrl = process.env.THIRDWEB_ENGINE_URL;
-                    const accessToken = process.env.THIRDWEB_ENGINE_ACCESS_TOKEN;
-
-                    if (engineUrl && accessToken) {
-                        const urlStr = engineUrl.startsWith('http') ? engineUrl : `https://${engineUrl}`;
-                        const response = await fetch(`${urlStr}/transaction/status/${queueId}`, {
-                            headers: {
-                                "Authorization": `Bearer ${accessToken}`,
-                            }
-                        });
-
-                        if (response.ok) {
-                            const data = await response.json();
-                            if (data.result?.result?.tokenId !== undefined) {
-                                thirdwebTokenId = data.result.result.tokenId;
-                            } else if (data.result?.tokenId !== undefined) {
-                                thirdwebTokenId = data.result.tokenId;
-                            }
-                        } else {
-                            console.error(`[Engine Webhook] Failed to fetch transaction details: ${response.status}`);
-                        }
-                    }
-                } catch (err) {
-                    console.error('[Engine Webhook] Error fetching from Engine:', err);
-                }
-            }
-
-            if (queueId && thirdwebTokenId !== undefined && thirdwebTokenId !== null) {
+            if (thirdwebTokenId !== undefined && thirdwebTokenId !== null) {
                 console.log(`[Engine Webhook] Process mined transaction: ${queueId}, parsed TokenID: ${thirdwebTokenId}`);
-                const supabase = createAdminClient();
-
-                const { error: updateError } = await supabase
-                    .from('mint_logs')
-                    .update({
-                        token_id: thirdwebTokenId.toString(),
-                        status: 'success'
-                    })
-                    .eq('transaction_hash', queueId);
-
-                if (updateError) {
-                    console.error('[Engine Webhook] Failed to update mint_logs:', updateError);
-                } else {
-                    console.log(`[Engine Webhook] Successfully updated mint_logs for queueId ${queueId} with token_id ${thirdwebTokenId}`);
-                }
-            } else if (queueId) {
-                console.log(`[Engine Webhook] Mined transaction ${queueId} still missing tokenId after fallback fetch. Engine might pass it differently depending on the contract call.`);
+                await updateMintLogWithRetry(queueId, {
+                    token_id: thirdwebTokenId.toString(),
+                    status: 'success'
+                });
+            } else {
+                console.log(`[Engine Webhook] Mined transaction ${queueId} still missing tokenId after fallback fetch.`);
                 // 成功ステータスのみ更新しておく
-                const supabase = createAdminClient();
-                await supabase
-                    .from('mint_logs')
-                    .update({ status: 'success' })
-                    .eq('transaction_hash', queueId);
+                await updateMintLogWithRetry(queueId, { status: 'success' });
             }
         } else if (payload.status === 'errored') {
-            console.error(`[Engine Webhook] Transaction ${payload.queueId} errored: ${payload.errorMessage}`);
+            console.error(`[Engine Webhook] Transaction ${queueId} errored: ${payload.errorMessage}`);
             const supabase = createAdminClient();
             await supabase
                 .from('mint_logs')
                 .update({ status: 'errored' })
-                .eq('transaction_hash', payload.queueId);
+                .eq('transaction_hash', queueId);
         }
 
         return NextResponse.json({ success: true });
@@ -104,4 +58,106 @@ export async function POST(req: Request) {
         console.error('[Engine Webhook] Error processing webhook:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
+}
+
+// ----------------------------------------------------------------------
+// Helper Functions
+// ----------------------------------------------------------------------
+
+/**
+ * ペイロードからtokenIdを取得する。ペイロードに無い場合はRPCに問い合わせて抽出する。
+ */
+async function resolveTokenId(payload: any): Promise<string | undefined> {
+    let tokenId = payload.result?.tokenId;
+
+    if (tokenId === undefined && payload.transactionHash && payload.chainId) {
+        console.log(`[Engine Webhook] TokenID missing in payload, getting receipt for tx: ${payload.transactionHash}`);
+        try {
+            const rpcUrl = `https://${payload.chainId}.rpc.thirdweb.com`;
+            const rpcResponse = await fetch(rpcUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    jsonrpc: "2.0",
+                    id: 1,
+                    method: "eth_getTransactionReceipt",
+                    params: [payload.transactionHash]
+                })
+            });
+
+            if (rpcResponse.ok) {
+                const rpcData = await rpcResponse.json();
+                const logs = rpcData.result?.logs || [];
+
+                // TransferSingle (ERC1155): 0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62
+                const transferSingleLog = logs.find((log: any) =>
+                    log.topics && log.topics[0] === "0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62"
+                );
+
+                if (transferSingleLog && transferSingleLog.data) {
+                    const dataBytes = transferSingleLog.data.replace('0x', '');
+                    if (dataBytes.length >= 64) {
+                        const idHex = dataBytes.slice(0, 64);
+                        tokenId = parseInt(idHex, 16).toString();
+                        console.log(`[Engine Webhook] Extracted tokenId ${tokenId} from TransferSingle event.`);
+                    }
+                }
+
+                // Transfer (ERC721/ERC20): 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+                if (tokenId === undefined) {
+                    const transferLog = logs.find((log: any) =>
+                        log.topics && log.topics[0] === "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+                    );
+                    if (transferLog && transferLog.topics && transferLog.topics.length >= 4) {
+                        tokenId = parseInt(transferLog.topics[3], 16).toString();
+                        console.log(`[Engine Webhook] Extracted tokenId ${tokenId} from Transfer event.`);
+                    }
+                }
+            } else {
+                console.error(`[Engine Webhook] Failed to fetch receipt: ${rpcResponse.status}`);
+            }
+        } catch (err) {
+            console.error('[Engine Webhook] Error fetching receipt from RPC:', err);
+        }
+    }
+
+    return tokenId;
+}
+
+/**
+ * DBへINSERTされるのを待ちながら、mint_logsを更新する
+ */
+async function updateMintLogWithRetry(queueId: string, updates: any) {
+    if (!queueId) return;
+
+    const supabase = createAdminClient();
+    const MAX_RETRIES = 5;
+    const WAIT_MS = 4000;
+
+    for (let i = 0; i < MAX_RETRIES; i++) {
+        const { data: checkData } = await supabase
+            .from('mint_logs')
+            .select('id')
+            .eq('transaction_hash', queueId)
+            .maybeSingle();
+
+        if (checkData) {
+            const { error: updateError } = await supabase
+                .from('mint_logs')
+                .update(updates)
+                .eq('transaction_hash', queueId);
+
+            if (updateError) {
+                console.error('[Engine Webhook] Failed to update mint_logs:', updateError);
+            } else {
+                console.log(`[Engine Webhook] Successfully updated mint_logs for queueId ${queueId} with ${JSON.stringify(updates)}`);
+            }
+            return; // 成功したので終了
+        }
+
+        console.log(`[Engine Webhook] DB row for queueId ${queueId} not found yet. Waiting... (${i + 1}/${MAX_RETRIES})`);
+        await new Promise(r => setTimeout(r, WAIT_MS));
+    }
+
+    console.log(`[Engine Webhook] Gave up waiting for db row queueId ${queueId}.`);
 }
