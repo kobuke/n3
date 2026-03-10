@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { User, Grid2X2, ShoppingBag } from "lucide-react";
 
-const SHOP_URL = "https://nanjo-nft-2.myshopify.com/";
+const SHOP_URL = `https://${process.env.NEXT_PUBLIC_SHOPIFY_SHOP_DOMAIN || 'nanjo-nft-2.myshopify.com'}`;
+
 
 const navItems = [
     {
