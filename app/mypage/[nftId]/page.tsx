@@ -136,6 +136,7 @@ function TicketDetailContent({
   const usedAt = attributes.find((a) => a.trait_type === "Used_At")?.value;
   const typeAttr = attributes.find((a) => a.trait_type === "Type" || a.trait_type === "type");
   const categoryLabel = typeAttr ? (TYPE_LABELS[typeAttr.value] ?? typeAttr.value) : null;
+  const isMogiriAllowed = typeAttr && ["experience", "asset", "more", "体験チケット", "デジタル資産", "モア"].includes(typeAttr.value);
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const identifier = nft?.uuid || nftId;
@@ -232,42 +233,41 @@ function TicketDetailContent({
         {/* Check-in / mogiri section — existing logic preserved */}
         {!isUsed ? (
           <>
-            {!showCheckin ? (
-              <div className="bg-white rounded-xl border border-slate-200 p-6 mb-5 flex flex-col items-center gap-3 shadow-sm">
-                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-1">
-                  <LogIn className="w-7 h-7 text-primary" />
+            {isMogiriAllowed && (
+              !showCheckin ? (
+                <div className="bg-white rounded-xl border border-slate-200 p-6 mb-5 flex flex-col items-center gap-3 shadow-sm">
+                  <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-1">
+                    <LogIn className="w-7 h-7 text-primary" />
+                  </div>
+                  <Button
+                    onClick={() => setShowCheckin(true)}
+                    size="lg"
+                    className="w-full font-bold mt-1 shadow-sm"
+                  >
+                    使用する
+                  </Button>
                 </div>
-                <p className="text-sm font-medium text-slate-700 text-center">
-                  会場入り口でチケットを提示して入場できます
-                </p>
-                <Button
-                  onClick={() => setShowCheckin(true)}
-                  size="lg"
-                  className="w-full font-bold mt-1 shadow-sm"
-                >
-                  チェックインする
-                </Button>
-              </div>
-            ) : (
-              <div className="mb-5 animate-in fade-in zoom-in-95 duration-300">
-                <CheckinMogiri
-                  nftId={nftId}
-                  contractAddress={contract || process.env.NEXT_PUBLIC_COLLECTION_ID || ""}
-                  walletAddress={session?.walletAddress || ""}
-                  onComplete={() => window.location.reload()}
-                  onCancel={() => setShowCheckin(false)}
-                />
-              </div>
+              ) : (
+                <div className="mb-5 animate-in fade-in zoom-in-95 duration-300">
+                  <CheckinMogiri
+                    nftId={nftId}
+                    contractAddress={contract || process.env.NEXT_PUBLIC_COLLECTION_ID || ""}
+                    walletAddress={session?.walletAddress || ""}
+                    onComplete={() => window.location.reload()}
+                    onCancel={() => setShowCheckin(false)}
+                  />
+                </div>
+              )
             )}
 
             {/* Transfer section */}
             <div className="bg-white rounded-xl border border-slate-200 p-5 mb-5 shadow-sm">
               <h3 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
                 <Send className="w-4 h-4 text-primary" />
-                チケットを譲渡する
+                譲渡する
               </h3>
               <p className="text-sm text-slate-400 mb-4">
-                専用リンクを発行して、他の人へチケットを譲渡できます。
+                専用リンクを発行して、他の人へ譲渡できます。
               </p>
 
               {transferLink ? (
