@@ -12,13 +12,13 @@ const navItems = [
         label: "マイページ",
         href: "/mypage",
         icon: User,
-        match: (p: string) => p === "/mypage" || p.startsWith("/mypage/notifications"),
+        match: (p: string) => p === "/mypage",
     },
     {
         label: "マイNFT",
-        href: "/mypage?tab=nfts",
+        href: "/mypage/nfts",
         icon: Grid2X2,
-        match: (p: string) => p.startsWith("/mypage/") && !p.startsWith("/mypage/notifications"),
+        match: (p: string) => p === "/mypage/nfts",
     },
 ];
 
