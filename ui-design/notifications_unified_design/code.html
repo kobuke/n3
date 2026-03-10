@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nanjo NFT Wallet - Notifications</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1392ec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101a22",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .dot-grid {
+            background-image: radial-gradient(circle, #cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(19, 146, 236, 0.1);
+        }
+        body {
+          min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+<div class="relative flex h-auto min-h-screen w-full max-w-md mx-auto flex-col dark:bg-slate-900 shadow-xl overflow-x-hidden dot-grid">
+<!-- Header -->
+<div class="flex items-center bg-white/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50 p-4 justify-between border-b border-slate-200 dark:border-slate-800">
+<div class="text-slate-900 dark:text-slate-100 flex size-10 shrink-0 items-center justify-center cursor-pointer">
+<span class="material-symbols-outlined">arrow_back</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">Notifications</h2>
+<div class="flex w-10 items-center justify-end">
+<button class="flex items-center justify-center rounded-full size-10 bg-primary/10 text-primary">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</div>
+</div>
+<!-- Filter Tabs -->
+<!-- Content -->
+<div class="flex-1 overflow-y-auto"><!-- Section: Recent -->
+<div class="px-4 mt-6">
+<div class="flex items-center justify-between mb-2">
+<h3 class="text-slate-900 dark:text-slate-100 text-base font-bold">Recent Activity</h3>
+<button class="text-primary text-xs font-bold uppercase tracking-wider">Mark all as read</button>
+</div>
+<div class="space-y-4">
+<!-- Notification Item 1 -->
+<div class="bg-white/80 dark:bg-background-dark/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex items-start gap-4">
+<div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-2xl">token</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<p class="text-slate-900 dark:text-slate-100 text-sm font-bold">NFT Minted</p>
+<p class="text-slate-400 text-[10px] font-bold uppercase tracking-wider">2M AGO</p>
+</div>
+<p class="text-slate-600 dark:text-slate-400 text-sm mt-1">Your 'Celestial Voyager #402' has been successfully minted.</p>
+</div>
+<div class="size-2 rounded-full bg-primary mt-2 shrink-0"></div>
+</div>
+<!-- Notification Item 2 -->
+<div class="bg-white/80 dark:bg-background-dark/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex items-start gap-4">
+<div class="size-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
+<span class="material-symbols-outlined text-2xl">confirmation_number</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<p class="text-slate-900 dark:text-slate-100 text-sm font-bold">Ticket Used</p>
+<p class="text-slate-400 text-[10px] font-bold uppercase tracking-wider">1H AGO</p>
+</div>
+<p class="text-slate-600 dark:text-slate-400 text-sm mt-1">You successfully entered the 'Web3 Summit' event.</p>
+</div>
+<div class="size-2 rounded-full bg-primary mt-2 shrink-0"></div>
+</div>
+</div>
+</div>
+<!-- Section: Earlier -->
+<div class="px-4 mt-8 pb-24">
+<h3 class="text-slate-900 dark:text-slate-100 text-base font-bold mb-4">Earlier</h3>
+<div class="space-y-4">
+<div class="bg-white/80 dark:bg-background-dark/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex items-start gap-4">
+<div class="size-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0">
+<span class="material-symbols-outlined text-2xl">local_offer</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<p class="text-slate-900 dark:text-slate-100 text-sm font-bold">Special Offer</p>
+<p class="text-slate-400 text-[10px] font-bold uppercase tracking-wider">YESTERDAY</p>
+</div>
+<p class="text-slate-600 dark:text-slate-400 text-sm mt-1">Get 20% off gas fees for your next transaction.</p>
+</div>
+</div>
+<div class="bg-white/80 dark:bg-background-dark/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex items-start gap-4">
+<div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-2xl">call_received</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<p class="text-slate-900 dark:text-slate-100 text-sm font-bold">NFT Received</p>
+<p class="text-slate-400 text-[10px] font-bold uppercase tracking-wider">JAN 24</p>
+</div>
+<p class="text-slate-600 dark:text-slate-400 text-sm mt-1">You received 'CryptoPunk #1282' from address 0x4f...91a2.</p>
+</div>
+</div>
+</div>
+<div class="p-8 text-center">
+<p class="text-slate-400 text-xs font-medium">That's all for now!</p>
+</div>
+</div></div>
+<!-- Optional: Action Button (Fixed Bottom Right) -->
+<div class="fixed bottom-6 right-6 lg:absolute">
+<button class="bg-primary text-white size-14 rounded-full shadow-lg shadow-primary/40 flex items-center justify-center hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-2xl">settings</span>
+</button>
+</div>
+</div>
+</body></html>

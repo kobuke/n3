@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Web3 NFT Wallet - My Page</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1392ec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101a22",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .dot-grid {
+            background-image: radial-gradient(circle, #cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(19, 146, 236, 0.1);
+        }
+        .nft-gradient {
+            background: linear-gradient(135deg, #1392ec 0%, #7dd3fc 50%, #1392ec 100%);
+            background-size: 200% 200%;
+        }
+        .glow-border {
+            position: relative;
+        }
+        .glow-border::after {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(45deg, #1392ec, #ffffff, #1392ec);
+            z-index: -1;
+            border-radius: 1.6rem;
+            opacity: 0.5;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark min-h-screen">
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden dot-grid">
+<!-- Header -->
+<div class="flex items-center bg-white/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50 p-4 justify-between border-b border-slate-200 dark:border-slate-800">
+<div class="text-slate-900 dark:text-slate-100 flex size-10 shrink-0 items-center justify-center cursor-pointer">
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">My Page</h2>
+<div class="flex w-10 items-center justify-end">
+<button class="flex items-center justify-center rounded-full size-10 bg-primary/10 text-primary">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto pb-24">
+<!-- Premium NFT Card Section -->
+<div class="p-4">
+<div class="glow-border">
+<div class="glass-card rounded-xl overflow-hidden flex flex-col items-stretch">
+<div class="relative w-full aspect-[4/3] bg-primary/5">
+<div class="absolute inset-0 nft-gradient opacity-20"></div>
+<div class="absolute inset-0 flex items-center justify-center p-8">
+<div class="w-full h-full rounded-lg bg-cover bg-center shadow-2xl border-2 border-white/50" data-alt="Futuristic 3D digital resident NFT avatar platinum style" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBIsWBocKOFJ-w-nFoQyw380OBt6RwoToghgHtoP1nifUC98B3z6IDfJNK3WQHzleBTH688S8YX01GCvh6QypTvACFsdGLncvdqUdiCm6fXP8IyuGJLU_fKCH8Di46qJVCnJc4BXzMMYo3N-PGWC0a6O1iW6Oey93eGmcXY4JsxCTZkvr4uSjxX4ygdMoUbzEcCp7FvxciUcKSPsu9SdS4_XVBXYpnEXlA_794K8SQH6PBGtiWVC2czcABDdGAkVTs5eldp-n4asl0");'>
+</div>
+</div>
+<div class="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold text-primary tracking-widest uppercase border border-primary/20">
+                                Platinum Status
+                            </div>
+</div>
+<div class="flex flex-col gap-3 p-6 bg-white/40">
+<div>
+<p class="text-primary text-xs font-bold tracking-[0.1em] uppercase">Web3 Identity</p>
+<h1 class="text-slate-900 dark:text-slate-100 text-2xl font-black leading-tight">Digital Resident NFT</h1>
+</div>
+<div class="flex items-center justify-between mt-2">
+<div class="flex -space-x-2">
+<div class="size-8 rounded-full border-2 border-white bg-slate-200 flex items-center justify-center overflow-hidden">
+<img class="size-full object-cover" data-alt="Small community member avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1I6J63dJluRy34XLXXN7YKjmqSFmz7lbAQsfurC68NBvVRHIvyvK2LPlVvFti94DMqE6vSsA0W0SbYA8VguzgT6CLT02wmovxk-QjHb9A3cQSprYFIHH-ef4EC7b1txAYrCfAKwbPvhc1GLmA9p9MbAWn_T1VZGqj7LJ46RcT4ksqdDuDDr78wPjkd5Jte1-vyugJum9bS_L69R1u0ywk8vNR0r5UFbG0nxSIHLCafQqAQm-dgTdwZTERHGnrOHmzEJ1wqmZroLI"/>
+</div>
+<div class="size-8 rounded-full border-2 border-white bg-slate-200 flex items-center justify-center overflow-hidden">
+<img class="size-full object-cover" data-alt="Small community member avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAOuUFhvQNgFTzGGo3Tsw6r1_WvfYTn-nqvR9Xe0WkAtN7qxuIlXcoOppslt2gYANNlKfxkm2aIEFxu2RrX5lC-A32_yEtsEsoYoA7aEIbkGN9F8sAjKF0uOi-VYbQKAF6ZbNthryrKcOCugrSDWojXbGW6UUPNghtcowZC_vNDptsdH0ucFAaFozNzcNiJ9Sa72Z_jx2_FHDbms7Y6wtxzn1CA7dm_MfBKaaaehLveF_mzDc4qymZGBImp5xH279ttVei6aAEOv4w"/>
+</div>
+<div class="size-8 rounded-full border-2 border-white bg-primary text-[10px] text-white flex items-center justify-center font-bold">
+                                        +2.4k
+                                    </div>
+</div>
+<button class="bg-primary text-white px-6 py-2 rounded-lg font-bold text-sm shadow-lg shadow-primary/20 active:scale-95 transition-transform">
+                                    View Details
+                                </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Asset Balance & Progress -->
+<div class="px-4 space-y-6 mt-4">
+<div class="bg-white/80 dark:bg-background-dark/50 p-5 rounded-xl border border-slate-200 dark:border-slate-800">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-slate-900 dark:text-slate-100 text-base font-bold">Asset Balance</h3>
+<span class="text-primary text-xs font-bold flex items-center gap-1 cursor-pointer">
+                            History <span class="material-symbols-outlined text-sm">chevron_right</span>
+</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-3xl">confirmation_number</span>
+</div>
+<div class="flex-1">
+<p class="text-slate-900 dark:text-slate-100 text-lg font-bold">12 NFT Tickets</p>
+<p class="text-slate-500 text-xs">Verified in wallet</p>
+</div>
+</div>
+</div>
+<div class="bg-white/80 dark:bg-background-dark/50 p-5 rounded-xl border border-slate-200 dark:border-slate-800">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-slate-900 dark:text-slate-100 text-base font-bold">Level Progress</h3>
+<span class="text-slate-500 text-xs font-medium">75% to Diamond</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-800 h-3 rounded-full overflow-hidden mb-2">
+<div class="h-full bg-primary rounded-full w-[75%] shadow-[0_0_10px_rgba(19,146,236,0.5)]"></div>
+</div>
+<div class="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-slate-400">
+<span>Platinum</span>
+<span class="text-primary">Diamond</span>
+</div>
+</div>
+</div>
+<!-- Community Access -->
+<div class="px-4 mt-8 pb-8">
+<h3 class="text-slate-900 dark:text-slate-100 text-base font-bold mb-4">Community Access</h3>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-white dark:bg-background-dark p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col items-center gap-2 cursor-pointer active:bg-slate-50">
+<div class="size-12 rounded-full bg-[#5865F2]/10 flex items-center justify-center text-[#5865F2]">
+<svg class="size-6" fill="currentColor" viewbox="0 0 24 24">
+<path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.196.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.086 2.157 2.419 0 1.334-.947 2.419-2.157 2.419zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.086 2.157 2.419 0 1.334-.946 2.419-2.157 2.419z"></path>
+</svg>
+</div>
+<p class="text-sm font-bold text-slate-800 dark:text-slate-200">Discord</p>
+</div>
+<div class="bg-white dark:bg-background-dark p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col items-center gap-2 cursor-pointer active:bg-slate-50">
+<div class="size-12 rounded-full bg-[#06C755]/10 flex items-center justify-center text-[#06C755]">
+<svg class="size-6" fill="currentColor" viewbox="0 0 24 24">
+<path d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 4.269 8.846 10.036 9.608.391.084.922.258 1.057.592.121.303.079.778.039 1.085l-.171 1.027c-.052.303-.242 1.186 1.039.647 1.281-.54 6.911-4.069 9.428-6.967 1.739-1.907 2.571-3.953 2.571-5.992z"></path>
+</svg>
+</div>
+<p class="text-sm font-bold text-slate-800 dark:text-slate-200">LINE</p>
+</div>
+</div>
+</div>
+<div class="px-4 pb-8">
+<button class="w-full py-3 px-4 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-50 active:scale-[0.98] transition-all">
+<span class="material-symbols-outlined text-lg">logout</span>
+        Logout
+    </button>
+</div>
+</div>
+<!-- Bottom Navigation Bar -->
+<div class="fixed bottom-0 left-0 right-0 flex gap-2 border-t border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-background-dark/90 backdrop-blur-lg px-4 pb-6 pt-2 z-50">
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined font-fill">person</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">My Page</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">grid_view</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">My NFTs</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">shopping_bag</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">Shop</p>
+</a>
+</div>
+</div>
+</body></html>

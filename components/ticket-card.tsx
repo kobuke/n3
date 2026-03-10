@@ -2,9 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Ticket, QrCode, CheckCircle2 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Ticket, CheckCircle2, Clock, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface NFTAttribute {
@@ -22,6 +20,21 @@ interface TicketCardProps {
   acquiredAt?: string;
 }
 
+const TYPE_LABELS: Record<string, string> = {
+  certificate: "証明書",
+  more: "モア",
+  experience: "体験チケット",
+  asset: "デジタル資産",
+  art: "アート",
+  other: "その他",
+  // 旧タイプの後方互換
+  ticket: "チケット",
+  tour: "ツアーパス",
+  resident_card: "デジタル住民証",
+  artwork: "アート作品",
+  product: "その他",
+};
+
 export function TicketCard({
   nftId,
   name,
@@ -35,8 +48,11 @@ export function TicketCard({
   const status = statusAttr?.value ?? "Unused";
   const isUsed = status === "Used";
   const usedAt = attributes.find((a) => a.trait_type === "Used_At")?.value;
+  const typeAttr = attributes.find((a) => a.trait_type === "Type" || a.trait_type === "type");
 
-  const href = contractAddress ? `/mypage/${nftId}?contract=${contractAddress}` : `/mypage/${nftId}`;
+  const href = contractAddress
+    ? `/mypage/${nftId}?contract=${contractAddress}`
+    : `/mypage/${nftId}`;
 
   const formatDate = (dateStr: string) => {
     try {
@@ -50,82 +66,94 @@ export function TicketCard({
     }
   };
 
+  const typeLabel = typeAttr ? (TYPE_LABELS[typeAttr.value] ?? typeAttr.value) : null;
+
   return (
     <Link href={href} className="block group">
-      <Card
-        className={`overflow-hidden transition-all duration-200 ${isUsed
-          ? "opacity-90 grayscale-[0.3] border-border/40 hover:opacity-100 hover:border-border/60 hover:shadow-sm"
-          : "shadow-md hover:shadow-lg hover:border-primary/20 hover:-translate-y-0.5 border-border/60"
+      <div
+        className={`rounded-xl overflow-hidden border bg-white transition-all duration-200 ${isUsed
+            ? "opacity-70 grayscale-[0.4] border-slate-100 shadow-sm"
+            : "border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5"
           }`}
       >
-        <CardContent className="p-0">
-          <div className="flex gap-4 p-4">
-            {/* Thumbnail */}
-            <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0 border border-border/10">
-              {image ? (
-                <Image
-                  src={image}
-                  alt={name}
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  sizes="96px"
-                  unoptimized
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Ticket className="w-8 h-8 text-muted-foreground/50" />
-                </div>
-              )}
+        {/* 16:9 Thumbnail */}
+        <div className="relative w-full aspect-[16/9] bg-slate-100">
+          {image ? (
+            <Image
+              src={image}
+              alt={name}
+              fill
+              className={`object-cover transition-transform duration-500 group-hover:scale-105 ${isUsed ? "grayscale" : ""
+                }`}
+              sizes="(max-width: 600px) 100vw, 600px"
+              unoptimized
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Ticket className="w-10 h-10 text-slate-300" />
             </div>
+          )}
+          {/* 使用状態バッジ */}
+          <div className="absolute top-2 right-2">
+            {isUsed ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+                <CheckCircle2 className="w-3 h-3" />
+                使用済み
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700">
+                <ShieldCheck className="w-3 h-3" />
+                有効
+              </span>
+            )}
+          </div>
+        </div>
 
-            {/* Content */}
-            <div className="flex flex-col flex-1 min-w-0 gap-1">
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="font-bold text-sm text-foreground truncate group-hover:text-primary transition-colors">
-                  {name}
-                </h3>
-                <Badge
-                  variant={isUsed ? "secondary" : "default"}
-                  className={`flex-shrink-0 text-[10px] px-2 h-5 ${isUsed
-                    ? "bg-muted text-muted-foreground border-border"
-                    : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
-                    }`}
-                >
-                  {isUsed ? "使用済み" : "未使用"}
-                </Badge>
-              </div>
-
+        {/* Content */}
+        <div className="flex flex-col gap-2 p-4">
+          <div className="flex items-start justify-between gap-2">
+            <div>
               {acquiredAt && (
-                <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                  <span>取得日:</span>
-                  <span>{formatDate(acquiredAt)}</span>
-                </div>
-              )}
-
-              {description && (
-                <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed mt-0.5">
-                  {description}
+                <p className="text-slate-400 text-[10px] font-medium uppercase tracking-wider mb-0.5">
+                  取得日: {formatDate(acquiredAt)}
                 </p>
               )}
-
-              <div className="mt-auto flex items-center justify-between pt-1">
-                {isUsed && usedAt ? (
-                  <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3 text-green-500/70" />
-                    <span>使用日: {formatDate(usedAt)}</span>
-                  </p>
-                ) : (
-                  <div className="flex items-center gap-1 text-[10px] font-medium text-primary">
-                    <QrCode className="w-3 h-3" />
-                    <span>決済/確認用QRを表示</span>
-                  </div>
-                )}
-              </div>
+              <h3 className="text-slate-900 text-base font-bold leading-tight">{name}</h3>
             </div>
+            {typeLabel && (
+              <span className="flex-shrink-0 text-[10px] font-medium text-slate-500 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5">
+                {typeLabel}
+              </span>
+            )}
           </div>
-        </CardContent>
-      </Card>
-    </Link>
 
+          <div className="flex items-center justify-between mt-1 pt-3 border-t border-slate-50">
+            <div className="flex items-center text-slate-500 text-xs">
+              {isUsed && usedAt ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-slate-400" />
+                  <span>使用日: {formatDate(usedAt)}</span>
+                </>
+              ) : (
+                <>
+                  <Clock className="w-3.5 h-3.5 mr-1 text-slate-400" />
+                  <span>未使用</span>
+                </>
+              )}
+            </div>
+            <Button
+              size="sm"
+              variant={isUsed ? "ghost" : "default"}
+              className={`h-8 text-xs px-3 ${isUsed
+                  ? "text-slate-500 bg-slate-100"
+                  : "bg-primary text-white shadow-sm shadow-primary/20"
+                }`}
+            >
+              詳細を見る
+            </Button>
+          </div>
+        </div>
+      </div>
+    </Link>
   );
 }

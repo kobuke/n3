@@ -1,0 +1,59 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { User, Grid2X2, ShoppingBag } from "lucide-react";
+
+const SHOP_URL = "https://nanjo-nft-2.myshopify.com/";
+
+const navItems = [
+    {
+        label: "マイページ",
+        href: "/mypage",
+        icon: User,
+        match: (p: string) => p === "/mypage" || p.startsWith("/mypage/notifications"),
+    },
+    {
+        label: "マイNFT",
+        href: "/mypage?tab=nfts",
+        icon: Grid2X2,
+        match: (p: string) => p.startsWith("/mypage/") && !p.startsWith("/mypage/notifications"),
+    },
+];
+
+export function BottomNav() {
+    const pathname = usePathname();
+
+    return (
+        <div className="fixed bottom-0 left-0 right-0 z-50 flex border-t border-slate-200 bg-white/90 backdrop-blur-lg px-4 pb-safe pt-2 max-w-lg mx-auto">
+            {navItems.map(({ label, href, icon: Icon, match }) => {
+                const isActive = match(pathname);
+                return (
+                    <Link
+                        key={label}
+                        href={href}
+                        className={`flex flex-1 flex-col items-center justify-center gap-1 py-1 transition-colors ${isActive ? "text-primary" : "text-slate-400 hover:text-slate-600"
+                            }`}
+                    >
+                        <Icon
+                            className="w-5 h-5"
+                            strokeWidth={isActive ? 2.5 : 1.8}
+                        />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
+                    </Link>
+                );
+            })}
+
+            {/* Shop — external link */}
+            <a
+                href={SHOP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-1 flex-col items-center justify-center gap-1 py-1 text-slate-400 hover:text-slate-600 transition-colors"
+            >
+                <ShoppingBag className="w-5 h-5" strokeWidth={1.8} />
+                <span className="text-[10px] font-bold uppercase tracking-wider">ショップ</span>
+            </a>
+        </div>
+    );
+}
