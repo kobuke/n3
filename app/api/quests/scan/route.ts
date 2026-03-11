@@ -298,11 +298,15 @@ export async function POST(request: Request) {
             console.log(`[QuestScan] reward_nft_template_id: ${quest.reward_nft_template_id}`);
             if (quest.reward_nft_template_id) {
                 try {
-                    const { data: rewardTemplate } = await supabase
+                    const { data: rewardTemplate, error: rewardErr } = await supabase
                         .from('nft_templates')
-                        .select('id, token_id, contract_address, name, description, image_url, type')
+                        .select('id, contract_address, name, description, image_url, type')
                         .eq('id', quest.reward_nft_template_id)
                         .single();
+
+                    if (rewardErr) {
+                        console.error("[QuestScan] Error fetching reward template:", rewardErr);
+                    }
 
                     if (!rewardTemplate) {
                         console.error(`[QuestScan] Reward template NOT FOUND in nft_templates! ID: ${quest.reward_nft_template_id}. Falling back to new mint.`);
@@ -368,9 +372,9 @@ export async function POST(request: Request) {
 
                         let rewardRes: Response;
 
-                        if (rewardTemplate.token_id !== null && rewardTemplate.token_id !== undefined) {
+                        if ((rewardTemplate as any).token_id !== null && (rewardTemplate as any).token_id !== undefined) {
                             // 既存トークンの追加サプライをミント（ユーザーに配布）
-                            console.log(`[QuestScan] Minting additional supply of token ${rewardTemplate.token_id} to ${userWallet}`);
+                            console.log(`[QuestScan] Minting additional supply of token ${(rewardTemplate as any).token_id} to ${userWallet}`);
                             rewardRes = await fetch(
                                 `https://${TW_ENGINE_URL}/contract/${CHAIN}/${rewardContractAddress}/erc1155/mint-additional-supply-to`,
                                 {
@@ -382,7 +386,7 @@ export async function POST(request: Request) {
                                     },
                                     body: JSON.stringify({
                                         receiver: userWallet,
-                                        tokenId: rewardTemplate.token_id.toString(),
+                                        tokenId: (rewardTemplate as any).token_id.toString(),
                                         additionalSupply: "1",
                                     }),
                                 }
@@ -437,7 +441,7 @@ export async function POST(request: Request) {
                                 transaction_hash: queueId,
                                 contract_address: rewardContractAddress,
                                 template_id: rewardTemplate.id,
-                                token_id: rewardTemplate.token_id?.toString() || null,
+                                token_id: (rewardTemplate as any).token_id?.toString() || null,
                             });
                         } else {
                             const errorText = await rewardRes.text();
