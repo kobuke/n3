@@ -41,15 +41,52 @@ const handler: Handler = async (event) => {
     // --- ウォレットアドレスの決定（注文につき1回のみ実行） ---
     let recipientWallet: string | null = null;
     const noteAttributes = payload.note_attributes || [];
-    const walletAttr = noteAttributes.find(
-        (attr: any) => attr.name?.toLowerCase() === "wallet_address"
-    );
+    console.log(`[BG] Order note_attributes: ${JSON.stringify(noteAttributes)}`);
 
-    if (walletAttr?.value) {
-        recipientWallet = walletAttr.value;
-        console.log(`[BG] Using wallet from order notes: ${recipientWallet}`);
-        
-        // Save or update the associated wallet for this email
+    let walletAttrValue: string | null = null;
+
+    // 1. note_attributes の中からウォレットアドレスらしきものを探す
+    if (Array.isArray(noteAttributes)) {
+        for (const attr of noteAttributes) {
+            const name = String(attr.name || "").toLowerCase();
+            const value = String(attr.value || "").trim();
+            if ((name.includes("wallet") || name.includes("ウォレット")) && value.length > 0) {
+                walletAttrValue = value;
+                break;
+            }
+            // 値の形式が0xで始まる42文字であれば無条件でウォレットとみなす
+            if (value.match(/^0x[a-fA-F0-9]{40}$/i)) {
+                walletAttrValue = value;
+                break;
+            }
+        }
+    }
+
+    // 2. もし見つからなければ、各商品のプロパティ(Line Item Properties)も探す
+    if (!walletAttrValue && Array.isArray(lineItems)) {
+        for (const item of lineItems) {
+            const properties = item.properties || [];
+            if (Array.isArray(properties)) {
+                for (const prop of properties) {
+                    const name = String(prop.name || "").toLowerCase();
+                    const value = String(prop.value || "").trim();
+                    if ((name.includes("wallet") || name.includes("ウォレット")) && value.length > 0) {
+                        walletAttrValue = value;
+                        break;
+                    }
+                    if (value.match(/^0x[a-fA-F0-9]{40}$/i)) {
+                        walletAttrValue = value;
+                        break;
+                    }
+                }
+            }
+            if (walletAttrValue) break;
+        }
+    }
+
+    if (walletAttrValue) {
+        recipientWallet = walletAttrValue;
+        console.log(`[BG] Using wallet from order notes/properties: ${recipientWallet}`);
         if (customerEmail) {
             const { error: upsertError } = await supabase.from("users").upsert(
                 { email: customerEmail, walletaddress: recipientWallet },
