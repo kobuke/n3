@@ -288,14 +288,7 @@ const handler: Handler = async (event) => {
                     console.log(`[BG] ✅ Mint SUCCESS for order ${orderId}, template ${templateId}`);
                 }
 
-                if (customerEmail) {
-                    const nftName = templateData?.name || productName;
-                    await sendNftDeliveryEmail({
-                        to: customerEmail,
-                        nftName,
-                        recipientWallet,
-                    });
-                }
+                // ✉️ メール送信はon-chain確定後（Engine Webhook）に行うため、ここでは送らない
             } catch (error: any) {
                 console.error("[BG] ❌ Minting FAILED:", error.message);
 

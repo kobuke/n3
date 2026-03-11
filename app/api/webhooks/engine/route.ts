@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createAdminClient } from '@/lib/supabase/server';
+import { sendNftDeliveryEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -151,6 +152,28 @@ async function updateMintLogWithRetry(queueId: string, updates: any) {
                 console.error('[Engine Webhook] Failed to update mint_logs:', updateError);
             } else {
                 console.log(`[Engine Webhook] Successfully updated mint_logs for queueId ${queueId} with ${JSON.stringify(updates)}`);
+
+                // ✉️ on-chain確定後にNFT配布完了メールを送信
+                // recipient_emailがある場合のみ（Shopify購入経由のmintに限定）
+                try {
+                    const { data: logRow } = await supabase
+                        .from('mint_logs')
+                        .select('recipient_email, product_name, recipient_wallet')
+                        .eq('transaction_hash', queueId)
+                        .maybeSingle();
+
+                    if (logRow?.recipient_email) {
+                        await sendNftDeliveryEmail({
+                            to: logRow.recipient_email,
+                            nftName: logRow.product_name || 'NFT',
+                            recipientWallet: logRow.recipient_wallet || '',
+                        });
+                        console.log(`[Engine Webhook] ✉️ Delivery email sent to ${logRow.recipient_email}`);
+                    }
+                } catch (emailError: any) {
+                    // メール送信失敗はログのみ（mint自体は成功しているので致命的ではない）
+                    console.error('[Engine Webhook] Failed to send delivery email:', emailError.message);
+                }
             }
             return; // 成功したので終了
         }
