@@ -34,8 +34,9 @@ CREATE TABLE IF NOT EXISTS public.user_quest_progress (
   quest_id uuid REFERENCES public.quests(id) ON DELETE CASCADE,
   location_id uuid REFERENCES public.quest_locations(id) ON DELETE CASCADE,
   user_wallet text NOT NULL,
+  token_id text, -- どのNFT（Token ID）でチェックインしたか
   scanned_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
-  UNIQUE(user_wallet, quest_id, location_id) -- 1つの地点につき1人1回だけスキャン可能
+  UNIQUE(user_wallet, token_id, quest_id, location_id) -- 1つの地点につき1つチケットで1回だけスキャン可能
 );
 
 -- アクセスポリシー等の設定（必要に応じて）

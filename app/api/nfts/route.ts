@@ -88,6 +88,7 @@ export async function GET(req: NextRequest) {
         supabase
           .from("user_quest_progress")
           .select(`
+            token_id,
             location_id, 
             quest_id, 
             quests (
@@ -150,7 +151,7 @@ export async function GET(req: NextRequest) {
 
         let metadata = nft.metadata || {};
         // クエスト進行に応じた動的メタデータの適用
-        metadata = computeDynamicMetadata(metadata, progressList as any);
+        metadata = computeDynamicMetadata(metadata, progressList as any, nftIdStr);
 
         let attributes = ((metadata as any).attributes || []).map(
           (a: any) => ({ ...a })

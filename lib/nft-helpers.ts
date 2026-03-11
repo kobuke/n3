@@ -142,6 +142,7 @@ export function buildMintLogEntry(params: {
 export interface QuestProgressContext {
   location_id: string;
   quest_id: string;
+  token_id?: string | null;
   quests: {
     base_nft_template_id: string;
     clear_metadata_uri: string | null;
@@ -160,16 +161,24 @@ export interface QuestProgressContext {
 export function computeDynamicMetadata(
   originalMetadata: any,
   progressList: QuestProgressContext[],
+  targetTokenId?: string // どのトークンIDの進捗を適用するか
 ): any {
   const attributes = originalMetadata.attributes || [];
   const templateId = extractTemplateId(attributes);
   if (!templateId) return originalMetadata;
 
   // ユーザーの進行レコード群から、このNFT（テンプレート）に紐づくクエストを探す
-  // ※複数のスキャン履歴が同じクエストに紐づいている場合があるため、先頭要素等からクエスト情報を得る
-  const relatedScans = progressList.filter(
+  let relatedScans = progressList.filter(
     (p) => p.quests?.base_nft_template_id === templateId,
   );
+
+  // 指定された tokenId があれば、その tokenId に紐づく記録（または NULL）のみに絞り込む
+  if (targetTokenId) {
+    relatedScans = relatedScans.filter(
+      (p) => !p.token_id || p.token_id === targetTokenId
+    );
+  }
+
   if (relatedScans.length === 0) return originalMetadata;
 
   // すべてのスキャンはこのクエストのものとして扱う
@@ -209,7 +218,7 @@ export function computeDynamicMetadata(
     if (typeof finalUri === "string" && finalUri.trim().startsWith("{")) {
       parsed = JSON.parse(finalUri);
     }
-  } catch (e) {}
+  } catch (e) { }
 
   if (typeof parsed === "object" && parsed !== null) {
     return {

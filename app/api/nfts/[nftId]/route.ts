@@ -33,6 +33,7 @@ export async function GET(
         ? supabase
           .from("user_quest_progress")
           .select(`
+              token_id,
               location_id,
               quest_id,
               quests (
@@ -84,7 +85,7 @@ export async function GET(
     // 2. 超重要：キャッシュ遅延対策（動的メタデータ計算）
     let finalMetadata = nft.metadata || {};
     if (progressMetadata && progressMetadata.length > 0) {
-      finalMetadata = computeDynamicMetadata(finalMetadata, progressMetadata as any);
+      finalMetadata = computeDynamicMetadata(finalMetadata, progressMetadata as any, nftId.toString());
     }
 
     // 3. 使用ステータスの取得＆マージ

@@ -62,17 +62,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "このクエストは現在非公開または終了しています。" }, { status: 403 })
         }
 
-        // 2. Check if user already scanned this location
-        const { data: existingScan } = await supabase
-            .from('user_quest_progress')
-            .select('*')
-            .eq('user_wallet', userWallet)
-            .eq('location_id', locationId)
-            .single()
-
-        if (existingScan) {
-            return NextResponse.json({ error: "既にこの地点はチェックイン済みです！" }, { status: 409 })
-        }
+        // (2は NFTの tokenId の特定後、または tokenId が不要なクエストの場合に実施する)
 
         // 3. Distance Validation
         const distance = getDistanceFromLatLonInM(lat, lng, location.lat, location.lng)
@@ -144,6 +134,23 @@ export async function POST(request: Request) {
             }
         }
 
+        // 2. Check if user already scanned this location (with specific tokenId if required)
+        let scanQuery = supabase
+            .from('user_quest_progress')
+            .select('*')
+            .eq('user_wallet', userWallet)
+            .eq('location_id', locationId);
+
+        if (targetTokenId) {
+            scanQuery = scanQuery.eq('token_id', targetTokenId);
+        }
+
+        const { data: existingScan } = await scanQuery.single();
+
+        if (existingScan) {
+            return NextResponse.json({ error: targetTokenId ? "このNFTでは既にチェックイン済みです！" : "既にこの地点はチェックイン済みです！" }, { status: 409 })
+        }
+
         // 5. Sequence Validation
         if (quest.is_sequential) {
             const { data: priorLocations } = await supabase
@@ -154,12 +161,18 @@ export async function POST(request: Request) {
 
             if (priorLocations && priorLocations.length > 0) {
                 const priorIds = priorLocations.map(p => p.id);
-                const { data: priorScans } = await supabase
+                let priorScansQuery = supabase
                     .from('user_quest_progress')
                     .select('location_id')
                     .eq('user_wallet', userWallet)
                     .eq('quest_id', quest.id)
                     .in('location_id', priorIds);
+
+                if (targetTokenId) {
+                    priorScansQuery = priorScansQuery.eq('token_id', targetTokenId);
+                }
+
+                const { data: priorScans } = await priorScansQuery;
 
                 if (!priorScans || priorScans.length < priorLocations.length) {
                     return NextResponse.json({ error: "前の地点をクリアしていません。決められた順序で回ってください。" }, { status: 403 })
@@ -173,14 +186,20 @@ export async function POST(request: Request) {
             .insert([{
                 quest_id: quest.id,
                 location_id: location.id,
-                user_wallet: userWallet
+                user_wallet: userWallet,
+                token_id: targetTokenId || null
             }]);
 
         if (insertError) throw insertError;
 
         // 7. Check for Quest Complete & Metadata Update
         const { data: allLocations } = await supabase.from('quest_locations').select('id').eq('quest_id', quest.id);
-        const { data: allScans } = await supabase.from('user_quest_progress').select('id').eq('user_wallet', userWallet).eq('quest_id', quest.id);
+
+        let allScansQuery = supabase.from('user_quest_progress').select('id').eq('user_wallet', userWallet).eq('quest_id', quest.id);
+        if (targetTokenId) {
+            allScansQuery = allScansQuery.eq('token_id', targetTokenId);
+        }
+        const { data: allScans } = await allScansQuery;
 
         let isComplete = false;
         let isLevelUp = false;
