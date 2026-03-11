@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
                     shopify_product_id: null, // manual
                     product_name: templateData.name,
                     status: "success",
-                    recipient_email: recipientEmail,
+                    recipient_email: recipientEmail || "",
                     recipient_wallet: recipientWallet,
                     transaction_hash: queueId,
                     token_id: minedTokenId?.toString() || null,
@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
                     shopify_product_id: null,
                     product_name: templateData.name,
                     status: "error",
-                    recipient_email: recipientEmail,
+                    recipient_email: recipientEmail || "",
                     recipient_wallet: recipientWallet,
                     error_message: err.message,
                 })

@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
         }
 
         const emailResults = uniqueEmails.map(email => {
-            const user = users.find(u => u.email.toLowerCase() === email)
+            const user = users.find(u => u.email?.toLowerCase() === email)
             const isValid = !!(user && user.walletaddress)
             return {
                 email,

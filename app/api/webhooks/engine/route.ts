@@ -74,7 +74,11 @@ async function resolveTokenId(payload: any): Promise<string | undefined> {
     if (tokenId === undefined && payload.transactionHash && payload.chainId) {
         console.log(`[Engine Webhook] TokenID missing in payload, getting receipt for tx: ${payload.transactionHash}`);
         try {
-            const rpcUrl = `https://${payload.chainId}.rpc.thirdweb.com`;
+            const clientId = process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID;
+            const rpcUrl = clientId 
+                ? `https://${payload.chainId}.rpc.thirdweb.com/${clientId}` 
+                : `https://${payload.chainId}.rpc.thirdweb.com`;
+                
             const rpcResponse = await fetch(rpcUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
