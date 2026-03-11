@@ -172,10 +172,10 @@ export function computeDynamicMetadata(
     (p) => p.quests?.base_nft_template_id === templateId,
   );
 
-  // 指定された tokenId があれば、その tokenId に紐づく記録（または NULL）のみに絞り込む
+  // 指定された tokenId があれば、その tokenId に紐づく記録のみに絞り込む
   if (targetTokenId) {
     relatedScans = relatedScans.filter(
-      (p) => !p.token_id || p.token_id === targetTokenId
+      (p) => p.token_id === targetTokenId
     );
   }
 
