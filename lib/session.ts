@@ -16,7 +16,12 @@ export async function getSession(): Promise<SessionData | null> {
   const raw = cookieStore.get(SESSION_KEY)?.value;
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as SessionData;
+    const data = JSON.parse(raw) as SessionData;
+    // Auto-patch older sessions that are missing authenticated: true
+    if (data.walletAddress && data.authenticated === undefined) {
+      data.authenticated = true;
+    }
+    return data;
   } catch {
     return null;
   }

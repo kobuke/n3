@@ -51,7 +51,8 @@ export async function POST(req: NextRequest) {
 
     await setSession({
       email: finalEmail,
-      walletAddress
+      walletAddress,
+      authenticated: true,
     });
 
     return NextResponse.json({ ok: true, walletAddress });
