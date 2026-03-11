@@ -86,14 +86,17 @@ export async function POST(req: NextRequest) {
         }
 
         // 3. User claim duplication check (template level restriction)
+        // Note: ilike を使ってウォレットアドレスの大文字小文字を無視
+        console.log(`[drop/claim] session.walletAddress = "${session.walletAddress}", templateId = "${finalTemplateId}"`);
         const { data: existingClaim } = await supabase
             .from("airdrop_claims")
-            .select("id")
+            .select("id, wallet_address")
             .eq("template_id", finalTemplateId)
-            .eq("wallet_address", session.walletAddress)
+            .ilike("wallet_address", session.walletAddress)
             .maybeSingle();
 
         if (existingClaim) {
+            console.log(`[drop/claim] ALREADY_CLAIMED: found airdrop_claims id=${existingClaim.id}, wallet=${existingClaim.wallet_address}`);
             return NextResponse.json(
                 { error: "このNFTは既に受け取り済みです。" },
                 { status: 409 }
@@ -160,6 +163,14 @@ export async function POST(req: NextRequest) {
         const chain = process.env.NEXT_PUBLIC_CHAIN_NAME || "polygon";
         const contractAddress = template.contract_address || process.env.NEXT_PUBLIC_COLLECTION_ID || "";
 
+        if (!contractAddress) {
+            console.error("[drop/claim] contractAddress is empty. Check NEXT_PUBLIC_COLLECTION_ID.");
+            return NextResponse.json(
+                { error: "NFTコントラクトアドレスが設定されていません。管理者にお問い合わせください。" },
+                { status: 500 }
+            );
+        }
+
         const metadata = {
             name: template.name,
             description: template.description || "",
@@ -180,18 +191,18 @@ export async function POST(req: NextRequest) {
             contractAddress,
             tokenId: mintResult?.result?.tokenId?.toString(),
             templateId: finalTemplateId,
-            transactionHash: mintResult?.result?.transactionHash,
+            transactionHash: mintResult?.result?.transactionHash || mintResult?.result?.queueId,
             source: spotId ? `spot-${spotId}` : `drop-${finalTemplateId}`,
         });
-        mintLogEntry.metadata = metadata;
-        await supabase.from("mint_logs").insert(mintLogEntry);
-
-
+        const { error: insertError } = await supabase.from("mint_logs").insert(mintLogEntry);
+        if (insertError) {
+            console.error("[drop/claim] mint_logs insert FAILED:", insertError);
+        }
 
         return NextResponse.json({
             ok: true,
             message: "NFTを受け取りました！",
-            txHash: mintResult?.result?.transactionHash || null,
+            txHash: mintResult?.result?.transactionHash || mintResult?.result?.queueId || null,
         });
     } catch (error: any) {
         console.error("Drop claim error:", error);

@@ -121,11 +121,13 @@ export async function POST(req: NextRequest) {
             contractAddress,
             tokenId: mintResult?.result?.tokenId?.toString(),
             templateId: templateId,
-            transactionHash: mintResult?.result?.transactionHash,
+            transactionHash: mintResult?.result?.transactionHash || mintResult?.result?.queueId,
             source: `line-airdrop-${templateId}`,
         });
-        mintLogEntry.metadata = metadata;
-        await supabase.from("mint_logs").insert(mintLogEntry);
+        const { error: insertError } = await supabase.from("mint_logs").insert(mintLogEntry);
+        if (insertError) {
+            console.error("[airdrop/line] mint_logs insert FAILED:", insertError);
+        }
 
 
         return NextResponse.json({
