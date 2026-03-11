@@ -107,7 +107,7 @@ export async function POST(request: Request) {
                 const { data: qpResult } = await supabase
                     .from('user_quest_progress')
                     .select(`
-                        location_id, quest_id, 
+                        token_id, location_id, quest_id, 
                         quests ( base_nft_template_id, clear_metadata_uri, quest_locations ( id, order_index, levelup_metadata_uri ) )
                     `)
                     .eq('user_wallet', userWallet)
@@ -116,7 +116,7 @@ export async function POST(request: Request) {
                 return NextResponse.json({
                     selectionRequired: true,
                     eligibleNfts: eligibleNfts.map(n => {
-                        const computed = computeDynamicMetadata(n.metadata, qpResult as any);
+                        const computed = computeDynamicMetadata(n.metadata, qpResult as any, n.id.toString());
                         return {
                             tokenId: n.id.toString(),
                             name: computed.name || n.metadata.name,
