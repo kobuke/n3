@@ -160,7 +160,7 @@ function TicketDetailContent({
     "Order ID": "注文ID",
   };
   const ATTR_VALUES: Record<string, string> = {
-    Unused: "未使用",
+    Unused: "利用可能",
     Used: "使用済み",
     Yes: "可能",
     No: "不可",
@@ -226,7 +226,7 @@ function TicketDetailContent({
             ) : isUsed ? (
               <><CheckCircle2 className="w-3.5 h-3.5" />使用済み</>
             ) : (
-              <><Clock className="w-3.5 h-3.5" />未使用 - 利用可能</>
+              <><Clock className="w-3.5 h-3.5" />利用可能</>
             )}
           </div>
           {nft?.acquiredAt && (

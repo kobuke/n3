@@ -400,7 +400,7 @@ export default function SpotsPage() {
                                         checked={!!formData.is_active}
                                         onCheckedChange={c => setFormData({ ...formData, is_active: c })}
                                     />
-                                    <Label htmlFor="is-active">スポットを有効にする</Label>
+                                    <Label htmlFor="is-active">公開する</Label>
                                 </div>
                             </div>
                         </div>
