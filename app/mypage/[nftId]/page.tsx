@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckinMogiri } from "@/components/checkin-mogiri";
+import { toast } from "sonner";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -369,10 +370,46 @@ function TicketDetailContent({
           </div>
         )}
 
-        {/* Identifier */}
-        <div className="flex justify-between items-center text-[10px] text-slate-300 font-mono px-2 mb-6">
-          <span>ID: {nft?.tokenId || nftId}</span>
-          {nft?.uuid && <span className="truncate ml-4">UUID: {nft.uuid.substring(0, 8)}...</span>}
+        {/* Contract & Identifier */}
+        <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6 shadow-sm">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-500">コントラクトID</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono text-slate-400 max-w-[150px] truncate">
+                  {nft?.contractAddress || contract || "不明"}
+                </span>
+                {(nft?.contractAddress || contract) && (
+                  <button
+                    onClick={() => {
+                      const address = nft?.contractAddress || contract;
+                      if (address) {
+                        navigator.clipboard.writeText(address);
+                        toast.success("コントラクトIDをコピーしました");
+                      }
+                    }}
+                    className="p-1.5 bg-slate-50 rounded-md shadow-sm border border-slate-100 hover:bg-slate-100 transition-colors"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-slate-500" />
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-500">トークンID</span>
+              <span className="text-[10px] font-mono text-slate-400">
+                {nft?.tokenId || nftId}
+              </span>
+            </div>
+            {nft?.uuid && (
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-500">UUID</span>
+                <span className="text-[10px] font-mono text-slate-400">
+                  {nft.uuid}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Attributes Grid */}
