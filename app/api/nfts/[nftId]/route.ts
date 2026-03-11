@@ -22,53 +22,72 @@ export async function GET(
   }
 
   try {
-    // 1. ブロックチェーンからNFT取得
-    let nft: any;
-    try {
-      nft = await getNFTById(contractAddress, nftId);
-    } catch (err: any) {
-      console.error("fetch NFT failed:", err.message);
-      return NextResponse.json({ error: "NFT not found" }, { status: 404 });
-    }
-
-    if (!nft) {
-      return NextResponse.json({ error: "NFT not found" }, { status: 404 });
-    }
-
     const session = await getSession();
     const walletAddress = session?.walletAddress;
-
     const supabase = createAdminClient();
 
-    // 2. 超重要：キャッシュ遅延対策（動的メタデータ計算）
-    // Thirdwebのキャッシュが更新されるまでの間、Supabaseに保存した最新のクエスト進行状況を優先する
-    const { data: progressMetadata } = await supabase
-      .from("user_quest_progress")
-      .select(`
-        location_id,
-        quest_id,
-        quests (
-            base_nft_template_id,
-            clear_metadata_uri,
-            quest_locations ( id, order_index, levelup_metadata_uri )
-        )
-      `)
-      .eq("user_wallet", walletAddress || "");
+    // 1. 各種データを並列で取得し、レスポンスタイムを大幅に短縮
+    const [nftResult, progressMetadataResult, usageLogResult, mintLogResult] = await Promise.allSettled([
+      getNFTById(contractAddress, nftId),
+      walletAddress
+        ? supabase
+          .from("user_quest_progress")
+          .select(`
+              location_id,
+              quest_id,
+              quests (
+                  base_nft_template_id,
+                  clear_metadata_uri,
+                  quest_locations ( id, order_index, levelup_metadata_uri )
+              )
+            `)
+          .eq("user_wallet", walletAddress)
+        : Promise.resolve({ data: null }),
+      supabase
+        .from("ticket_usages")
+        .select("status, used_at")
+        .eq("token_id", nftId)
+        .ilike("contract_address", contractAddress)
+        .eq("status", "used")
+        .maybeSingle(),
+      walletAddress
+        ? supabase
+          .from("mint_logs")
+          .select("created_at, template_id")
+          .eq("token_id", nftId)
+          .ilike("contract_address", contractAddress)
+          .ilike("recipient_wallet", walletAddress)
+          .eq("status", "success")
+          .order("created_at", { ascending: false })
+          .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
 
+    if (nftResult.status === "rejected" || !nftResult.value) {
+      console.error(
+        "fetch NFT failed:",
+        nftResult.status === "rejected" ? nftResult.reason : "Not found"
+      );
+      return NextResponse.json({ error: "NFT not found" }, { status: 404 });
+    }
+
+    const nft: any = nftResult.value;
+    const progressMetadata: any =
+      progressMetadataResult.status === "fulfilled"
+        ? progressMetadataResult.value.data
+        : null;
+    const usageLog: any =
+      usageLogResult.status === "fulfilled" ? usageLogResult.value.data : null;
+    const mintLog: any =
+      mintLogResult.status === "fulfilled" ? mintLogResult.value.data : null;
+
+    // 2. 超重要：キャッシュ遅延対策（動的メタデータ計算）
     let finalMetadata = nft.metadata || {};
     if (progressMetadata && progressMetadata.length > 0) {
       finalMetadata = computeDynamicMetadata(finalMetadata, progressMetadata as any);
     }
 
     // 3. 使用ステータスの取得＆マージ
-    const { data: usageLog } = await supabase
-      .from("ticket_usages")
-      .select("status, used_at")
-      .eq("token_id", nftId)
-      .ilike("contract_address", contractAddress)
-      .eq("status", "used")
-      .maybeSingle();
-
     let attributes = (finalMetadata.attributes || []).map((a: any) => ({
       ...a,
     }));
@@ -92,15 +111,6 @@ export async function GET(
 
     // 4. 取得日・有効期限の照合（ログインユーザーのミントログから）
     if (walletAddress) {
-      const { data: mintLog } = await supabase
-        .from("mint_logs")
-        .select("created_at, template_id")
-        .eq("token_id", nftId)
-        .ilike("contract_address", contractAddress)
-        .ilike("recipient_wallet", walletAddress)
-        .eq("status", "success")
-        .order("created_at", { ascending: false })
-        .maybeSingle();
 
       if (mintLog) {
         formattedNft.acquiredAt = mintLog.created_at;

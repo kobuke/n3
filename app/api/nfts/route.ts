@@ -63,8 +63,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ nfts: [] });
     }
 
-    // 3. 関連データの一括取得（使用ログ、譲渡、ミントログ、配布請求、クエスト進行からのメタデータ）
-    const [usagesResult, transfersResult, mintLogsResult, claimsResult, questProgressResult] =
+    // 3. 関連データの一括取得とブロックチェーンからのNFT取得をすべて並列実行して待ち時間を短縮
+    const [usagesResult, transfersResult, mintLogsResult, claimsResult, questProgressResult, ...nftFetchResults] =
       await Promise.all([
         supabase
           .from("ticket_usages")
@@ -96,7 +96,15 @@ export async function GET(req: NextRequest) {
                 quest_locations ( id, order_index, levelup_metadata_uri )
             )
           `)
-          .eq("user_wallet", walletAddress)
+          .eq("user_wallet", walletAddress),
+        ...Array.from(contractAddresses).map(contractAddress =>
+          getNFTsForWallet(contractAddress, walletAddress!)
+            .then(ownedNfts => ({ contractAddress, ownedNfts }))
+            .catch(err => {
+              console.warn(`[NFT] Failed to fetch from ${contractAddress}:`, err.message);
+              return { contractAddress, ownedNfts: [] };
+            })
+        )
       ]);
 
     // 使用ログのMap化
@@ -130,87 +138,76 @@ export async function GET(req: NextRequest) {
     // user_quest_progressのデータ (動的メタデータ計算用)
     const progressList = questProgressResult.data || [];
 
-    // 4. ブロックチェーンからNFT取得＆ローカルデータのマージ
+    // 4. ローカルデータのマージ
     const allNfts: any[] = [];
-    for (const contractAddress of contractAddresses) {
-      try {
-        const ownedNfts = await getNFTsForWallet(
-          contractAddress,
-          walletAddress
+    for (const { contractAddress, ownedNfts } of nftFetchResults) {
+      if (!ownedNfts) continue;
+      for (const nft of ownedNfts) {
+        const nftIdStr = nft.id.toString();
+
+        // 譲渡済みは非表示
+        if (hiddenTokenIds.has(nftIdStr)) continue;
+
+        let metadata = nft.metadata || {};
+        // クエスト進行に応じた動的メタデータの適用
+        metadata = computeDynamicMetadata(metadata, progressList as any);
+
+        let attributes = ((metadata as any).attributes || []).map(
+          (a: any) => ({ ...a })
         );
 
-        for (const nft of ownedNfts) {
-          const nftIdStr = nft.id.toString();
+        // 使用ステータスのマージ
+        const usageLog = usagesMap.get(
+          `${contractAddress.toLowerCase()}-${nftIdStr}`
+        );
+        attributes = mergeUsageStatus(attributes, usageLog);
 
-          // 譲渡済みは非表示
-          if (hiddenTokenIds.has(nftIdStr)) continue;
+        // 取得日の照合（Webhookによりtoken_idが保存されるようになったため、正確に照合可能）
+        const mintLogKey = `${contractAddress.toLowerCase()}-${nftIdStr}`;
+        const mintLogEntry = mintLogsMap.get(mintLogKey);
+        let acquiredAt = mintLogEntry?.created_at;
+        const mintTemplateId = mintLogEntry?.template_id || null;
 
-          let metadata = nft.metadata || {};
-          // クエスト進行に応じた動的メタデータの適用
-          metadata = computeDynamicMetadata(metadata, progressList as any);
-
-          let attributes = ((metadata as any).attributes || []).map(
-            (a: any) => ({ ...a })
-          );
-
-          // 使用ステータスのマージ
-          const usageLog = usagesMap.get(
-            `${contractAddress.toLowerCase()}-${nftIdStr}`
-          );
-          attributes = mergeUsageStatus(attributes, usageLog);
-
-          // 取得日の照合（Webhookによりtoken_idが保存されるようになったため、正確に照合可能）
-          const mintLogKey = `${contractAddress.toLowerCase()}-${nftIdStr}`;
-          const mintLogEntry = mintLogsMap.get(mintLogKey);
-          let acquiredAt = mintLogEntry?.created_at;
-          const mintTemplateId = mintLogEntry?.template_id || null;
-
-          if (!acquiredAt) {
-            // mintLogsに存在しない場合（過去のデータ等）のフォールバックとして、
-            // airdrop_claims を参照するのみに留める
-            const templateId = extractTemplateId(attributes);
-            if (templateId) {
-              acquiredAt = claimsMap.get(templateId);
-            }
+        if (!acquiredAt) {
+          // mintLogsに存在しない場合（過去のデータ等）のフォールバックとして、
+          // airdrop_claims を参照するのみに留める
+          const templateId = extractTemplateId(attributes);
+          if (templateId) {
+            acquiredAt = claimsMap.get(templateId);
           }
-
-          // 有効期限の計算
-          const resolvedTemplateId = mintTemplateId || extractTemplateId(attributes);
-          const tmpl = resolvedTemplateId ? templateMap.get(resolvedTemplateId) : null;
-          const { expiresAt, isExpired, shopifyProductUrl } = computeExpiryInfo(acquiredAt, tmpl);
-
-          const imageUrl = resolveIpfsUrl((metadata as any).image);
-
-          allNfts.push({
-            id: nftIdStr,
-            tokenId: nftIdStr,
-            contractAddress,
-            name:
-              (metadata as any).name || `Ticket #${nftIdStr}`,
-            description: (metadata as any).description || "",
-            image: imageUrl,
-            acquiredAt: acquiredAt || null,
-            expiresAt,
-            isExpired,
-            shopifyProductUrl,
-            supply: (nft as any).supply
-              ? Number((nft as any).supply)
-              : (nft as any).quantityOwned
-                ? Number((nft as any).quantityOwned)
-                : 1,
-            metadata: {
-              name: (metadata as any).name,
-              description: (metadata as any).description,
-              image: imageUrl,
-              attributes,
-            },
-          });
         }
-      } catch (contractErr: any) {
-        console.warn(
-          `[NFT] Failed to fetch from ${contractAddress}:`,
-          contractErr.message
-        );
+
+        // 有効期限の計算
+        const resolvedTemplateId = mintTemplateId || extractTemplateId(attributes);
+        const tmpl = resolvedTemplateId ? templateMap.get(resolvedTemplateId) : null;
+        const { expiresAt, isExpired, shopifyProductUrl } = computeExpiryInfo(acquiredAt, tmpl);
+
+        const imageUrl = resolveIpfsUrl((metadata as any).image);
+
+        allNfts.push({
+          id: nftIdStr,
+          tokenId: nftIdStr,
+          contractAddress,
+          name:
+            (metadata as any).name || `Ticket #${nftIdStr}`,
+          description: (metadata as any).description || "",
+          image: imageUrl,
+          acquiredAt: acquiredAt || null,
+          expiresAt,
+          isExpired,
+          shopifyProductUrl,
+          supply: (nft as any).supply
+            ? Number((nft as any).supply)
+            : (nft as any).quantityOwned
+              ? Number((nft as any).quantityOwned)
+              : 1,
+          metadata: {
+            name: (metadata as any).name,
+            description: (metadata as any).description,
+            image: imageUrl,
+            attributes,
+          },
+        });
       }
     }
 
