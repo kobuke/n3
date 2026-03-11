@@ -17,25 +17,29 @@ export async function POST(req: NextRequest) {
 
         const supabase = createAdminClient()
 
-        // Ensure no duplicates in the query, and clean up emails
-        const uniqueEmails = Array.from(new Set(emails.map((e: string) => e.trim().toLowerCase()).filter(Boolean)))
+        // Separate emails and raw wallet addresses
+        const rawInputs = emails.map((e: string) => e.trim()).filter(Boolean)
+        const walletAddresses = rawInputs.filter(e => e.toLowerCase().startsWith('0x') && e.length === 42)
+        const emailAddresses = rawInputs.filter(e => !(e.toLowerCase().startsWith('0x') && e.length === 42)).map(e => e.toLowerCase())
 
-        if (uniqueEmails.length === 0) {
-            return NextResponse.json({ results: [] })
+        const uniqueEmails = Array.from(new Set(emailAddresses))
+        let users: any[] = []
+
+        if (uniqueEmails.length > 0) {
+            const { data, error } = await supabase
+                .from('users')
+                .select('email, walletaddress')
+                .in('email', uniqueEmails)
+
+            if (error) {
+                console.error("User check error:", error)
+                return NextResponse.json({ error: "Database error" }, { status: 500 })
+            }
+            users = data || []
         }
 
-        const { data: users, error } = await supabase
-            .from('users')
-            .select('email, walletaddress')
-            .in('email', uniqueEmails)
-
-        if (error) {
-            console.error("User check error:", error)
-            return NextResponse.json({ error: "Database error" }, { status: 500 })
-        }
-
-        const results = uniqueEmails.map(email => {
-            const user = users?.find(u => u.email.toLowerCase() === email)
+        const emailResults = uniqueEmails.map(email => {
+            const user = users.find(u => u.email.toLowerCase() === email)
             const isValid = !!(user && user.walletaddress)
             return {
                 email,
@@ -45,7 +49,14 @@ export async function POST(req: NextRequest) {
             }
         })
 
-        return NextResponse.json({ results })
+        const walletResults = walletAddresses.map(wallet => ({
+            email: wallet,
+            isValid: true,
+            isRegistered: true,
+            hasWallet: true
+        }))
+
+        return NextResponse.json({ results: [...emailResults, ...walletResults] })
     } catch (e: any) {
         console.error("Check users error:", e)
         return NextResponse.json({ error: e.message }, { status: 500 })

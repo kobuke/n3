@@ -48,10 +48,21 @@ const handler: Handler = async (event) => {
     if (walletAttr?.value) {
         recipientWallet = walletAttr.value;
         console.log(`[BG] Using wallet from order notes: ${recipientWallet}`);
-    }
-
-    // DBからメールでウォレットを検索（重複作成防止）
-    if (!recipientWallet && customerEmail) {
+        
+        // Save or update the associated wallet for this email
+        if (customerEmail) {
+            const { error: upsertError } = await supabase.from("users").upsert(
+                { email: customerEmail, walletaddress: recipientWallet },
+                { onConflict: "email", ignoreDuplicates: false }
+            );
+            if (upsertError) {
+                console.error("[BG] Failed to update user with manual wallet in DB:", upsertError.message);
+            } else {
+                console.log(`[BG] Associated manual wallet with email: ${customerEmail}`);
+            }
+        }
+    } else if (customerEmail) {
+        // DBからメールでウォレットを検索（重複作成防止）
         const { data: userRecord, error: userError } = await supabase
             .from("users")
             .select("walletaddress")

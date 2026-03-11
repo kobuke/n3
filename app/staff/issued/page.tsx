@@ -119,7 +119,7 @@ export default function IssuedNFTsPage() {
                                         <TableCell colSpan={6} className="h-48 text-center text-destructive">
                                             <div className="flex flex-col items-center justify-center gap-2">
                                                 <AlertTriangle className="h-8 w-8" />
-                                                <p>データの取得に失敗しました</p>
+                                                <p>データの取得に失敗しました: {error?.message}</p>
                                             </div>
                                         </TableCell>
                                     </TableRow>
@@ -150,7 +150,13 @@ export default function IssuedNFTsPage() {
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex flex-col gap-1">
-                                                    <span className="text-sm">{nft.recipient_email || 'アドレスなし'}</span>
+                                                    <span className="text-sm">
+                                                        {nft.recipient_email?.toLowerCase().startsWith('0x') ? (
+                                                            <Badge variant="outline" className="text-[10px] font-normal w-fit bg-slate-50">外部ウォレット</Badge>
+                                                        ) : (
+                                                            nft.recipient_email || 'アドレスなし'
+                                                        )}
+                                                    </span>
                                                     <span className="text-xs text-muted-foreground font-mono truncate max-w-[150px]" title={nft.recipient_wallet}>
                                                         {nft.recipient_wallet ? `${nft.recipient_wallet.slice(0, 8)}...${nft.recipient_wallet.slice(-6)}` : '-'}
                                                     </span>

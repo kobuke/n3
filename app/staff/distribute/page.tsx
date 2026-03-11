@@ -119,7 +119,7 @@ export default function DistributePage() {
                             <Send className="size-5" /> 送信フォーム
                         </CardTitle>
                         <CardDescription>
-                            テンプレートを選択し、送信先のメールアドレスを入力してください。※メールアドレスは事前にシステムに登録（ウォレット作成済み）である必要があります。
+                            テンプレートを選択し、送信先のメールアドレスまたはウォレットアドレス（0x...）を入力してください。※メールアドレスは事前にシステムに登録（ウォレット作成済み）である必要があります（ウォレットアドレス直接指定の場合は未登録でも送信可能です）。
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -141,11 +141,11 @@ export default function DistributePage() {
                             </div>
 
                             <div className="flex flex-col gap-2">
-                                <Label>対象ユーザーのメールアドレス</Label>
+                                <Label>対象者のメールアドレス または ウォレットアドレス</Label>
                                 <Textarea
                                     value={emails}
                                     onChange={e => setEmails(e.target.value)}
-                                    placeholder="user1@example.com&#10;user2@example.com"
+                                    placeholder="user1@example.com&#10;0x123...abc"
                                     rows={6}
                                     required
                                 />

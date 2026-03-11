@@ -18,6 +18,13 @@ export async function sendNftDeliveryEmail({
     recipientWallet,
     appUrl
 }: SendNftDeliveryEmailParams) {
+    // Verify that the 'to' address looks like a valid email, not a wallet address
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(to)) {
+        console.log(`[Email] Skipping email delivery for invalid/dummy address: ${to}`);
+        return;
+    }
+
     const finalAppUrl = appUrl || (
         process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost')
             ? process.env.NEXT_PUBLIC_APP_URL

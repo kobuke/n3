@@ -39,20 +39,30 @@ export async function POST(req: NextRequest) {
         const results = []
 
         // Process each email sequentially or in parallel
-        for (const email of emails) {
-            // Check user existance
-            const { data: userRecord } = await supabase
-                .from("users")
-                .select("walletaddress")
-                .eq("email", email.trim())
-                .maybeSingle()
+        for (const input of emails) {
+            const rawInput = input.trim()
+            let recipientWallet = ""
+            let recipientEmail: string | null = null
 
-            if (!userRecord || !userRecord.walletaddress) {
-                results.push({ email, status: "error", message: "User not found or no wallet attached" })
-                continue
+            const isWalletInput = rawInput.toLowerCase().startsWith('0x') && rawInput.length === 42
+
+            if (isWalletInput) {
+                recipientWallet = rawInput
+            } else {
+                recipientEmail = rawInput
+                // Check user existance
+                const { data: userRecord } = await supabase
+                    .from("users")
+                    .select("walletaddress")
+                    .eq("email", rawInput.toLowerCase())
+                    .maybeSingle()
+
+                if (!userRecord || !userRecord.walletaddress) {
+                    results.push({ email: rawInput, status: "error", message: "User not found or no wallet attached" })
+                    continue
+                }
+                recipientWallet = userRecord.walletaddress
             }
-
-            const recipientWallet = userRecord.walletaddress
 
             // Prepare metadata
             const mintedAt = new Date()
@@ -107,7 +117,7 @@ export async function POST(req: NextRequest) {
                     shopify_product_id: null, // manual
                     product_name: templateData.name,
                     status: "success",
-                    recipient_email: email,
+                    recipient_email: recipientEmail,
                     recipient_wallet: recipientWallet,
                     transaction_hash: queueId,
                     token_id: minedTokenId?.toString() || null,
@@ -117,13 +127,13 @@ export async function POST(req: NextRequest) {
 
 
                 results.push({
-                    email,
+                    email: rawInput,
                     status: "success",
                     message: "Successfully minted and distributed!"
                 })
 
             } catch (err: any) {
-                console.error("Airdrop error for", email, err)
+                console.error("Airdrop error for", rawInput, err)
 
                 const dummyOrderId = `manual-airdrop-${Date.now()}-${Math.floor(Math.random() * 1000)}`
                 await supabase.from("mint_logs").insert({
@@ -131,12 +141,12 @@ export async function POST(req: NextRequest) {
                     shopify_product_id: null,
                     product_name: templateData.name,
                     status: "error",
-                    recipient_email: email,
+                    recipient_email: recipientEmail,
                     recipient_wallet: recipientWallet,
                     error_message: err.message,
                 })
 
-                results.push({ email, status: "error", message: err.message })
+                results.push({ email: rawInput, status: "error", message: err.message })
             }
         }
 
