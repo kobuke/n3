@@ -180,8 +180,8 @@ function MyPageContent() {
     router.push("/");
   }
 
-  const mainSbt = mainSbtTemplateId 
-    ? nfts.find((n: any) => n.templateId === mainSbtTemplateId) 
+  const mainSbt = mainSbtTemplateId
+    ? nfts.find((n: any) => n.templateId === mainSbtTemplateId)
     : null;
 
   let mainSbtImage = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=2600&auto=format&fit=crop"; // ダミー画像
@@ -193,8 +193,8 @@ function MyPageContent() {
   if (mainSbt) {
     hasMainSbt = true;
     mainSbtImage = mainSbt.image || mainSbtImage;
-    mainSbtName = mainSbt.name || "デジタル住民NFT";
-    
+    mainSbtName = mainSbt.name || "（未登録）";
+
     // attributes から Rank を探す
     const attrs = mainSbt.metadata?.attributes || [];
     const rankAttr = attrs.find((a: any) => a.trait_type === "Rank" || a.trait_type === "rank" || a.trait_type === "ランク");
@@ -205,7 +205,7 @@ function MyPageContent() {
 
   const formatHolders = (num: number) => {
     if (num >= 1000) return `+${(num / 1000).toFixed(1)}k`;
-    return `+${num}`;
+    return `${num}`;
   };
 
   return (
@@ -249,11 +249,11 @@ function MyPageContent() {
                     <img className="inline-block size-8 rounded-full border-2 border-white" src="https://i.pravatar.cc/100?img=2" alt="" />
                   </div>
                   <div className="flex h-8 px-3 items-center justify-center rounded-full border-2 border-white bg-[#0EA5E9] text-[10px] font-bold text-white shadow-sm -ml-1 z-10">
-                    同郷民 {formatHolders(holdersCount)}人
+                    所持者 {formatHolders(holdersCount)}人
                   </div>
                 </div>
                 {hasMainSbt ? (
-                  <button 
+                  <button
                     onClick={() => router.push(`/mypage/${mainSbt.tokenId}?contract=${mainSbt.contractAddress}`)}
                     className="rounded-full bg-[#0EA5E9] px-6 py-2.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(14,165,233,0.4)] hover:bg-[#0284C7] active:scale-95 transition-all"
                   >
@@ -301,7 +301,7 @@ function MyPageContent() {
           {/* Level Progress */}
           <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-[0_2px_20px_rgba(0,0,0,0.02)]">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-900">レベル進捗</h3>
+              <h3 className="text-sm font-bold text-slate-900">レベル進捗（開発中）</h3>
               <span className="text-[11px] font-bold text-slate-400">ダイヤモンドまで 75%</span>
             </div>
 
