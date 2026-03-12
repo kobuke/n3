@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/admin/ui/select"
-import { Save, MessageSquare, Loader2, Bell, CheckCircle2 } from "lucide-react"
+import { Save, MessageSquare, Loader2, Bell, CheckCircle2, Image as ImageIcon } from "lucide-react"
 
 export function SettingsForm() {
   // LINE Airdrop Settings
@@ -23,6 +23,11 @@ export function SettingsForm() {
   const [templates, setTemplates] = useState<any[]>([])
   const [lineSettingsLoading, setLineSettingsLoading] = useState(true)
   const [lineSettingsSaving, setLineSettingsSaving] = useState(false)
+
+  // Main SBT Settings
+  const [mainSbtTemplateId, setMainSbtTemplateId] = useState("")
+  const [mainSbtSettingsLoading, setMainSbtSettingsLoading] = useState(true)
+  const [mainSbtSettingsSaving, setMainSbtSettingsSaving] = useState(false)
 
   // Notification Settings
   const [emailNotifications, setEmailNotifications] = useState(false)
@@ -46,6 +51,15 @@ export function SettingsForm() {
       })
       .catch(() => { })
       .finally(() => setLineSettingsLoading(false))
+
+    // Load main SBT settings
+    fetch("/api/settings?keys=main_sbt_template_id")
+      .then(r => r.json())
+      .then(data => {
+        if (data.main_sbt_template_id) setMainSbtTemplateId(data.main_sbt_template_id)
+      })
+      .catch(() => { })
+      .finally(() => setMainSbtSettingsLoading(false))
 
     // Load notification settings
     fetch("/api/settings?keys=email_notifications_enabled,notification_email,auto_retry_enabled")
@@ -78,6 +92,24 @@ export function SettingsForm() {
     }
   }
 
+  async function saveMainSbtSettings() {
+    setMainSbtSettingsSaving(true)
+    try {
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          main_sbt_template_id: mainSbtTemplateId,
+        }),
+      })
+      alert("トップ画像（SBT）表示設定を保存しました。")
+    } catch {
+      alert("保存に失敗しました。")
+    } finally {
+      setMainSbtSettingsSaving(false)
+    }
+  }
+
   async function saveNotifSettings() {
     setNotifSettingsSaving(true)
     try {
@@ -100,8 +132,58 @@ export function SettingsForm() {
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
-      {/* LINE Airdrop Settings */}
+      {/* Main SBT Settings */}
       <Card className="border-primary/30">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <ImageIcon className="size-4 text-primary" />
+            トップ画像（SBT）表示設定
+          </CardTitle>
+          <CardDescription>
+            マイページのトップに表示する代表的なSBT（デジタル住民NFT等）を指定します。
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-5">
+          {mainSbtSettingsLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="size-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-col gap-2">
+                <Label>表示するSBTテンプレート</Label>
+                <Select value={mainSbtTemplateId} onValueChange={setMainSbtTemplateId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="テンプレートを選択してください" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {templates.map(t => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[10px] text-muted-foreground">
+                  ※ここで指定したSBTがマイページ最上段に表示され、保有者数（関係人口）などの情報が連動します。
+                </p>
+              </div>
+
+              <Button
+                className="gap-2 w-fit"
+                onClick={saveMainSbtSettings}
+                disabled={mainSbtSettingsSaving}
+              >
+                {mainSbtSettingsSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                表示設定を保存
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* LINE Airdrop Settings */}
+      <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <MessageSquare className="size-4 text-green-500" />

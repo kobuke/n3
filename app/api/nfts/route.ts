@@ -189,6 +189,7 @@ export async function GET(req: NextRequest) {
           id: nftIdStr,
           tokenId: nftIdStr,
           contractAddress,
+          templateId: resolvedTemplateId,
           name:
             (metadata as any).name || `Ticket #${nftIdStr}`,
           description: (metadata as any).description || "",

@@ -123,6 +123,18 @@ function MyPageContent() {
     fetcher
   );
 
+  const { data: settingsData } = useSWR(
+    session?.authenticated ? "/api/settings?keys=main_sbt_template_id" : null,
+    fetcher
+  );
+  const mainSbtTemplateId = settingsData?.main_sbt_template_id || null;
+
+  const { data: statsData } = useSWR(
+    mainSbtTemplateId ? `/api/stats/sbt-holders?templateId=${mainSbtTemplateId}` : null,
+    fetcher
+  );
+  const holdersCount = statsData?.holdersCount || 0;
+
   const handleRefresh = async () => {
     if (session?.authenticated) {
       try {
@@ -168,6 +180,34 @@ function MyPageContent() {
     router.push("/");
   }
 
+  const mainSbt = mainSbtTemplateId 
+    ? nfts.find((n: any) => n.templateId === mainSbtTemplateId) 
+    : null;
+
+  let mainSbtImage = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=2600&auto=format&fit=crop"; // ダミー画像
+  let mainSbtName = "指定されたSBTはありません";
+  let mainSbtRank: string | null = null;
+  let mainSbtCategory = "Web3 アイデンティティ";
+  let hasMainSbt = false;
+
+  if (mainSbt) {
+    hasMainSbt = true;
+    mainSbtImage = mainSbt.image || mainSbtImage;
+    mainSbtName = mainSbt.name || "デジタル住民NFT";
+    
+    // attributes から Rank を探す
+    const attrs = mainSbt.metadata?.attributes || [];
+    const rankAttr = attrs.find((a: any) => a.trait_type === "Rank" || a.trait_type === "rank" || a.trait_type === "ランク");
+    if (rankAttr) {
+      mainSbtRank = rankAttr.value;
+    }
+  }
+
+  const formatHolders = (num: number) => {
+    if (num >= 1000) return `+${(num / 1000).toFixed(1)}k`;
+    return `+${num}`;
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 pb-28">
       <AppHeader
@@ -185,34 +225,45 @@ function MyPageContent() {
             <div className="relative mb-6">
               <div className="aspect-[16/9] w-full overflow-hidden rounded-2xl bg-black">
                 <img
-                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=2600&auto=format&fit=crop"
-                  alt="Digital Resident"
+                  src={mainSbtImage}
+                  alt={mainSbtName}
                   className="h-full w-full object-cover opacity-90"
                 />
               </div>
-              <div className="absolute top-3 right-3 rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-bold text-[#0EA5E9] shadow-[0_2px_10px_rgba(0,0,0,0.1)]">
-                プラチナ
-              </div>
+              {mainSbtRank && (
+                <div className="absolute top-3 right-3 rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-bold text-[#0EA5E9] shadow-[0_2px_10px_rgba(0,0,0,0.1)]">
+                  {mainSbtRank}
+                </div>
+              )}
             </div>
 
             {/* Details */}
             <div className="flex flex-col">
-              <span className="mb-1 text-[11px] font-bold tracking-wider text-[#0EA5E9]">Web3 アイデンティティ</span>
-              <h2 className="mb-4 text-2xl font-bold text-slate-900 tracking-tight">デジタル住民NFT</h2>
+              <span className="mb-1 text-[11px] font-bold tracking-wider text-[#0EA5E9]">{mainSbtCategory}</span>
+              <h2 className="mb-4 text-2xl font-bold text-slate-900 tracking-tight">{hasMainSbt ? mainSbtName : "マイデジタル住民証"}</h2>
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <div className="flex -space-x-2">
+                  <div className="flex -space-x-2 relative">
                     <img className="inline-block size-8 rounded-full border-2 border-white" src="https://i.pravatar.cc/100?img=1" alt="" />
                     <img className="inline-block size-8 rounded-full border-2 border-white" src="https://i.pravatar.cc/100?img=2" alt="" />
-                    <div className="flex size-8 items-center justify-center rounded-full border-2 border-white bg-[#0EA5E9] text-[10px] font-bold text-white">
-                      +2.4k
-                    </div>
+                  </div>
+                  <div className="flex h-8 px-3 items-center justify-center rounded-full border-2 border-white bg-[#0EA5E9] text-[10px] font-bold text-white shadow-sm -ml-1 z-10">
+                    同郷民 {formatHolders(holdersCount)}人
                   </div>
                 </div>
-                <button className="rounded-full bg-[#0EA5E9] px-6 py-2.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(14,165,233,0.4)] hover:bg-[#0284C7] active:scale-95 transition-all">
-                  詳細を見る
-                </button>
+                {hasMainSbt ? (
+                  <button 
+                    onClick={() => router.push(`/mypage/${mainSbt.tokenId}?contract=${mainSbt.contractAddress}`)}
+                    className="rounded-full bg-[#0EA5E9] px-6 py-2.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(14,165,233,0.4)] hover:bg-[#0284C7] active:scale-95 transition-all"
+                  >
+                    詳細を見る
+                  </button>
+                ) : (
+                  <button className="rounded-full bg-slate-200 px-6 py-2.5 text-sm font-bold text-slate-400 cursor-not-allowed">
+                    未取得
+                  </button>
+                )}
               </div>
             </div>
           </div>
