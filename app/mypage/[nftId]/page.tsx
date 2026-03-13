@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckinMogiri } from "@/components/checkin-mogiri";
 import { toast } from "sonner";
+import { NFT_TYPE_LABELS, NFT_ATTR_LABELS, NFT_ATTR_VALUES } from "@/lib/nft-constants";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -31,19 +32,7 @@ const fetcher = (url: string) =>
     return r.json();
   });
 
-const TYPE_LABELS: Record<string, string> = {
-  certificate: "証明書",
-  more: "モア",
-  experience: "体験チケット",
-  asset: "デジタル資産",
-  art: "アート",
-  other: "その他",
-  ticket: "チケット",
-  tour: "ツアーパス",
-  resident_card: "デジタル住民証",
-  artwork: "アート作品",
-  product: "その他",
-};
+
 
 export default function TicketDetailPage({
   params,
@@ -138,7 +127,7 @@ function TicketDetailContent({
   const isUsed = status === "Used";
   const usedAt = attributes.find((a) => a.trait_type === "Used_At")?.value;
   const typeAttr = attributes.find((a) => a.trait_type === "Type" || a.trait_type === "type");
-  const categoryLabel = typeAttr ? (TYPE_LABELS[typeAttr.value] ?? typeAttr.value) : null;
+  const categoryLabel = typeAttr ? (NFT_TYPE_LABELS[typeAttr.value] ?? typeAttr.value) : null;
   const isMogiriAllowed = typeAttr && ["experience", "asset", "more", "体験チケット", "デジタル資産", "モア"].includes(typeAttr.value);
 
   // 有効期限
@@ -150,25 +139,7 @@ function TicketDetailContent({
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const identifier = nft?.uuid || nftId;
 
-  const ATTR_LABELS: Record<string, string> = {
-    Status: "ステータス",
-    Type: "種別",
-    Source: "取得方法",
-    Transferable: "譲渡",
-    Used_At: "使用日時",
-    Event: "イベント",
-    Issued_At: "発行日",
-    "Order ID": "注文ID",
-  };
-  const ATTR_VALUES: Record<string, string> = {
-    Unused: "利用可能",
-    Used: "使用済み",
-    Yes: "可能",
-    No: "不可",
-    Airdrop: "配布（QRコード）",
-    LINE連携: "LINE連携",
-    Purchase: "購入",
-  };
+
 
   return (
     <div className="min-h-screen bg-slate-50 pb-28">
@@ -439,10 +410,10 @@ function TicketDetailContent({
                   className="rounded-xl bg-white border border-slate-100 p-4 flex flex-col items-center text-center shadow-sm"
                 >
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    {ATTR_LABELS[attr.trait_type] || attr.trait_type}
+                    {NFT_ATTR_LABELS[attr.trait_type] || attr.trait_type}
                   </p>
                   <p className="text-sm font-bold text-slate-800">
-                    {ATTR_VALUES[attr.value] || attr.value}
+                    {NFT_ATTR_VALUES[attr.value] || attr.value}
                   </p>
                 </div>
               ))}

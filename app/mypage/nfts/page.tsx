@@ -9,6 +9,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { TicketCard } from "@/components/ticket-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { NFT_TYPE_LABELS } from "@/lib/nft-constants";
 
 const fetcher = (url: string) =>
     fetch(url).then((r) => {
@@ -124,12 +125,12 @@ function MyNFTsContent() {
 
     const CATEGORY_FILTERS = [
         { key: "all", label: `すべて${nfts.length > 0 ? ` (${nfts.length})` : ""}` },
-        { key: "certificate", label: "証明書" },
-        { key: "more", label: "モア" },
-        { key: "experience", label: "体験チケット" },
-        { key: "asset", label: "デジタル資産" },
-        { key: "art", label: "アート" },
-        { key: "other", label: "その他" },
+        { key: "certificate", label: NFT_TYPE_LABELS.certificate },
+        { key: "more", label: NFT_TYPE_LABELS.more },
+        { key: "experience", label: NFT_TYPE_LABELS.experience },
+        { key: "asset", label: NFT_TYPE_LABELS.asset },
+        { key: "art", label: NFT_TYPE_LABELS.art },
+        { key: "other", label: NFT_TYPE_LABELS.other },
     ];
 
     return (
@@ -218,6 +219,7 @@ function MyNFTsContent() {
                                     acquiredAt={nft.acquiredAt}
                                     expiresAt={nft.expiresAt}
                                     isExpired={nft.isExpired}
+                                    rawNft={nft}
                                 />
                             );
                         })}

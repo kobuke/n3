@@ -1,8 +1,11 @@
 "use client";
 
+import { mutate } from "swr";
+
 import Image from "next/image";
 import Link from "next/link";
 import { Ticket } from "lucide-react";
+import { NFT_TYPE_LABELS } from "@/lib/nft-constants";
 
 interface NFTAttribute {
   trait_type: string;
@@ -19,22 +22,10 @@ interface TicketCardProps {
   acquiredAt?: string;
   expiresAt?: string | null;
   isExpired?: boolean;
+  rawNft?: any;
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  certificate: "証明書",
-  more: "モア",
-  experience: "体験チケット",
-  asset: "デジタル資産",
-  art: "アート",
-  other: "その他",
-  // 旧タイプの後方互換
-  ticket: "チケット",
-  tour: "ツアーパス",
-  resident_card: "デジタル住民証",
-  artwork: "アート作品",
-  product: "その他",
-};
+
 
 export function TicketCard({
   nftId,
@@ -46,6 +37,7 @@ export function TicketCard({
   acquiredAt,
   expiresAt,
   isExpired = false,
+  rawNft,
 }: TicketCardProps) {
   const statusAttr = attributes.find((a) => a.trait_type === "Status");
   const status = statusAttr?.value ?? "Unused";
@@ -70,10 +62,23 @@ export function TicketCard({
     }
   };
 
-  const typeLabel = typeAttr ? (TYPE_LABELS[typeAttr.value] ?? typeAttr.value) : null;
+  const typeLabel = typeAttr ? (NFT_TYPE_LABELS[typeAttr.value] ?? typeAttr.value) : null;
+
+  const handlePrefetch = () => {
+    if (!rawNft) return;
+    const cacheKey = contractAddress
+      ? `/api/nfts/${nftId}?contract=${contractAddress}`
+      : `/api/nfts/${nftId}`;
+    mutate(cacheKey, rawNft, { revalidate: true });
+  };
 
   return (
-    <Link href={href} className="flex flex-col gap-3 group">
+    <Link 
+      href={href} 
+      className="flex flex-col gap-3 group"
+      onClick={handlePrefetch}
+      onMouseEnter={handlePrefetch}
+    >
       <div
         className={`relative p-1.5 bg-gradient-to-br from-[#1392ec] to-[#a5d8ff] rounded-[1.1rem] shadow-lg shadow-[#1392ec]/5 group-hover:shadow-[#1392ec]/20 transition-all ${isInactive ? "opacity-75 grayscale-[0.3]" : ""
           }`}
