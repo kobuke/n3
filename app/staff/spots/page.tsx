@@ -354,7 +354,7 @@ export default function SpotsPage() {
                                 <div className="pt-4 border-t space-y-4 animate-in fade-in slide-in-from-top-2">
                                     <div className="h-[350px] w-full rounded-md border overflow-hidden relative">
                                         <MapPicker
-                                            center={[formData.latitude || 35.658034, formData.longitude || 139.701636]}
+                                            center={[formData.latitude ?? 35.658034, formData.longitude ?? 139.701636]}
                                             radius={formData.radius_meters || 100}
                                             onLocationChange={(lat, lng) => setFormData({ ...formData, latitude: lat, longitude: lng })}
                                         />

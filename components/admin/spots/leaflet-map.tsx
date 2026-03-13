@@ -55,8 +55,7 @@ export default function LeafletMap({ center, radius, zoom = 15, onLocationChange
         setMounted(true);
     }, []);
 
-    const handleSearch = async (e?: React.FormEvent) => {
-        if (e) e.preventDefault();
+    const handleSearch = async () => {
         if (!searchQuery.trim()) return;
 
         setIsSearching(true);
@@ -83,17 +82,18 @@ export default function LeafletMap({ center, radius, zoom = 15, onLocationChange
     return (
         <div className="flex flex-col gap-2 w-full h-full">
             {!readOnly && (
-                <form onSubmit={handleSearch} className="flex gap-2">
+                <div className="flex gap-2">
                     <Input
                         placeholder="場所を検索 (例: 世田谷区代沢, Paris Eiffel Tower)"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                         className="flex-1"
                     />
-                    <Button type="submit" disabled={isSearching} size="icon">
+                    <Button type="button" onClick={handleSearch} disabled={isSearching} size="icon">
                         {isSearching ? <Loader2 className="animate-spin" /> : <Search />}
                     </Button>
-                </form>
+                </div>
             )}
             <div className="relative flex-1" style={{ minHeight: "300px" }}>
                 <MapContainer center={center} zoom={zoom} className="h-full w-full rounded-md z-0" style={{ height: "100%", width: "100%", zIndex: 0 }}>
