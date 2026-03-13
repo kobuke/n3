@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { LogOut } from "lucide-react";
+import { useDisconnect } from "wagmi";
 import { AppHeader } from "@/components/app-header";
 import { BottomNav } from "@/components/bottom-nav";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,6 +36,7 @@ export default function MyPage() {
 
 function MyPageContent() {
   const router = useRouter();
+  const { disconnectAsync } = useDisconnect();
   const searchParams = useSearchParams();
   const [showAllActivities, setShowAllActivities] = useState(false);
   const lineAirdropTriggered = useRef(false);
@@ -170,6 +172,14 @@ function MyPageContent() {
   const activities: any[] = activityData?.activities ?? [];
 
   async function handleLogout() {
+    try {
+      // マニュアルログアウトのフラグを立てる（自動再ログイン防止）
+      localStorage.setItem('userLoggedOut', 'true');
+      // Wallet接続を解除 (完了を待機)
+      await disconnectAsync();
+    } catch (e) {
+      console.error("Disconnect error:", e);
+    }
     await fetch("/api/logout", { method: "POST" });
     toast.success("ログアウトしました");
     router.push("/");

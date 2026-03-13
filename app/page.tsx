@@ -26,6 +26,10 @@ export default function LoginPage() {
   // Handle wallet connection success
   useEffect(() => {
     async function loginWithWallet() {
+      // 意図的なログアウト直後で、まだ接続が残っている場合は自動ログインをスキップ
+      const isLoggedOut = localStorage.getItem('userLoggedOut') === 'true';
+      if (isLoggedOut) return;
+
       if (isConnected && address) {
         setLoading(true);
         try {
@@ -58,6 +62,13 @@ export default function LoginPage() {
 
     loginWithWallet();
   }, [isConnected, address, router]);
+
+  // マニュアルログアウト済みフラグのクリア（接続が完全に切れた場合など）
+  useEffect(() => {
+    if (!isConnected) {
+      localStorage.removeItem('userLoggedOut');
+    }
+  }, [isConnected]);
 
   // Handle LINE LIFF Initialization
   useEffect(() => {
