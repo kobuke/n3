@@ -53,6 +53,19 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
             return NextResponse.json({ error: "No ID provided" }, { status: 400 });
         }
 
+        const { data: claims } = await supabase
+            .from("airdrop_claims")
+            .select("id")
+            .eq("spot_id", id)
+            .limit(1);
+
+        if (claims && claims.length > 0) {
+            return NextResponse.json(
+                { error: "この配布スポットは既にユーザーにNFTが配布された履歴があるため削除できません。代わりに「公開する」の設定をオフにして非公開に切り替えてください。" },
+                { status: 400 }
+            );
+        }
+
         const { error } = await supabase
             .from("nft_distribution_spots")
             .delete()

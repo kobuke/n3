@@ -55,8 +55,8 @@ export function MappingList() {
         const templatesData = await templatesRes.json()
         const mappingsData = await mappingsRes.json()
 
-        setProducts(productsData)
-        setTemplates(templatesData)
+        setProducts(Array.isArray(productsData) ? productsData : (productsData.data || []))
+        setTemplates(Array.isArray(templatesData) ? templatesData : [])
 
         const mappingMap: Record<string, string[]> = {}
         if (Array.isArray(mappingsData)) {
@@ -112,6 +112,9 @@ export function MappingList() {
 
   const currentMappings = { ...mappings, ...pendingChanges }
   const activeCount = Object.values(currentMappings).filter(ids => ids.length > 0).length
+
+  const productIds = new Set(products.map(p => p.id))
+  const orphanedProductIds = Object.keys(mappings).filter(id => !productIds.has(id))
 
   return (
     <div className="flex flex-col gap-6">
@@ -273,6 +276,64 @@ export function MappingList() {
           )
         })}
       </div>
+      {orphanedProductIds.length > 0 && (
+        <div className="mt-8 pt-6 border-t border-destructive/20">
+          <div className="flex items-center gap-2 mb-4">
+             <div className="size-2 rounded-full bg-destructive animate-pulse" />
+             <h3 className="text-md font-semibold text-destructive">Shopifyから削除された商品の紐付け（幽霊マッピング）</h3>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Shopify側で商品が削除されましたが、N3側に紐付けデータだけが残っています。これが原因でテンプレートが削除できない場合があります。以下のチェックを外して保存し、紐付けを解除してください。
+          </p>
+          <div className="flex flex-col gap-4">
+            {orphanedProductIds.map((productId) => {
+              const currentTemplateIds = pendingChanges[productId] !== undefined ? pendingChanges[productId] : (mappings[productId] || [])
+              const selectedTemplates = templates.filter(t => currentTemplateIds.includes(t.id))
+              
+              if (currentTemplateIds.length === 0) return null; // Already unlinked
+
+              return (
+                <Card key={productId} className="border-destructive/30 bg-destructive/5">
+                  <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <div className="font-mono text-xs text-muted-foreground bg-white/50 px-2 py-1 rounded inline-block mb-1">
+                        Product ID: {productId}
+                      </div>
+                      <div className="text-sm font-semibold text-destructive">
+                        存在しない商品
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        該当テンプレート ({currentTemplateIds.length} 個)
+                      </span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" className="w-56 justify-start text-left font-normal border-destructive/20">
+                            <span className="truncate">{selectedTemplates.map(t => t.name).join(", ")}</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56 max-h-64 overflow-y-auto">
+                          {templates.map((template) => (
+                            <DropdownMenuCheckboxItem
+                              key={template.id}
+                              checked={currentTemplateIds.includes(template.id)}
+                              onCheckedChange={() => handleTemplateToggle(productId, template.id)}
+                            >
+                              {template.name}
+                            </DropdownMenuCheckboxItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -7,6 +7,7 @@ export async function GET() {
         const { data, error } = await supabase
             .from('nft_templates')
             .select('*')
+            .eq('is_deleted', false)
             .order('created_at', { ascending: false })
 
         if (error) {

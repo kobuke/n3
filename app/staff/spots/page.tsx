@@ -146,6 +146,23 @@ export default function SpotsPage() {
         return '';
     };
 
+    const handleDelete = async (id: string, name: string) => {
+        if (!confirm(`配布スポット「${name}」を本当に削除しますか？\n（この操作は取り消せません）`)) return;
+        setIsLoading(true);
+        try {
+            const res = await fetch(`/api/admin/spots/${id}`, { method: "DELETE" });
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || "Failed to delete spot");
+            }
+            toast.success("配布スポットを削除しました。");
+            fetchData();
+        } catch (error: any) {
+            toast.error(error.message);
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="flex flex-col h-full">
             <PageHeader
@@ -177,8 +194,8 @@ export default function SpotsPage() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                         {spots.map((spot) => (
-                            <Card key={spot.id} className="flex flex-col">
-                                <CardHeader className="pb-3 border-b bg-muted/40 relative">
+                            <Card key={spot.id} className={`flex flex-col transition-all ${!spot.is_active ? "opacity-60 grayscale-[50%] bg-muted/50" : ""}`}>
+                                <CardHeader className={`pb-3 border-b relative ${!spot.is_active ? "bg-transparent" : "bg-muted/40"}`}>
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <div className="flex items-center gap-2 mb-1">
@@ -197,6 +214,9 @@ export default function SpotsPage() {
                                         <div className="flex space-x-1">
                                             <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(spot)}>
                                                 <Pencil className="w-4 h-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" onClick={() => handleDelete(spot.id, spot.name)} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                                                <Trash2 className="w-4 h-4" />
                                             </Button>
                                         </div>
                                     </div>

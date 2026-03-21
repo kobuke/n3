@@ -9,22 +9,34 @@ export async function DELETE(
         const { id } = await params
         const supabase = createAdminClient()
 
-        // Before deleting, check if it's being used in mappings
-        const { data: mappings } = await supabase
-            .from('mappings')
-            .select('id')
-            .eq('nft_template_id', id)
-            .limit(1)
+        // Run all checks concurrently for better performance
+        const [mappingsRes, spotsRes, questsRes] = await Promise.all([
+            supabase.from('mappings').select('id').eq('nft_template_id', id).limit(1),
+            supabase.from('nft_distribution_spots').select('id').eq('template_id', id).eq('is_active', true).limit(1),
+            supabase.from('quests').select('id').eq('is_active', true).or(`base_nft_template_id.eq.${id},reward_nft_template_id.eq.${id}`).limit(1)
+        ])
 
-        if (mappings && mappings.length > 0) {
+        if (mappingsRes.data && mappingsRes.data.length > 0) {
             return NextResponse.json({
-                error: 'このテンプレートは現在Shopify商品に紐付いているため削除できません。先に紐付けを解除してください。'
+                error: 'このテンプレートは現在Shopify商品に紐付いているため削除できません。先に商品マッピングの紐付けを解除してください。'
+            }, { status: 400 })
+        }
+
+        if (spotsRes.data && spotsRes.data.length > 0) {
+            return NextResponse.json({
+                error: 'このテンプレートは現在「配布スポット」に設定されているため削除できません。先に配布スポットを削除または変更してください。'
+            }, { status: 400 })
+        }
+
+        if (questsRes.data && questsRes.data.length > 0) {
+            return NextResponse.json({
+                error: 'このテンプレートは現在「クエスト（スタンプラリー）」の条件または報酬に設定されているため削除できません。先にクエスト設定を変更してください。'
             }, { status: 400 })
         }
 
         const { error } = await supabase
             .from('nft_templates')
-            .delete()
+            .update({ is_deleted: true })
             .eq('id', id)
 
         if (error) {

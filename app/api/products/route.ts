@@ -45,9 +45,8 @@ export async function GET() {
 
             if (!response.ok) {
                 console.error('Shopify API Error:', await response.text())
-                // Fallback to mock if API fails but return error status? 
-                // For now, let's return mock with a warning or just throw
-                return NextResponse.json({ error: 'Failed to fetch from Shopify' }, { status: response.status })
+                // 画面（配列を期待している）をクラッシュさせないため、エラー情報を含めつつ空の配列を返す
+                return NextResponse.json({ error: 'Failed to fetch from Shopify', data: [] }, { status: response.status })
             }
 
             const data = await response.json()
