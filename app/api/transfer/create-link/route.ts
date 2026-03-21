@@ -30,6 +30,46 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
         }
 
+        const supabase = createAdminClient();
+
+        // --- Expiration Check ---
+        const { getNFTById } = await import("@/lib/thirdweb");
+        const { extractTemplateId } = await import("@/lib/nft-helpers");
+
+        const nft = await getNFTById(contractAddress, String(nftId));
+        if (nft && (nft.metadata as any)?.attributes) {
+            const templateId = extractTemplateId((nft.metadata as any).attributes);
+            if (templateId) {
+                const { data: mintLog } = await supabase
+                    .from('mint_logs')
+                    .select('created_at')
+                    .eq('token_id', String(nftId))
+                    .eq('contract_address', contractAddress)
+                    .ilike('recipient_wallet', session.walletAddress)
+                    .eq('status', 'success')
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                if (mintLog?.created_at) {
+                    const { data: tmpl } = await supabase
+                        .from('nft_templates')
+                        .select('validity_days')
+                        .eq('id', templateId)
+                        .single();
+
+                    if (tmpl?.validity_days) {
+                        const expDate = new Date(mintLog.created_at);
+                        expDate.setDate(expDate.getDate() + tmpl.validity_days);
+                        if (new Date() > expDate) {
+                            return NextResponse.json({ error: "このNFTは有効期限が切れているため譲渡できません" }, { status: 400 });
+                        }
+                    }
+                }
+            }
+        }
+        // ------------------------
+
         // 1. Generate unique transfer token
         const token = generateSecureToken();
         const expiresAt = new Date();
@@ -40,7 +80,6 @@ export async function POST(req: NextRequest) {
         // This avoids requiring the sender (MetaMask user) to sign a transaction or give approvals.
 
         // 3. Save transfer link to DB
-        const supabase = createAdminClient();
         const { error: dbError } = await supabase
             .from('transfer_links')
             .insert({

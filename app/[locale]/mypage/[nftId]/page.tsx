@@ -250,15 +250,13 @@ function TicketDetailContent({
             </div>
             <p className="font-bold text-slate-700 text-base">{t('expired_msg')}</p>
             <p className="text-sm text-slate-500">{t('expired_desc')}</p>
-            {shopifyProductUrl ? (
+            {shopifyProductUrl && (
               <a href={shopifyProductUrl} target="_blank" rel="noopener noreferrer" className="mt-2 w-full">
                 <Button size="lg" className="w-full font-bold gap-2 bg-amber-500 hover:bg-amber-600">
                   <RefreshCw className="w-4 h-4" />
                   {t('renew')}
                 </Button>
               </a>
-            ) : (
-              <p className="text-xs text-slate-400 mt-2">{t('no_renew_url')}</p>
             )}
           </div>
         ) : !isUsed ? (

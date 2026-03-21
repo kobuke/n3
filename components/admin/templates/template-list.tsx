@@ -136,7 +136,7 @@ export function TemplateList() {
                     is_transferable: isTransferable,
                     contract_address: process.env.NEXT_PUBLIC_COLLECTION_ID || "",
                     max_supply: isInfinite ? null : maxSupply,
-                    validity_days: !isTransferable && validityDays ? validityDays : null,
+                    validity_days: validityDays ? parseInt(validityDays, 10) : null,
                     shopify_product_url: !isTransferable && shopifyProductUrl ? shopifyProductUrl : null,
                 })
             })
@@ -380,22 +380,22 @@ export function TemplateList() {
                                         </div>
                                     </div>
 
-                                    {/* SBT専用: 有効期限 & Shopify更新URL */}
-                                    {!isTransferable && (
-                                        <div className="flex flex-col gap-4 mt-2 border-t pt-4">
-                                            <div className="flex flex-col gap-2">
-                                                <Label htmlFor="validityDays">有効期限（日数）</Label>
-                                                <Input
-                                                    id="validityDays"
-                                                    type="number"
-                                                    min="1"
-                                                    placeholder="例: 365（空欄 = 無期限）"
-                                                    value={validityDays}
-                                                    onChange={e => setValidityDays(e.target.value)}
-                                                />
-                                                <p className="text-[11px] text-muted-foreground">配布日から起算。空欄の場合は無期限です。</p>
-                                            </div>
-                                            <div className="flex flex-col gap-2">
+                                    {/* 有効期限 & Shopify更新URL (SBT・NFT共通) */}
+                                    <div className="flex flex-col gap-4 mt-2 border-t pt-4">
+                                        <div className="flex flex-col gap-2">
+                                            <Label htmlFor="validityDays">有効期限（日数）</Label>
+                                            <Input
+                                                id="validityDays"
+                                                type="number"
+                                                min="1"
+                                                placeholder="例: 365（空欄 = 無期限）"
+                                                value={validityDays}
+                                                onChange={e => setValidityDays(e.target.value)}
+                                            />
+                                            <p className="text-[11px] text-muted-foreground">配布日から起算。空欄の場合は無期限です。</p>
+                                        </div>
+                                        {!isTransferable && (
+                                            <div className="flex flex-col gap-2 mt-2">
                                                 <Label htmlFor="shopifyUrl">更新購入用Shopify URL</Label>
                                                 <Input
                                                     id="shopifyUrl"
@@ -406,8 +406,8 @@ export function TemplateList() {
                                                 />
                                                 <p className="text-[11px] text-muted-foreground">期限切れ時に「更新する」ボタンから遷移する先です。</p>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 

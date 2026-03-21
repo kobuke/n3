@@ -70,6 +70,39 @@ export async function POST(req: Request) {
         const oldAttributes = (oldMetadata as any).attributes || [];
         const newAttributes = [...oldAttributes];
         const hasStatus = newAttributes.some((a: any) => a.trait_type === "Status");
+        
+        // --- Expiration Check ---
+        const templateAttr = oldAttributes.find((a: any) => a.trait_type === "TemplateID" || a.trait_type === "templateId");
+        const templateId = templateAttr?.value;
+        if (templateId) {
+            const { data: mintLog } = await supabase
+                .from('mint_logs')
+                .select('created_at')
+                .eq('token_id', tokenId.toString())
+                .eq('contract_address', contractAddress)
+                .ilike('recipient_wallet', walletAddress)
+                .eq('status', 'success')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (mintLog?.created_at) {
+                const { data: tmpl } = await supabase
+                    .from('nft_templates')
+                    .select('validity_days')
+                    .eq('id', templateId)
+                    .single();
+
+                if (tmpl?.validity_days) {
+                    const expDate = new Date(mintLog.created_at);
+                    expDate.setDate(expDate.getDate() + tmpl.validity_days);
+                    if (new Date() > expDate) {
+                        return NextResponse.json({ error: "このチケットは有効期限が切れています" }, { status: 400 });
+                    }
+                }
+            }
+        }
+        // ------------------------
 
         // Use ISO string for deterministic used date
         const usedAtTime = new Date().toISOString();
