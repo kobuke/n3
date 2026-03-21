@@ -1,25 +1,28 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Link2 } from "lucide-react";
 
 interface SbtCardProps {
-  mainSbt: any;
+  mainSbt?: any;
+  mainSbtTemplate?: any;
+  purchaseUrl?: string | null;
   holdersCount: number;
 }
 
-export function SbtCard({ mainSbt, holdersCount }: SbtCardProps) {
+export function SbtCard({ mainSbt, mainSbtTemplate, purchaseUrl, holdersCount }: SbtCardProps) {
   const router = useRouter();
 
-  let mainSbtImage = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=2600&auto=format&fit=crop"; // ダミー画像
-  let mainSbtName = "指定されたSBTはありません";
+  let mainSbtImage = null;
+  let mainSbtName = mainSbtTemplate?.name || "設定されていません";
   let mainSbtRank: string | null = null;
-  let mainSbtCategory = "Web3 アイデンティティ";
+  let mainSbtCategory = "あなたの会員証";
   let hasMainSbt = false;
 
   if (mainSbt) {
     hasMainSbt = true;
-    mainSbtImage = mainSbt.image || mainSbtImage;
-    mainSbtName = mainSbt.name || "（未登録）";
+    mainSbtImage = mainSbt.image || mainSbtTemplate?.image_url;
+    mainSbtName = mainSbt.name || mainSbtTemplate?.name || "（未登録）";
 
     // attributes から Rank を探す
     const attrs = mainSbt.metadata?.attributes || [];
@@ -43,12 +46,29 @@ export function SbtCard({ mainSbt, holdersCount }: SbtCardProps) {
     <div className="relative rounded-3xl bg-gradient-to-b from-[#e0f2fe] to-white p-6 shadow-sm border border-slate-100/50">
       {/* Main Image */}
       <div className="relative mb-6">
-        <div className="aspect-[16/9] w-full overflow-hidden rounded-2xl bg-black">
-          <img
-            src={mainSbtImage}
-            alt={mainSbtName}
-            className="h-full w-full object-cover opacity-90"
-          />
+        <div className={`flex items-center justify-center aspect-[16/9] w-full overflow-hidden rounded-2xl ${hasMainSbt && mainSbtImage ? 'bg-black' : 'bg-slate-300/80 border border-slate-200'}`}>
+          {hasMainSbt && mainSbtImage ? (
+            <img
+              src={mainSbtImage}
+              alt={mainSbtName}
+              className="h-full w-full object-cover opacity-90"
+            />
+          ) : (
+            <>
+              {/* Unowned state overlay: gray background + Purchase Button */}
+              {purchaseUrl && (
+                <a
+                  href={purchaseUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-slate-800 shadow-md hover:scale-105 active:scale-95 transition-all z-10"
+                >
+                  <Link2 className="w-4 h-4" />
+                  取得する
+                </a>
+              )}
+            </>
+          )}
         </div>
         {mainSbtRank && (
           <div className="absolute top-3 right-3 rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-bold text-[#0EA5E9] shadow-[0_2px_10px_rgba(0,0,0,0.1)]">
@@ -63,7 +83,7 @@ export function SbtCard({ mainSbt, holdersCount }: SbtCardProps) {
           {mainSbtCategory}
         </span>
         <h2 className="mb-4 text-2xl font-bold text-slate-900 tracking-tight">
-          {hasMainSbt ? mainSbtName : "マイデジタル住民証"}
+          {mainSbtName}
         </h2>
 
         <div className="flex items-center justify-between">
@@ -96,9 +116,9 @@ export function SbtCard({ mainSbt, holdersCount }: SbtCardProps) {
               詳細を見る
             </button>
           ) : (
-            <button className="rounded-full bg-slate-200 px-6 py-2.5 text-sm font-bold text-slate-400 cursor-not-allowed">
+            <span className="rounded-full bg-slate-200 px-6 py-2.5 text-sm font-bold text-slate-400">
               未取得
-            </button>
+            </span>
           )}
         </div>
       </div>

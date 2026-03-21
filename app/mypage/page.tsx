@@ -121,10 +121,16 @@ function MyPageContent() {
   );
 
   const { data: settingsData } = useSWR(
-    session?.authenticated ? "/api/settings?keys=main_sbt_template_id" : null,
+    session?.authenticated ? "/api/settings?keys=main_sbt_template_id,main_sbt_purchase_url" : null,
     fetcher
   );
   const mainSbtTemplateId = settingsData?.main_sbt_template_id || null;
+  const mainSbtPurchaseUrl = settingsData?.main_sbt_purchase_url || null;
+
+  const { data: mainSbtTemplateData } = useSWR(
+    mainSbtTemplateId ? `/api/templates/${mainSbtTemplateId}` : null,
+    fetcher
+  );
 
   const { data: statsData } = useSWR(
     mainSbtTemplateId ? `/api/stats/sbt-holders?templateId=${mainSbtTemplateId}` : null,
@@ -202,6 +208,8 @@ function MyPageContent() {
           {/* User ID Card (Digital Resident NFT) */}
           <SbtCard
             mainSbt={nfts.find((n: any) => n.templateId === mainSbtTemplateId)}
+            mainSbtTemplate={mainSbtTemplateData}
+            purchaseUrl={mainSbtPurchaseUrl}
             holdersCount={holdersCount}
           />
 

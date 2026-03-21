@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/admin/ui/card"
 import { Label } from "@/components/admin/ui/label"
+import { Input } from "@/components/admin/ui/input"
 import { Button } from "@/components/admin/ui/button"
 import {
   Select,
@@ -15,14 +16,16 @@ import { Save, Loader2, Image as ImageIcon } from "lucide-react"
 
 export function MainSbtSettingsCard({ templates }: { templates: any[] }) {
   const [mainSbtTemplateId, setMainSbtTemplateId] = useState("")
+  const [mainSbtPurchaseUrl, setMainSbtPurchaseUrl] = useState("")
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    fetch("/api/settings?keys=main_sbt_template_id")
+    fetch("/api/settings?keys=main_sbt_template_id,main_sbt_purchase_url")
       .then(r => r.json())
       .then(data => {
         if (data.main_sbt_template_id) setMainSbtTemplateId(data.main_sbt_template_id)
+        if (data.main_sbt_purchase_url) setMainSbtPurchaseUrl(data.main_sbt_purchase_url)
       })
       .catch(() => { })
       .finally(() => setLoading(false))
@@ -36,6 +39,7 @@ export function MainSbtSettingsCard({ templates }: { templates: any[] }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           main_sbt_template_id: mainSbtTemplateId,
+          main_sbt_purchase_url: mainSbtPurchaseUrl,
         }),
       })
       alert("トップ画像（SBT）表示設定を保存しました。")
@@ -80,6 +84,18 @@ export function MainSbtSettingsCard({ templates }: { templates: any[] }) {
               </Select>
               <p className="text-[10px] text-muted-foreground">
                 ※ここで指定したSBTがマイページ最上段に表示され、保有者数（関係人口）などの情報が連動します。
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 mt-4">
+              <Label>購入ページ（Shopify）のURL</Label>
+              <Input 
+                value={mainSbtPurchaseUrl} 
+                onChange={e => setMainSbtPurchaseUrl(e.target.value)} 
+                placeholder="https://nanjo-nft-2.myshopify.com/products/..."
+              />
+              <p className="text-[10px] text-muted-foreground">
+                ※ユーザーがこのデジタル住民証をまだ持っていない場合、マイページに「購入する」ボタンと共にこのURLへのリンクが表示されます。
               </p>
             </div>
 
