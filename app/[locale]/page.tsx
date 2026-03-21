@@ -66,13 +66,6 @@ export default function LoginPage() {
     loginWithWallet();
   }, [isConnected, address, router, t]);
 
-  // マニュアルログアウト済みフラグのクリア（接続が完全に切れた場合など）
-  useEffect(() => {
-    if (!isConnected) {
-      localStorage.removeItem('userLoggedOut');
-    }
-  }, [isConnected]);
-
   // Handle LINE LIFF Initialization
   useEffect(() => {
     async function initLiff() {
@@ -103,17 +96,22 @@ export default function LoginPage() {
 
       try {
         await liff.init({ liffId });
+
+        // 手動ログアウト済みフラグがある場合は自動ログイン関連の処理をすべてスキップ
+        const isLoggedOut = localStorage.getItem('userLoggedOut') === 'true';
+        if (isLoggedOut) {
+          if (liff.isLoggedIn()) {
+            const profile = await liff.getProfile();
+            setLineId(profile.userId);
+          }
+          setLiffLoading(false);
+          return;
+        }
+
         if (liff.isLoggedIn()) {
           const profile = await liff.getProfile();
           const currentLineId = profile.userId;
           setLineId(currentLineId);
-
-          // 手動ログアウト済みフラグがある場合は自動ログインをスキップ
-          const isLoggedOut = localStorage.getItem('userLoggedOut') === 'true';
-          if (isLoggedOut) {
-            setLiffLoading(false);
-            return;
-          }
 
           const res = await fetch("/api/auth/line", {
             method: "POST",
@@ -135,7 +133,8 @@ export default function LoginPage() {
             setLiffLoading(false);
           }
         } else {
-          if (liff.isInClient()) {
+          // ログアウト済みフラグがない場合のみ、LINE内ブラウザで自動ログインを実行
+          if (liff.isInClient() && !isLoggedOut) {
             liff.login();
           } else {
             setLiffLoading(false);
