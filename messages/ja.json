@@ -14,6 +14,8 @@
       "otp_description": "{email} に6桁の認証コードを送りました。\nメールbox（迷惑メールも）をご確認ください。",
       "email_placeholder": "メールアドレスを入力",
       "submit_email": "メールで続ける →",
+      "submit_line": "LINEでログイン",
+      "or_email_section": "またはメールアドレスでログイン",
       "sending": "送信中...",
       "otp_placeholder": "例: 123456",
       "otp_hint": "メールに届いた6桁の数字を入力してください",

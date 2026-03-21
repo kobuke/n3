@@ -14,6 +14,8 @@
       "otp_description": "We've sent a 6-digit verification code to {email}.\nPlease check your inbox (including spam folder).",
       "email_placeholder": "Enter your email address",
       "submit_email": "Continue with Email →",
+      "submit_line": "Login with LINE",
+      "or_email_section": "or login with email address",
       "sending": "Sending...",
       "otp_placeholder": "Example: 123456",
       "otp_hint": "Enter the 6-digit code sent to your email",
