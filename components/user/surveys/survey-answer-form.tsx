@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
 import { CheckCircle, AlertCircle } from "lucide-react"
+import { useTranslations } from "next-intl"
 
 type Question = {
     id: string
@@ -26,6 +27,7 @@ type Survey = {
 }
 
 export function SurveyAnswerForm({ surveyId }: { surveyId: string }) {
+    const t = useTranslations('SurveyAnswerForm')
     const router = useRouter()
     const { data: survey, error, isLoading } = useSWR<Survey>(`/api/surveys/${surveyId}`, (url: string) => fetch(url).then(res => res.json()))
 
@@ -37,7 +39,7 @@ export function SurveyAnswerForm({ surveyId }: { surveyId: string }) {
     if (isLoading) {
         return (
             <div className="max-w-xl mx-auto text-center py-20 text-muted-foreground bg-white rounded-2xl shadow-sm border">
-                読み込み中...
+                {t('loading')}
             </div>
         )
     }
@@ -45,7 +47,7 @@ export function SurveyAnswerForm({ surveyId }: { surveyId: string }) {
     if (error || !survey) {
         return (
             <div className="max-w-xl mx-auto text-center py-20 text-red-500 bg-white rounded-2xl shadow-sm border">
-                アンケートが見つかりませんでした。
+                {t('not_found')}
             </div>
         )
     }
@@ -53,7 +55,7 @@ export function SurveyAnswerForm({ surveyId }: { surveyId: string }) {
     if (!survey.is_active) {
         return (
             <div className="max-w-xl mx-auto text-center py-20 bg-white rounded-2xl shadow-sm border">
-                このアンケートは現在回答を受け付けていません。
+                {t('not_accepting')}
             </div>
         )
     }
@@ -64,13 +66,13 @@ export function SurveyAnswerForm({ surveyId }: { surveyId: string }) {
                 <div className="flex justify-center mb-4">
                     <CheckCircle className="w-16 h-16 text-green-500" />
                 </div>
-                <h2 className="text-2xl font-bold leading-tight">ご回答ありがとうございました！</h2>
+                <h2 className="text-2xl font-bold leading-tight">{t('success_title')}</h2>
                 <p className="text-muted-foreground leading-relaxed">
-                    アンケートの送信が完了しました。報酬が設定されている場合、あなたのウォレットにNFTが配布されます。
+                    {t('success_desc')}
                 </p>
                 <div className="pt-8">
                     <Button onClick={() => router.push('/mypage')} className="w-full h-14 rounded-xl font-bold text-lg shadow-md border border-black/10">
-                        マイページに戻る
+                        {t('back_to_mypage')}
                     </Button>
                 </div>
             </div>
@@ -112,11 +114,11 @@ export function SurveyAnswerForm({ surveyId }: { surveyId: string }) {
             if (res.ok) {
                 setIsSuccess(true)
             } else {
-                setSubmitError(data.error || "送信に失敗しました。")
+                setSubmitError(data.error || t('submit_failed'))
             }
         } catch (e) {
             console.error(e)
-            setSubmitError("サーバーエラーが発生しました。時間を置いて再度お試しください。")
+            setSubmitError(t('server_error'))
         } finally {
             setSubmitting(false)
         }
@@ -151,7 +153,7 @@ export function SurveyAnswerForm({ surveyId }: { surveyId: string }) {
 
                         {q.type === 'text' && (
                             <Textarea
-                                placeholder="回答を入力してください"
+                                placeholder={t('placeholder')}
                                 value={(answers[q.id] as string) || ""}
                                 onChange={(e) => handleTextChange(q.id, e.target.value)}
                                 className="min-h-[140px] text-base p-4 rounded-xl resize-none"
@@ -223,12 +225,12 @@ export function SurveyAnswerForm({ surveyId }: { surveyId: string }) {
                     disabled={submitting || !isAllAnswered}
                     className="w-full h-[60px] text-lg font-bold rounded-xl shadow-md border border-black/10 active:scale-[0.98] transition-all"
                 >
-                    {submitting ? "送信中..." : "回答を送信する"}
+                    {submitting ? t('submitting') : t('submit')}
                 </Button>
 
                 {!isAllAnswered && (
                     <p className="text-center text-sm font-medium text-red-500 mt-4">
-                        すべての必須項目に回答してください
+                        {t('required_error')}
                     </p>
                 )}
             </div>

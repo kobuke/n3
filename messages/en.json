@@ -1,0 +1,292 @@
+{
+  "LoginPage": {
+    "title": "Nanjo NFT Wallet",
+    "subtitle": "Nanjo City Digital Ticket & Certificate Service",
+    "features": {
+      "qr": "QR Ticket",
+      "digital": "Digital Souvenir",
+      "safe": "Safe & Free"
+    },
+    "login_card": {
+      "title": "Get Started / Login",
+      "otp_title": "Email Verification",
+      "description": "Enter your email address to get started immediately.",
+      "otp_description": "We've sent a 6-digit verification code to {email}.\nPlease check your inbox (including spam folder).",
+      "email_placeholder": "Enter your email address",
+      "submit_email": "Continue with Email →",
+      "sending": "Sending...",
+      "otp_placeholder": "Example: 123456",
+      "otp_hint": "Enter the 6-digit code sent to your email",
+      "submit_otp": "✓ Verify and Login",
+      "verifying": "Verifying...",
+      "change_email": "Change email address",
+      "email_hint": "* No registration needed. Just enter the 6-digit code.",
+      "wallet_section": "For Crypto Wallet Holders",
+      "wallet_connect": "Connect with Wallet (Advanced)",
+      "footer": "By logging in, we securely store your digital tickets and souvenirs."
+    },
+    "toast": {
+      "login_success": "Logged in successfully!",
+      "login_failed": "Login failed",
+      "line_login_success": "Logged in via LINE",
+      "otp_sent": "Verification code sent to your email!",
+      "otp_failed": "Failed to send code",
+      "otp_invalid": "Incorrect code. Please check and try again.",
+      "network_error": "Network error. Please try again."
+    }
+  },
+  "Common": {
+    "logout": "Logout",
+    "refresh": "Refresh",
+    "back": "Back",
+    "success": "Success",
+    "error": "Error",
+    "loading": "Loading...",
+    "processing": "Processing...",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "retry": "Retry",
+    "notifications": "Notifications",
+    "status": {
+      "valid": "Valid",
+      "used": "Used",
+      "expired": "Expired",
+      "pending": "Pending",
+      "available": "Available"
+    },
+    "copy": "Copy",
+    "copied": "Copied",
+    "view_detail": "View Detail",
+    "end_of_list": "End of list"
+  },
+  "MyPage": {
+    "title": "My Page",
+    "discord_success": "Discord connected!",
+    "line_success": "LINE connected!",
+    "logout_success": "Logged out successfully",
+    "language_setting": "Language",
+    "japanese": "Japanese",
+    "english": "English"
+  },
+  "BottomNav": {
+    "home": "Home",
+    "quests": "Quests",
+    "mypage": "My Page",
+    "my_nfts": "My NFTs",
+    "shop": "Shop",
+    "notifications": "Notifications"
+  },
+  "AppHeader": {
+    "refresh": "Refresh",
+    "back": "Back",
+    "notifications": "Notifications"
+  },
+  "MyNFTsPage": {
+    "title": "NFT Collection",
+    "filter": {
+      "all": "All",
+      "count": "All ({count})"
+    },
+    "empty": {
+      "no_items": "No items yet",
+      "no_items_desc": "Join events or receive a QR code from staff to see your digital tickets and souvenirs here.",
+      "no_category_items": "No items in this category",
+      "show_all": "Show all items"
+    },
+    "toast": {
+      "refresh_success": "Information updated",
+      "refresh_failed": "Update failed"
+    },
+    "acquired_at": "Acquired at: {date}"
+  },
+  "ClaimPage": {
+    "invalid_link": "Invalid link",
+    "no_token": "Token not found.",
+    "title": "NFT Ticket Delivery",
+    "description": "An NFT ticket has been transferred to you!",
+    "success_title": "Claim Successful!",
+    "success_desc": "* Due to blockchain processing, it usually takes 30 seconds to 1 minute to appear in your list. Please refresh the page after a short while.",
+    "go_to_nfts": "View NFT Collection",
+    "login_required": "Login is required to claim.",
+    "login_to_claim": "Login to Claim",
+    "confirm_claim": "Do you want to claim this ticket with your account ({identifier})?",
+    "submit_claim": "Claim Ticket",
+    "toast": {
+      "claim_failed": "Failed to claim ticket"
+    }
+  },
+  "SpotPage": {
+    "not_found_title": "Page Not Found",
+    "not_found_desc": "The URL is invalid or the distribution may have ended.",
+    "default_description": "Collect local exclusive souvenirs here.",
+    "claiming": "Processing claim...",
+    "checking_location": "Verifying location...",
+    "submit_claim": "Claim NFT",
+    "error_geo": "Could not get location. Please check your settings and try again.",
+    "error_network": "Network error occurred.",
+    "error_default": "An error occurred."
+  },
+  "QuestPage": {
+    "title": "Quests",
+    "scan": {
+      "invalid_qr": "Invalid QR code.",
+      "locating": "Locating your position...",
+      "geo_not_supported": "Your browser does not support geolocation.",
+      "geo_denied": "Location access was denied. Please enable it in your browser settings.",
+      "geo_unavailable": "Location information is unavailable.",
+      "geo_timeout": "Location request timed out.",
+      "geo_unknown": "An unknown error occurred while getting location.",
+      "checking": "Checking in...",
+      "success": "🎉 Check-in successful!",
+      "level_up": "✨ Status evolved! (It may take a moment to reflect in your wallet)",
+      "complete": "🏆 All quests cleared!",
+      "reward": "🎁 Additional reward NFT has been granted to your wallet!",
+      "desc": "Submit your location to record your visit.",
+      "submit": "Check-in Now"
+    }
+  },
+  "SbtCard": {
+    "holders": "{count} holders",
+    "view_detail": "View Detail",
+    "not_held": "Not Held"
+  },
+  "ActivityModal": {
+    "title": "Activity History",
+    "empty": "No history yet",
+    "empty_desc": "Your activities will appear here."
+  },
+  "NftTypes": {
+    "certificate": "Certificate",
+    "more": "More",
+    "experience": "Experience Ticket",
+    "asset": "Digital Asset",
+    "art": "Art",
+    "other": "Other",
+    "ticket": "Ticket",
+    "tour": "Tour Pass",
+    "resident_card": "Digital Resident Card",
+    "artwork": "Artwork",
+    "product": "Other"
+  },
+  "NftAttributes": {
+    "Status": "Status",
+    "Type": "Type",
+    "Source": "Source",
+    "Transferable": "Transferable",
+    "Used_At": "Used At",
+    "Event": "Event",
+    "Issued_At": "Issued At",
+    "Order ID": "Order ID"
+  },
+  "NftAttrValues": {
+    "Unused": "Available",
+    "Used": "Used",
+    "Yes": "Yes",
+    "No": "No",
+    "Airdrop": "Airdrop (QR)",
+    "LINE連携": "LINE Linked",
+    "Purchase": "Purchase"
+  },
+  "NftDetailPage": {
+    "title": "NFT Details",
+    "acquired_at": "Acquired at: {date}",
+    "expires_at": "Expires at: {date}",
+    "expired_at": "Expired at: {date}",
+    "expired_msg": "This SBT has expired",
+    "expired_desc": "Re-purchase the product below to extend the expiration date.",
+    "no_renew_url": "Renewal URL has not been set yet.",
+    "renew": "Renew Now",
+    "use": "Use Ticket",
+    "used_msg": "Ticket has been used",
+    "used_at": "Used at: {date}",
+    "transfer_title": "Transfer",
+    "transfer_desc": "Issue a link to transfer this NFT to someone else.",
+    "transfer_link_issued": "Processing...",
+    "issue_transfer_link": "Issue Transfer Link",
+    "copy_link": "Copy Link",
+    "contract_id": "Contract ID",
+    "token_id": "Token ID",
+    "uuid": "UUID",
+    "detail_info": "NFT Information",
+    "unknown": "Unknown",
+    "toast": {
+      "link_failed": "Failed to issue link",
+      "contract_copied": "Contract ID copied"
+    }
+  },
+  "NotificationPage": {
+    "title": "Notifications",
+    "empty": "No notifications yet",
+    "recent": "Recent Activity",
+    "earlier": "Earlier"
+  },
+  "QuestListPage": {
+    "title": "Available Quests",
+    "empty": "No available quests at the moment.",
+    "fetch_error": "Failed to fetch quest information.",
+    "progress": "Progress {clear} / {total}",
+    "checkpoints": "Checkpoints",
+    "sequential_hint": "* Complete previous checkpoints to unlock.",
+    "no_checkpoints": "No checkpoints defined yet."
+  },
+  "LocationGuidePage": {
+    "title": "Location Access Guide",
+    "description": "To check in or receive souvenirs, we need to verify your current location. Please follow the steps below to check your settings.",
+    "steps": {
+      "ios": {
+        "title": "iPhone (iOS) Settings",
+        "step1": "1. Open the 'Settings' app",
+        "step2": "2. Go to 'Privacy & Security' > 'Location Services'",
+        "step3": "3. Ensure Location Services is 'On'",
+        "step4": "4. Select your browser (e.g., Safari) and check 'While Using the App'"
+      },
+      "android": {
+        "title": "Android Settings",
+        "step1": "1. Open the 'Settings' app",
+        "step2": "2. Tap 'Location' and turn on 'Use Location'",
+        "step3": "3. Select your browser (e.g., Chrome) in 'App Permissions' and set to 'Allow only while using the app'"
+      }
+    }
+  },
+  "SurveyPage": {
+    "title": "Answer Survey"
+  },
+  "AssetBalanceCard": {
+    "title": "Owned NFTs",
+    "history": "History",
+    "tickets_count": "{count} Tickets",
+    "confirmed_in_wallet": "Confirmed in wallet"
+  },
+  "LevelProgressCard": {
+    "title": "Level Progress (In Development)",
+    "progress_desc": "75% to Diamond",
+    "platinum": "Platinum",
+    "diamond": "Diamond"
+  },
+  "CommunityLinksCard": {
+    "title": "Community Links",
+    "linked": "Linked",
+    "unlinked": "Unlinked"
+  },
+  "WalletInfoCard": {
+    "email_title": "Logged-in email address",
+    "wallet_title": "Wallet Address",
+    "not_connected": "Not Connected",
+    "copy_success": "Copied wallet address",
+    "description": "Use to check your owned NFTs on OpenSea or similar platforms."
+  },
+  "SurveyAnswerForm": {
+    "loading": "Loading...",
+    "not_found": "Survey not found.",
+    "not_accepting": "This survey is not currently accepting answers.",
+    "success_title": "Thank you for your response!",
+    "success_desc": "Your survey response has been submitted. If a reward is set, an NFT will be distributed to your wallet.",
+    "back_to_mypage": "Back to My Page",
+    "placeholder": "Please enter your answer",
+    "server_error": "Server error occurred. Please try again later.",
+    "submit_failed": "Failed to submit.",
+    "submitting": "Submitting...",
+    "submit": "Submit answer",
+    "required_error": "Please answer all required fields"
+  }
+}

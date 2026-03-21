@@ -1,44 +1,50 @@
 /**
- * NFT種別の表示用ラベル
+ * NFT種別の表示用キー（messages/[locale].json の NftTypes セクションに対応）
  */
-export const NFT_TYPE_LABELS: Record<string, string> = {
-  certificate: "証明書",
-  more: "モア",
-  experience: "体験チケット",
-  asset: "デジタル資産",
-  art: "アート",
-  other: "その他",
+export const NFT_TYPE_KEYS: Record<string, string> = {
+  certificate: "certificate",
+  more: "more",
+  experience: "experience",
+  asset: "asset",
+  art: "art",
+  other: "other",
   // 旧タイプの後方互換
-  ticket: "チケット",
-  tour: "ツアーパス",
-  resident_card: "デジタル住民証",
-  artwork: "アート作品",
-  product: "その他",
+  ticket: "ticket",
+  tour: "tour",
+  resident_card: "resident_card",
+  artwork: "artwork",
+  product: "product",
 };
 
 /**
- * NFT詳細画面の属性ラベル
+ * NFT種別の表示用ラベル（後方互換用、基本は i18n キーの使用を推奨）
+ * ※このオブジェクトは将来的に廃止し、コンポーネント側で t('NftTypes.xxx') を使うべきです。
  */
-export const NFT_ATTR_LABELS: Record<string, string> = {
-  Status: "ステータス",
-  Type: "種別",
-  Source: "取得方法",
-  Transferable: "譲渡",
-  Used_At: "使用日時",
-  Event: "イベント",
-  Issued_At: "発行日",
-  "Order ID": "注文ID",
+export const NFT_TYPE_LABELS = NFT_TYPE_KEYS;
+
+/**
+ * NFT詳細画面の属性ラベルキー
+ */
+export const NFT_ATTR_LABEL_KEYS: Record<string, string> = {
+  Status: "Status",
+  Type: "Type",
+  Source: "Source",
+  Transferable: "Transferable",
+  Used_At: "Used_At",
+  Event: "Event",
+  Issued_At: "Issued_At",
+  "Order ID": "Order ID",
 };
 
 /**
- * NFT詳細画面の属性値ラベル
+ * NFT詳細画面の属性値ラベルキー
  */
-export const NFT_ATTR_VALUES: Record<string, string> = {
-  Unused: "利用可能",
-  Used: "使用済み",
-  Yes: "可能",
-  No: "不可",
-  Airdrop: "配布（QRコード）",
+export const NFT_ATTR_VALUE_KEYS: Record<string, string> = {
+  Unused: "Unused",
+  Used: "Used",
+  Yes: "Yes",
+  No: "No",
+  Airdrop: "Airdrop",
   LINE連携: "LINE連携",
-  Purchase: "購入",
+  Purchase: "Purchase",
 };

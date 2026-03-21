@@ -1,7 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/routing";
 import { Link2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface SbtCardProps {
   mainSbt?: any;
@@ -11,18 +12,18 @@ interface SbtCardProps {
 }
 
 export function SbtCard({ mainSbt, mainSbtTemplate, purchaseUrl, holdersCount }: SbtCardProps) {
+  const t = useTranslations('SbtCard');
   const router = useRouter();
 
   let mainSbtImage = null;
-  let mainSbtName = mainSbtTemplate?.name || "設定されていません";
+  let mainSbtName = mainSbtTemplate?.name || "---";
   let mainSbtRank: string | null = null;
-  let mainSbtCategory = "あなたの会員証";
   let hasMainSbt = false;
 
   if (mainSbt) {
     hasMainSbt = true;
     mainSbtImage = mainSbt.image || mainSbtTemplate?.image_url;
-    mainSbtName = mainSbt.name || mainSbtTemplate?.name || "（未登録）";
+    mainSbtName = mainSbt.name || mainSbtTemplate?.name || "---";
 
     // attributes から Rank を探す
     const attrs = mainSbt.metadata?.attributes || [];
@@ -56,7 +57,7 @@ export function SbtCard({ mainSbt, mainSbtTemplate, purchaseUrl, holdersCount }:
           ) : (
             <>
               {/* Unowned state overlay: gray background + Purchase Button */}
-              {purchaseUrl && (
+              {!hasMainSbt && purchaseUrl && (
                 <a
                   href={purchaseUrl}
                   target="_blank"
@@ -64,7 +65,7 @@ export function SbtCard({ mainSbt, mainSbtTemplate, purchaseUrl, holdersCount }:
                   className="flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-slate-800 shadow-md hover:scale-105 active:scale-95 transition-all z-10"
                 >
                   <Link2 className="w-4 h-4" />
-                  取得する
+                  {t('view_detail')}
                 </a>
               )}
             </>
@@ -79,9 +80,6 @@ export function SbtCard({ mainSbt, mainSbtTemplate, purchaseUrl, holdersCount }:
 
       {/* Details */}
       <div className="flex flex-col">
-        <span className="mb-1 text-[11px] font-bold tracking-wider text-[#0EA5E9]">
-          {mainSbtCategory}
-        </span>
         <h2 className="mb-4 text-2xl font-bold text-slate-900 tracking-tight">
           {mainSbtName}
         </h2>
@@ -101,7 +99,7 @@ export function SbtCard({ mainSbt, mainSbtTemplate, purchaseUrl, holdersCount }:
               />
             </div>
             <div className="flex h-8 px-3 items-center justify-center rounded-full border-2 border-white bg-[#0EA5E9] text-[10px] font-bold text-white shadow-sm -ml-1 z-10">
-              所持者 {formatHolders(holdersCount)}人
+              {t('holders', { count: formatHolders(holdersCount) })}
             </div>
           </div>
           {hasMainSbt ? (
@@ -113,11 +111,11 @@ export function SbtCard({ mainSbt, mainSbtTemplate, purchaseUrl, holdersCount }:
               }
               className="rounded-full bg-[#0EA5E9] px-6 py-2.5 text-sm font-bold text-white shadow-[0_4px_14px_rgba(14,165,233,0.4)] hover:bg-[#0284C7] active:scale-95 transition-all"
             >
-              詳細を見る
+              {t('view_detail')}
             </button>
           ) : (
             <span className="rounded-full bg-slate-200 px-6 py-2.5 text-sm font-bold text-slate-400">
-              未取得
+              {t('not_held')}
             </span>
           )}
         </div>

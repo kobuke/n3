@@ -1,11 +1,11 @@
 "use client";
 
 import { mutate } from "swr";
-
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
 import { Ticket } from "lucide-react";
 import { NFT_TYPE_LABELS } from "@/lib/nft-constants";
+import { useTranslations } from "next-intl";
 
 interface NFTAttribute {
   trait_type: string;
@@ -25,8 +25,6 @@ interface TicketCardProps {
   rawNft?: any;
 }
 
-
-
 export function TicketCard({
   nftId,
   name,
@@ -39,20 +37,21 @@ export function TicketCard({
   isExpired = false,
   rawNft,
 }: TicketCardProps) {
+  const t = useTranslations('Common.status');
+  const tNfts = useTranslations('MyNFTsPage');
   const statusAttr = attributes.find((a) => a.trait_type === "Status");
   const status = statusAttr?.value ?? "Unused";
   const isUsed = status === "Used";
   const isInactive = isUsed || isExpired;
-  const usedAt = attributes.find((a) => a.trait_type === "Used_At")?.value;
   const typeAttr = attributes.find((a) => a.trait_type === "Type" || a.trait_type === "type");
 
   const href = contractAddress
-    ? `/mypage/${nftId}?contract=${contractAddress}`
-    : `/mypage/${nftId}`;
+    ? `/mypage/${nftId}?contract=${contractAddress}` as const
+    : `/mypage/${nftId}` as const;
 
   const formatDate = (dateStr: string) => {
     try {
-      return new Date(dateStr).toLocaleDateString("ja-JP", {
+      return new Date(dateStr).toLocaleDateString(undefined, {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
@@ -73,8 +72,8 @@ export function TicketCard({
   };
 
   return (
-    <Link 
-      href={href} 
+    <Link
+      href={href}
       className="flex flex-col gap-3 group"
       onClick={handlePrefetch}
       onMouseEnter={handlePrefetch}
@@ -105,14 +104,16 @@ export function TicketCard({
         <div className="flex justify-between items-start mb-1 gap-1">
           <p className="text-slate-900 text-sm font-bold truncate">{name}</p>
           {isExpired ? (
-            <span className="shrink-0 bg-amber-100 text-amber-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">期限切れ</span>
+            <span className="shrink-0 bg-amber-100 text-amber-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">{t('expired')}</span>
           ) : isUsed ? (
-            <span className="shrink-0 bg-slate-100 text-slate-500 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">使用済み</span>
+            <span className="shrink-0 bg-slate-100 text-slate-500 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">{t('used')}</span>
           ) : (
-            <span className="shrink-0 bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">有効</span>
+            <span className="shrink-0 bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">{t('valid')}</span>
           )}
         </div>
-        <p className="text-slate-500 text-[11px] font-medium">取得日: {acquiredAt ? formatDate(acquiredAt) : "-"}</p>
+        <p className="text-slate-500 text-[11px] font-medium">
+          {tNfts('acquired_at', { date: acquiredAt ? formatDate(acquiredAt) : "-" })}
+        </p>
       </div>
     </Link>
   );

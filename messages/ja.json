@@ -1,0 +1,292 @@
+{
+  "LoginPage": {
+    "title": "Nanjo NFT Wallet",
+    "subtitle": "南城市デジタルチケット・証明書サービス",
+    "features": {
+      "qr": "QRチケット",
+      "digital": "デジタル記念品",
+      "safe": "安全・無料"
+    },
+    "login_card": {
+      "title": "はじめる / ログイン",
+      "otp_title": "メール認証",
+      "description": "メールアドレスを入力するだけで、すぐに始められます。",
+      "otp_description": "{email} に6桁の認証コードを送りました。\nメールbox（迷惑メールも）をご確認ください。",
+      "email_placeholder": "メールアドレスを入力",
+      "submit_email": "メールで続ける →",
+      "sending": "送信中...",
+      "otp_placeholder": "例: 123456",
+      "otp_hint": "メールに届いた6桁の数字を入力してください",
+      "submit_otp": "✓ 認証してログイン",
+      "verifying": "認証中...",
+      "change_email": "メールアドレスを変更する",
+      "email_hint": "※ 登録不要。メールが届いたら6桁コードを入力するだけです。",
+      "wallet_section": "暗号資産ウォレットをお持ちの方",
+      "wallet_connect": "ウォレットで接続（上級者向け）",
+      "footer": "ログインすることで、お客様のデジタルチケットや記念品を安全に保管します。"
+    },
+    "toast": {
+      "login_success": "ログインしました！",
+      "login_failed": "ログインに失敗しました",
+      "line_login_success": "LINEからログインしました",
+      "otp_sent": "認証コードをメールに送信しました！",
+      "otp_failed": "コード送信に失敗しました",
+      "otp_invalid": "コードが正しくありません。もう一度確認してください。",
+      "network_error": "ネットワークエラー。もう一度お試しください。"
+    }
+  },
+  "Common": {
+    "logout": "ログアウト",
+    "refresh": "更新",
+    "back": "戻る",
+    "success": "成功",
+    "error": "エラー",
+    "loading": "読み込み中...",
+    "processing": "処理中...",
+    "confirm": "確認",
+    "cancel": "キャンセル",
+    "retry": "再試行",
+    "notifications": "通知",
+    "status": {
+      "valid": "有効",
+      "used": "使用済み",
+      "expired": "期限切れ",
+      "pending": "処理中",
+      "available": "利用可能"
+    },
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "view_detail": "詳細を見る",
+    "end_of_list": "以上です"
+  },
+  "MyPage": {
+    "title": "マイページ",
+    "discord_success": "Discord連携完了！",
+    "line_success": "LINE連携完了！",
+    "logout_success": "ログアウトしました",
+    "language_setting": "言語設定",
+    "japanese": "日本語",
+    "english": "English"
+  },
+  "BottomNav": {
+    "home": "ホーム",
+    "quests": "クエスト",
+    "mypage": "マイページ",
+    "my_nfts": "マイNFT",
+    "shop": "ショップ",
+    "notifications": "通知"
+  },
+  "AppHeader": {
+    "refresh": "更新",
+    "back": "戻る",
+    "notifications": "通知"
+  },
+  "MyNFTsPage": {
+    "title": "NFTコレクション",
+    "filter": {
+      "all": "すべて",
+      "count": "すべて ({count})"
+    },
+    "empty": {
+      "no_items": "まだアイテムがありません",
+      "no_items_desc": "イベントに参加したり、スタッフからQRコードを受け取ると、ここにデジタルチケットや記念品が表示されます。",
+      "no_category_items": "このカテゴリにはアイテムがありません",
+      "show_all": "すべてのアイテムを表示する"
+    },
+    "toast": {
+      "refresh_success": "情報を更新しました",
+      "refresh_failed": "更新に失敗しました"
+    },
+    "acquired_at": "取得日: {date}"
+  },
+  "ClaimPage": {
+    "invalid_link": "無効なリンクです",
+    "no_token": "トークンが見つかりません。",
+    "title": "NFTチケットのお届け",
+    "description": "NFTチケットが譲渡されました！",
+    "success_title": "受け取り完了！",
+    "success_desc": "※ ブロックチェーン上の処理に時間がかかるため、一覧に表示されるまで通常 30秒〜1分程度 かかります。しばらく待ってからページを更新してください。",
+    "go_to_nfts": "NFT一覧を見る",
+    "login_required": "受け取るにはログインが必要です。",
+    "login_to_claim": "ログインして受け取る",
+    "confirm_claim": "あなたのアカウント ({identifier}) でチケットを受け取りますか？",
+    "submit_claim": "チケットを受け取る",
+    "toast": {
+      "claim_failed": "受け取りに失敗しました"
+    }
+  },
+  "SpotPage": {
+    "not_found_title": "ページが見つかりません",
+    "not_found_desc": "無効なURLか、配布が終了した可能性があります。",
+    "default_description": "現地限定の記念品を受け取れます。",
+    "claiming": "受け取り処理中…",
+    "checking_location": "位置情報を確認中...",
+    "submit_claim": "NFTを受け取る",
+    "error_geo": "位置情報が取得できませんでした。周囲の状況を確認して再度お試しください。",
+    "error_network": "ネットワークエラーが発生しました。",
+    "error_default": "エラーが発生しました。"
+  },
+  "QuestPage": {
+    "title": "クエスト",
+    "scan": {
+      "invalid_qr": "無効なQRコードです。",
+      "locating": "現在地を取得しています...",
+      "geo_not_supported": "お使いのブラウザは位置情報をサポートしていません。",
+      "geo_denied": "位置情報の取得が拒否されました。ブラウザの設定から位置情報の利用を許可してください。",
+      "geo_unavailable": "位置情報が利用できません。",
+      "geo_timeout": "位置情報の取得がタイムアウトしました。",
+      "geo_unknown": "位置情報の取得中に不明なエラーが発生しました。",
+      "checking": "チェックインを実行しています...",
+      "success": "🎉 チェックインに成功しました！",
+      "level_up": "✨ 状態が進化しました！(ウォレット反映まで少し時間がかかります)",
+      "complete": "🏆 全てのクエストをクリアしました！",
+      "reward": "🎁 追加の報酬NFTがウォレットに付与されました！",
+      "desc": "現在地を送信して地点への到達を記録します。",
+      "submit": "チェックインする"
+    }
+  },
+  "SbtCard": {
+    "holders": "所持者 {count}人",
+    "view_detail": "詳細を見る",
+    "not_held": "未所持"
+  },
+  "ActivityModal": {
+    "title": "受け取り履歴",
+    "empty": "履歴がありません",
+    "empty_desc": "アクティビティが発生するとここに表示されます"
+  },
+  "NftTypes": {
+    "certificate": "証明書",
+    "more": "モア",
+    "experience": "体験チケット",
+    "asset": "デジタル資産",
+    "art": "アート",
+    "other": "その他",
+    "ticket": "チケット",
+    "tour": "ツアーパス",
+    "resident_card": "デジタル住民証",
+    "artwork": "アート作品",
+    "product": "その他"
+  },
+  "NftAttributes": {
+    "Status": "ステータス",
+    "Type": "種別",
+    "Source": "取得方法",
+    "Transferable": "譲渡",
+    "Used_At": "使用日時",
+    "Event": "イベント",
+    "Issued_At": "発行日",
+    "Order ID": "注文ID"
+  },
+  "NftAttrValues": {
+    "Unused": "利用可能",
+    "Used": "使用済み",
+    "Yes": "可能",
+    "No": "不可",
+    "Airdrop": "配布（QRコード）",
+    "LINE連携": "LINE連携",
+    "Purchase": "購入"
+  },
+  "NftDetailPage": {
+    "title": "NFT詳細",
+    "acquired_at": "取得日: {date}",
+    "expires_at": "有効期限: {date}",
+    "expired_at": "期限切れ: {date}",
+    "expired_msg": "このSBTの有効期限が切れています",
+    "expired_desc": "下のボタンから商品を再購入すると、有効期限が延長されます。",
+    "no_renew_url": "更新用のURLがまだ設定されていません。",
+    "renew": "更新する",
+    "use": "使用する",
+    "used_msg": "チケットは使用済みです",
+    "used_at": "使用日時: {date}",
+    "transfer_title": "譲渡する",
+    "transfer_desc": "専用リンクを発行して、他の人へ譲渡できます。",
+    "transfer_link_issued": "発行処理中...",
+    "issue_transfer_link": "譲渡リンクを発行する",
+    "copy_link": "リンクをコピー",
+    "contract_id": "コントラクトID",
+    "token_id": "トークンID",
+    "uuid": "UUID",
+    "detail_info": "チケット詳細情報",
+    "unknown": "不明",
+    "toast": {
+      "link_failed": "リンクの発行に失敗しました",
+      "contract_copied": "コントラクトIDをコピーしました"
+    }
+  },
+  "NotificationPage": {
+    "title": "お知らせ",
+    "empty": "現在お知らせはありません",
+    "recent": "最近のアクティビティ",
+    "earlier": "以前の通知"
+  },
+  "QuestListPage": {
+    "title": "参加可能なクエスト",
+    "empty": "現在参加できるクエストはありません。",
+    "fetch_error": "クエスト情報を取得できませんでした。",
+    "progress": "達成度 {clear} / {total}",
+    "checkpoints": "チェックポイント",
+    "sequential_hint": "※前の地点をクリアすると挑戦できます",
+    "no_checkpoints": "チェックポイントがまだ設定されていません。"
+  },
+  "LocationGuidePage": {
+    "title": "位置情報の許可について",
+    "description": "チェックインや記念品の受け取りには、現在地の確認が必要です。以下の手順で設定を確認してください。",
+    "steps": {
+      "ios": {
+        "title": "iPhone (iOS) の設定",
+        "step1": "1. 「設定」アプリを開く",
+        "step2": "2. 「プライバシーとセキュリティ」＞「位置情報サービス」を開く",
+        "step3": "3. 位置情報サービスが「オン」になっていることを確認",
+        "step4": "4. リストからブラウザ（Safariなど）を選択し、「このAppの使用中」にチェック"
+      },
+      "android": {
+        "title": "Android の設定",
+        "step1": "1. 「設定」アプリを開く",
+        "step2": "2. 「位置情報」をタップし、「位置情報の使用」をオンにする",
+        "step3": "3. 「アプリの権限」でブラウザ（Chromeなど）を選択し、「アプリの使用中のみ許可」に設定"
+      }
+    }
+  },
+  "SurveyPage": {
+    "title": "アンケート回答"
+  },
+  "AssetBalanceCard": {
+    "title": "保有するNFT",
+    "history": "履歴",
+    "tickets_count": "{count} 枚のチケット",
+    "confirmed_in_wallet": "ウォレット内で確認済み"
+  },
+  "LevelProgressCard": {
+    "title": "レベル進捗（開発中）",
+    "progress_desc": "ダイヤモンドまで 75%",
+    "platinum": "プラチナ",
+    "diamond": "ダイヤモンド"
+  },
+  "CommunityLinksCard": {
+    "title": "コミュニティ連携",
+    "linked": "連携済み",
+    "unlinked": "未連携"
+  },
+  "WalletInfoCard": {
+    "email_title": "ログイン中のメールアドレス",
+    "wallet_title": "ウォレットアドレス",
+    "not_connected": "未接続",
+    "copy_success": "ウォレットアドレスをコピーしました",
+    "description": "OpenSeaなどでご自身の保有するNFTを確認する際に使用してください。"
+  },
+  "SurveyAnswerForm": {
+    "loading": "読み込み中...",
+    "not_found": "アンケートが見つかりませんでした。",
+    "not_accepting": "このアンケートは現在回答を受け付けていません。",
+    "success_title": "ご回答ありがとうございました！",
+    "success_desc": "アンケートの送信が完了しました。報酬が設定されている場合、あなたのウォレットにNFTが配布されます。",
+    "back_to_mypage": "マイページに戻る",
+    "placeholder": "回答を入力してください",
+    "server_error": "サーバーエラーが発生しました。時間を置いて再度お試しください。",
+    "submit_failed": "送信に失敗しました。",
+    "submitting": "送信中...",
+    "submit": "回答を送信する",
+    "required_error": "すべての必須項目に回答してください"
+  }
+}

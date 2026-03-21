@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, Link } from "@/i18n/routing";
 import { Bell, ArrowLeft, RefreshCw } from "lucide-react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 interface AppHeaderProps {
   title?: string;
@@ -16,12 +16,14 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({
-  title = "マイページ",
+  title,
   showBack = false,
   onBack,
   onRefresh,
   isRefreshing = false,
 }: AppHeaderProps) {
+  const t = useTranslations('AppHeader');
+  const tCommon = useTranslations('Common');
   const router = useRouter();
 
   const handleBack = () => {
@@ -41,7 +43,7 @@ export function AppHeader({
             <button
               onClick={handleBack}
               className="flex items-center justify-center rounded-full size-10 hover:bg-slate-100 transition-colors text-slate-700"
-              aria-label="戻る"
+              aria-label={t('back')}
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -50,7 +52,7 @@ export function AppHeader({
               onClick={onRefresh}
               disabled={isRefreshing}
               className="flex items-center justify-center rounded-full size-10 hover:bg-slate-100 transition-colors text-slate-700"
-              aria-label="更新"
+              aria-label={t('refresh')}
             >
               <RefreshCw className={`w-5 h-5 ${isRefreshing ? "animate-spin" : ""}`} />
             </button>
@@ -59,7 +61,7 @@ export function AppHeader({
 
         {/* Center: title */}
         <h2 className="text-slate-900 text-base font-bold leading-tight tracking-tight flex-1 text-center">
-          {title}
+          {title || tCommon('back')}
         </h2>
 
         {/* Right: notification bell */}
@@ -67,7 +69,7 @@ export function AppHeader({
           <Link href="/mypage/notifications">
             <button
               className="flex items-center justify-center rounded-full size-10 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-              aria-label="通知"
+              aria-label={t('notifications')}
             >
               <Bell className="w-5 h-5" />
             </button>

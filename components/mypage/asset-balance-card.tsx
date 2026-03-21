@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface AssetBalanceCardProps {
   nftsCount: number;
@@ -8,15 +9,17 @@ interface AssetBalanceCardProps {
 }
 
 export function AssetBalanceCard({ nftsCount, onShowActivities }: AssetBalanceCardProps) {
+  const t = useTranslations('AssetBalanceCard');
+
   return (
     <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-[0_2px_20px_rgba(0,0,0,0.02)]">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-bold text-slate-900">保有するNFT</h3>
+        <h3 className="text-sm font-bold text-slate-900">{t('title')}</h3>
         <button
           onClick={onShowActivities}
           className="flex items-center text-[12px] font-bold text-[#0EA5E9] transition-opacity hover:opacity-80"
         >
-          履歴 <ChevronRight className="ml-0.5 w-3.5 h-3.5" />
+          {t('history')} <ChevronRight className="ml-0.5 w-3.5 h-3.5" />
         </button>
       </div>
 
@@ -40,10 +43,10 @@ export function AssetBalanceCard({ nftsCount, onShowActivities }: AssetBalanceCa
         </div>
         <div>
           <div className="text-xl font-bold text-slate-900 leading-tight mb-0.5 tracking-tight">
-            {nftsCount} 枚のチケット
+            {t('tickets_count', { count: nftsCount })}
           </div>
           <div className="text-[12px] text-slate-400 font-medium">
-            ウォレット内で確認済み
+            {t('confirmed_in_wallet')}
           </div>
         </div>
       </div>

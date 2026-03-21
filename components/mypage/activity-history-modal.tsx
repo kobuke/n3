@@ -2,6 +2,7 @@
 
 import { XCircle, Gift, Undo2, Check, CheckCircle2, Activity as ActivityIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTranslations } from "next-intl";
 
 interface ActivityHistoryModalProps {
   onDismiss: () => void;
@@ -14,11 +15,14 @@ export function ActivityHistoryModal({
   isLoading,
   activities,
 }: ActivityHistoryModalProps) {
+  const t = useTranslations('ActivityModal');
+  const tStatus = useTranslations('Common.status');
+
   return (
     <div className="fixed inset-y-0 left-1/2 -translate-x-1/2 w-full max-w-lg z-[100] flex flex-col bg-slate-50 animate-in slide-in-from-bottom-full duration-300 pb-20 overflow-y-auto shadow-2xl">
       {/* Activity Header */}
       <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/80 px-4 py-4 backdrop-blur-md">
-        <h2 className="text-base font-bold text-slate-900">受け取り履歴</h2>
+        <h2 className="text-base font-bold text-slate-900">{t('title')}</h2>
         <button
           onClick={onDismiss}
           className="flex size-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200"
@@ -40,10 +44,10 @@ export function ActivityHistoryModal({
               <ActivityIcon className="w-8 h-8 text-slate-400" />
             </div>
             <h3 className="text-sm font-bold text-slate-900 mb-2">
-              履歴はまだありません
+              {t('empty')}
             </h3>
             <p className="text-xs text-slate-400 max-w-[240px]">
-              チケットや記念品を受け取ると、ここに履歴が表示されます。
+              {t('empty_desc')}
             </p>
           </div>
         ) : (
@@ -97,7 +101,7 @@ export function ActivityHistoryModal({
                         {act.title}
                       </h4>
                       <span className="shrink-0 text-[10px] font-medium text-slate-400">
-                        {new Date(act.date).toLocaleDateString("ja-JP")}
+                        {new Date(act.date).toLocaleDateString(undefined)}
                       </span>
                     </div>
                     <p className="truncate text-[11px] text-slate-500">
@@ -105,7 +109,7 @@ export function ActivityHistoryModal({
                     </p>
                     {act.status === "pending" && (
                       <p className="mt-1 text-[10px] font-medium text-amber-500">
-                        ※相手の受け取り待ち
+                        {tStatus('pending')}
                       </p>
                     )}
                   </div>

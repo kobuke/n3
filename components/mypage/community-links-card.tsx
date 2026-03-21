@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckCircle2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface CommunityLinksCardProps {
   discordStatus: any;
@@ -11,10 +12,12 @@ export function CommunityLinksCard({
   discordStatus,
   lineStatus,
 }: CommunityLinksCardProps) {
+  const t = useTranslations('CommunityLinksCard');
+
   return (
     <div>
       <h3 className="mb-4 text-sm font-bold text-slate-900 px-1">
-        コミュニティ連携
+        {t('title')}
       </h3>
       <div className="grid grid-cols-2 gap-4">
         {/* Discord */}
@@ -43,11 +46,11 @@ export function CommunityLinksCard({
           {discordStatus?.linked ? (
             <span className="text-[10px] font-bold text-green-600 flex items-center gap-0.5 bg-green-50 px-2 py-0.5 rounded-full">
               <CheckCircle2 className="w-3 h-3" />
-              連携済み
+              {t('linked')}
             </span>
           ) : (
             <span className="text-[10px] font-medium text-slate-400">
-              未連携
+              {t('unlinked')}
             </span>
           )}
         </a>
@@ -78,11 +81,11 @@ export function CommunityLinksCard({
           {lineStatus?.linked ? (
             <span className="text-[10px] font-bold text-green-600 flex items-center gap-0.5 bg-green-50 px-2 py-0.5 rounded-full">
               <CheckCircle2 className="w-3 h-3" />
-              連携済み
+              {t('linked')}
             </span>
           ) : (
             <span className="text-[10px] font-medium text-slate-400">
-              未連携
+              {t('unlinked')}
             </span>
           )}
         </a>
