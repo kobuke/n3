@@ -18,6 +18,7 @@ import { CommunityLinksCard } from "@/components/mypage/community-links-card";
 import { WalletInfoCard } from "@/components/mypage/wallet-info-card";
 import { ActivityHistoryModal } from "@/components/mypage/activity-history-modal";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { LegalLinksCard } from "@/components/mypage/legal-links-card";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -235,6 +236,9 @@ function MyPageContent() {
 
           {/* Wallet Info */}
           <WalletInfoCard walletAddress={session?.walletAddress} email={session?.email} />
+
+          {/* Legal Links (Terms, Privacy, etc.) */}
+          <LegalLinksCard />
 
           {/* Logout */}
           <button

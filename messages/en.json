@@ -290,5 +290,11 @@
     "submitting": "Submitting...",
     "submit": "Submit answer",
     "required_error": "Please answer all required fields"
+  },
+  "LegalLinksCard": {
+    "title": "Terms & Guidelines",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "rules": "Token Operation Rules"
   }
 }

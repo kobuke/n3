@@ -290,5 +290,11 @@
     "submitting": "送信中...",
     "submit": "回答を送信する",
     "required_error": "すべての必須項目に回答してください"
+  },
+  "LegalLinksCard": {
+    "title": "規約・ガイドライン",
+    "terms": "利用規約",
+    "privacy": "プライバシーポリシー",
+    "rules": "地域トークン（MORE MORE）運用規定"
   }
 }
