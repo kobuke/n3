@@ -221,7 +221,7 @@ function MyPageContent() {
           />
 
           {/* Wallet Info */}
-          <WalletInfoCard walletAddress={session?.walletAddress} />
+          <WalletInfoCard walletAddress={session?.walletAddress} email={session?.email} />
 
           {/* Logout */}
           <button

@@ -5,11 +5,25 @@ import { toast } from "sonner";
 
 interface WalletInfoCardProps {
   walletAddress?: string;
+  email?: string;
 }
 
-export function WalletInfoCard({ walletAddress }: WalletInfoCardProps) {
+export function WalletInfoCard({ walletAddress, email }: WalletInfoCardProps) {
   return (
     <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-[0_2px_20px_rgba(0,0,0,0.02)]">
+      {email && (
+        <div className="mb-4">
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-900">ログイン中のメールアドレス</h3>
+          </div>
+          <div className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
+            <span className="text-sm text-slate-800 font-medium truncate">
+               {email}
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-sm font-bold text-slate-900">ウォレットアドレス</h3>
       </div>

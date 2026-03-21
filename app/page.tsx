@@ -46,7 +46,7 @@ export default function LoginPage() {
               localStorage.removeItem('redirectAfterLogin');
               router.push(redirect);
             } else {
-              router.push("/mypage");
+              router.push("/mypage/nfts");
             }
           } else {
             const data = await res.json();
@@ -83,7 +83,7 @@ export default function LoginPage() {
               localStorage.removeItem('redirectAfterLogin');
               router.push(redirect);
             } else {
-              router.push("/mypage");
+              router.push("/mypage/nfts");
             }
             return;
           }
@@ -119,7 +119,7 @@ export default function LoginPage() {
               localStorage.removeItem('redirectAfterLogin');
               router.push(redirect);
             } else {
-              router.push("/mypage");
+              router.push("/mypage/nfts");
             }
           } else {
             setLiffLoading(false);
@@ -193,7 +193,7 @@ export default function LoginPage() {
         localStorage.removeItem('redirectAfterLogin');
         router.push(redirect);
       } else {
-        router.push("/mypage");
+        router.push("/mypage/nfts");
       }
     } catch {
       toast.error("ネットワークエラー。もう一度お試しください。");
