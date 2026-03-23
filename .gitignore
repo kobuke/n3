@@ -28,3 +28,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# OS files
+.DS_Store
+
+# documentation and design
+/docs/
+/ui-design/

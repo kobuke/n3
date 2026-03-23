@@ -2,6 +2,7 @@
 
 import { CheckCircle2 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/routing";
 
 interface CommunityLinksCardProps {
   discordStatus: any;
@@ -21,8 +22,11 @@ export function CommunityLinksCard({
       </h3>
       <div className="grid grid-cols-2 gap-4">
         {/* Discord */}
-        <a
-          href={discordStatus?.linked ? undefined : "/api/auth/discord"}
+        <Link
+          href={discordStatus?.linked ? "/mypage" : "/mypage/discord-guide"}
+          onClick={(e) => {
+            if (discordStatus?.linked) e.preventDefault();
+          }}
           className={`flex flex-col items-center justify-center gap-3 rounded-3xl border border-slate-100 bg-white py-6 shadow-[0_2px_20px_rgba(0,0,0,0.02)] transition-colors ${
             discordStatus?.linked
               ? "cursor-default"
@@ -53,11 +57,14 @@ export function CommunityLinksCard({
               {t('unlinked')}
             </span>
           )}
-        </a>
+        </Link>
 
         {/* LINE */}
-        <a
-          href={lineStatus?.linked ? undefined : "/api/auth/line/connect"}
+        <Link
+          href={lineStatus?.linked ? "/mypage" : "/mypage/line-guide"}
+          onClick={(e) => {
+            if (lineStatus?.linked) e.preventDefault();
+          }}
           className={`flex flex-col items-center justify-center gap-3 rounded-3xl border border-slate-100 bg-white py-6 shadow-[0_2px_20px_rgba(0,0,0,0.02)] transition-colors ${
             lineStatus?.linked
               ? "cursor-default"
@@ -88,7 +95,7 @@ export function CommunityLinksCard({
               {t('unlinked')}
             </span>
           )}
-        </a>
+        </Link>
       </div>
     </div>
   );

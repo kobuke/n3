@@ -296,5 +296,21 @@
     "terms": "利用規約",
     "privacy": "プライバシーポリシー",
     "rules": "地域トークン（MORE MORE）運用規定"
+  },
+  "LineGuidePage": {
+    "title": "LINE連携の手順",
+    "description": "LINEと連携するには、以下の手順を行ってください。",
+    "step1": "1. 以下のボタンから公式LINEを友だち追加します。",
+    "step2": "2. トーク画面のメニューから「マイページ」をタップします。",
+    "step3": "3. 表示された画面で再度ログインを行うと、連携処理が完了します。",
+    "open_line": "公式LINEを開く"
+  },
+  "DiscordGuidePage": {
+    "title": "Discord連携の手順",
+    "description": "Discordと連携するには、以下の手順を行ってください。",
+    "step1": "1. 以下のボタンからDiscord連携画面を開きます。",
+    "step2": "2. Discordの認証画面でアクセスを承認してください。",
+    "step3": "3. 承認が完了すると自動的にマイページに戻り、連携が完了します。",
+    "connect_discord": "Discordを連携する"
   }
 }

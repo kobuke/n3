@@ -296,5 +296,21 @@
     "terms": "Terms of Service",
     "privacy": "Privacy Policy",
     "rules": "Token Operation Rules"
+  },
+  "LineGuidePage": {
+    "title": "Steps to Connect LINE",
+    "description": "To connect your account with LINE, please follow the steps below.",
+    "step1": "1. Add the official LINE account as a friend using the button below.",
+    "step2": "2. Tap 'My Page' from the menu at the bottom of the chat screen.",
+    "step3": "3. Log in again on the displayed screen to complete the connection.",
+    "open_line": "Open Official LINE"
+  },
+  "DiscordGuidePage": {
+    "title": "Steps to Connect Discord",
+    "description": "To connect your account with Discord, please follow the steps below.",
+    "step1": "1. Open the Discord connection screen using the button below.",
+    "step2": "2. Authorize access on the Discord authentication screen.",
+    "step3": "3. Once authorized, you will automatically return to My Page and the connection will be complete.",
+    "connect_discord": "Connect Discord"
   }
 }

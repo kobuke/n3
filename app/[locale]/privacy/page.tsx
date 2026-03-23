@@ -30,7 +30,7 @@ export default function PrivacyPage() {
             <section>
               <h2 className="font-bold text-base text-slate-800 mb-2">2. 利用目的</h2>
               <ol className="list-decimal pl-5 space-y-1">
-                <li>デジタル住民証NFTの発行・管理および本人確認のため。</li>
+                <li>なんじょう結まーる証の発行・管理および本人確認のため。</li>
                 <li>保有NFTに応じたDiscord内ロールの自動付与およびコミュニティ運営のため。</li>
                 <li>地域トークン「MORE MORE」の付与および消し込み（使用）管理のため。</li>
                 <li>南城市の観光施策の改善を目的とした統計データの分析。</li>
