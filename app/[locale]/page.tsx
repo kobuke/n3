@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
-import { Mail, Waves, Wallet, ArrowLeft, Sparkles, QrCode, Shield, MessageCircle } from "lucide-react";
+import { Mail, Waves, Wallet, ArrowLeft, Sparkles, QrCode, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -149,38 +149,6 @@ export default function LoginPage() {
     initLiff();
   }, [router, t]);
 
-  // Manual LINE Login
-  async function handleLineLogin() {
-    if (!lineId) return;
-    setLoading(true);
-    try {
-      localStorage.removeItem('userLoggedOut');
-      const res = await fetch("/api/auth/line", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lineId }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.linked) {
-        toast.success(t('toast.line_login_success'));
-        const redirect = localStorage.getItem('redirectAfterLogin');
-        if (redirect) {
-          localStorage.removeItem('redirectAfterLogin');
-          router.push(redirect as any);
-        } else {
-          router.push("/mypage/nfts");
-        }
-      } else {
-        toast.error(t('toast.login_failed'));
-      }
-    } catch (e) {
-      console.error(e);
-      toast.error(t('toast.network_error'));
-    } finally {
-      setLoading(false);
-    }
-  }
 
   // Step 1: Send OTP
   async function handleEmailSubmit(e: React.FormEvent) {
@@ -345,28 +313,6 @@ export default function LoginPage() {
             ) : (
               /* Initial Login Options */
               <div className="flex flex-col gap-5">
-
-                {/* LINE Login Section - HIGHLIGHTED IF LIFF */}
-                {lineId && (
-                  <div className="flex flex-col gap-3">
-                    <Button
-                      onClick={handleLineLogin}
-                      disabled={loading}
-                      className="h-12 w-full text-base font-bold bg-[#06C755] hover:bg-[#05b34c] text-white border-none"
-                    >
-                      <MessageCircle className="w-5 h-5 mr-2" />
-                      {t('login_card.submit_line')}
-                    </Button>
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t border-border/50" />
-                      </div>
-                      <div className="relative flex justify-center text-xs">
-                        <span className="bg-background px-3 text-muted-foreground">{t('login_card.or_email_section')}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 {/* Email Login Section - PRIMARY */}
                 <div className="flex flex-col gap-3">
