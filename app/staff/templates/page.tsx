@@ -6,7 +6,7 @@ export default function TemplatesPage() {
         <div className="flex flex-col">
             <PageHeader
                 title="NFTテンプレート"
-                description="Shopifyでの購入時にミントされるNFTテンプレートを作成・管理します"
+                description="Shopify等での取得時にミントされるNFTテンプレートを作成・管理します"
             />
             <div className="flex flex-1 flex-col gap-6 p-6">
                 <TemplateList />

@@ -1,6 +1,6 @@
 {
   "LoginPage": {
-    "title": "Nanjo NFT Wallet",
+    "title": "なんじょうNFTポータル",
     "subtitle": "南城市デジタルチケット・証明書サービス",
     "features": {
       "qr": "QRチケット",
@@ -22,10 +22,10 @@
       "submit_otp": "✓ 認証してログイン",
       "verifying": "認証中...",
       "change_email": "メールアドレスを変更する",
-      "email_hint": "※ 登録不要。メールが届いたら6桁コードを入力するだけです。",
+      "email_hint": "※ NFTを取得した際と同じメールアドレスを入力してください。異なるアドレスでは、お持ちのNFTが表示されません。",
       "wallet_section": "暗号資産ウォレットをお持ちの方",
       "wallet_connect": "ウォレットで接続（上級者向け）",
-      "footer": "ログインすることで、お客様のデジタルチケットや記念品を安全に保管します。"
+      "footer": "※ NFTを取得した際（Shopify等）と同じメールアドレスでログインしてください。取得したNFTはお使いのメールアドレスに紐づいて管理されます。"
     },
     "toast": {
       "login_success": "ログインしました！",
@@ -187,7 +187,7 @@
     "No": "不可",
     "Airdrop": "配布（QRコード）",
     "LINE連携": "LINE連携",
-    "Purchase": "購入"
+    "Purchase": "取得"
   },
   "NftDetailPage": {
     "title": "NFT詳細",

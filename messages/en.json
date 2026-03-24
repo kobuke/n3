@@ -1,6 +1,6 @@
 {
   "LoginPage": {
-    "title": "Nanjo NFT Wallet",
+    "title": "なんじょうNFTポータル",
     "subtitle": "Nanjo City Digital Ticket & Certificate Service",
     "features": {
       "qr": "QR Ticket",
@@ -22,10 +22,10 @@
       "submit_otp": "✓ Verify and Login",
       "verifying": "Verifying...",
       "change_email": "Change email address",
-      "email_hint": "* No registration needed. Just enter the 6-digit code.",
+      "email_hint": "* Use the same email address you used when getting your NFT. Your NFTs will not be displayed if a different address is used.",
       "wallet_section": "For Crypto Wallet Holders",
       "wallet_connect": "Connect with Wallet (Advanced)",
-      "footer": "By logging in, we securely store your digital tickets and souvenirs."
+      "footer": "* Please log in using the same email address you used when obtaining your NFT (e.g., via Shopify). Your NFTs are tied to that email address."
     },
     "toast": {
       "login_success": "Logged in successfully!",

@@ -13,8 +13,8 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const notoSansJP = Noto_Sans_JP({ subsets: ["latin"], variable: "--font-noto-sans-jp" });
 
 export const metadata: Metadata = {
-  title: 'Nanjo NFT Wallet',
-  description: 'NFT Ticket Wallet for Nanjo City, Okinawa',
+  title: 'なんじょうNFTポータル',
+  description: 'なんじょうNFTポータル - 南城市のデジタルチケット・証明書サービス',
 }
 
 export const viewport: Viewport = {

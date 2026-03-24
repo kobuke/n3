@@ -34,7 +34,7 @@ export async function sendNftDeliveryEmail({
     await resend.emails.send({
         from: "なんじょうNFT <updates@resend.nomadresort.jp>",
         to,
-        subject: `【なんじょうNFT】お受け取り準備が整いました！`,
+        subject: `【なんじょうNFT】NFTお受け取り準備完了 / NFT Ready for Collection`,
         html: `
             <!DOCTYPE html>
             <html lang="ja">
@@ -47,6 +47,7 @@ export async function sendNftDeliveryEmail({
                     .content { padding: 40px 30px; text-align: center; }
                     .title { font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #1a1a1a; }
                     .message { font-size: 15px; line-height: 1.6; color: #4b5563; margin-bottom: 30px; text-align: left; }
+                    .warning { background-color: #fffbeb; border: 1px solid #fef3c7; padding: 15px; border-radius: 8px; color: #92400e; font-size: 14px; margin-bottom: 25px; text-align: left; }
                     .highlight { font-weight: bold; color: #1a8fc4; }
                     .btn { display: inline-block; padding: 14px 32px; background-color: #1a8fc4; color: #ffffff !important; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 16px; }
                     .footer { padding: 25px; text-align: center; font-size: 12px; color: #9ca3af; background-color: #fafafa; border-top: 1px solid #f3f4f6; }
@@ -55,25 +56,34 @@ export async function sendNftDeliveryEmail({
             </head>
             <body>
                 <div class="container">
-                    <!-- プロダクション環境では公開URLに置き換えてください -->
                     <img src="https://n3-nanjo-nft.netlify.app/images/email-hero.webp" alt="Nanjo City" class="hero-image">
                     <div class="content">
-                        <h1 class="title">NFTが届きました！</h1>
+                        <h1 class="title">NFTが届きました！ / NFT Received!</h1>
                         <div class="message">
-                            南城市「N3」NFTシステムをご利用いただきありがとうございます。<br><br>
-                            ご購入いただいた <span class="highlight">「${nftName}」</span> のNFTが、お客様のウォレットへ配布されました。<br><br>
-                            下記のボタンよりNFT一覧にアクセスして、取得したNFTをご確認ください。
+                            南城市「N3」NFTシステムをご利用いただきありがとうございます。<br>
+                            取得された <span class="highlight">「${nftName}」</span> のNFTが、お客様のウォレットへ配布されました。<br><br>
+                            Thank you for using the Nanjo City "N3" NFT system.<br>
+                            The NFT <span class="highlight">"${nftName}"</span> you obtained has been distributed to your wallet.
                         </div>
+
+                        <div class="warning">
+                            <strong>【重要 / IMPORTANT】</strong><br>
+                            NFTを表示・利用するには、<strong>取得時に使用したこのメールアドレス (${to})</strong> でログインしてください。別のアドレスでログインするとNFTが表示されません。<br><br>
+                            To view and use your NFT, please log in with <strong>this email address (${to})</strong> used when you obtained it. NFTs will not be displayed if you log in with a different address.
+                        </div>
+
                         <div class="btn-wrapper">
-                            <a href="${finalAppUrl}/mypage/nfts" class="btn">確認する</a>
+                            <a href="${finalAppUrl}/mypage/nfts" class="btn">NFTを確認する / View NFT</a>
                         </div>
+                        
                         <div class="address-box">
-                            受取ウォレット: ${recipientWallet}
+                            受取ウォレット / Recipient Wallet: ${recipientWallet}
                         </div>
                     </div>
                     <div class="footer">
                         <p><strong>南城市デジタル住民・貢献プラットフォーム「N3」</strong></p>
-                        <p>※このメールは送信専用です。</p>
+                        <p>Nanjo City Digital Citizen & Contribution Platform "N3"</p>
+                        <p>※このメールは送信専用です / This is a send-only email.</p>
                         <p>© Nanjo City NFT Project. All rights reserved.</p>
                     </div>
                 </div>

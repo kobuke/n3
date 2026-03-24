@@ -59,7 +59,7 @@ export default function StaffLoginPage() {
             </h1>
             <p className="text-sm text-muted-foreground mt-1 flex items-center justify-center gap-1.5">
               <Waves className="w-3.5 h-3.5" />
-              Nanjo NFT Wallet
+              なんじょうNFTポータル
             </p>
           </div>
         </div>

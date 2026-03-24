@@ -27,10 +27,16 @@ export async function POST(req: NextRequest) {
 
         // Send email via Resend
         const { data, error } = await resend.emails.send({
-            from: "Nanjo NFT Wallet <noreply@resend.nomadresort.jp>",
+            from: "なんじょうNFTポータル <noreply@resend.nomadresort.jp>",
             to: [email],
-            subject: "認証コード - Nanjo NFT Wallet",
-            html: `<p>認証コード: <strong>${otp}</strong></p><p>このコードは10分間有効です。</p>`,
+            subject: "認証コード / Verification Code - なんじょうNFTポータル",
+            html: `
+                <p>認証コード: <strong>${otp}</strong></p>
+                <p>このコードは10分間有効です。</p>
+                <hr />
+                <p>Verification Code: <strong>${otp}</strong></p>
+                <p>This code is valid for 10 minutes.</p>
+            `,
         });
 
         if (error) {
