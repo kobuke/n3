@@ -13,7 +13,13 @@ const nextConfig = {
       { protocol: "https", hostname: "**" },
     ],
   },
-  serverExternalPackages: ["pino", "thread-stream"],
+  transpilePackages: [
+    "pino",
+    "thread-stream",
+    "@walletconnect/ethereum-provider",
+    "@walletconnect/logger",
+    "@walletconnect/universal-provider"
+  ],
   webpack: (config) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,

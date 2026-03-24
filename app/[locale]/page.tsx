@@ -26,45 +26,49 @@ export default function LoginPage() {
   const { address, isConnected } = useAppKitAccount();
 
   // Handle wallet connection success
-  useEffect(() => {
-    async function loginWithWallet() {
-      // 意図的なログアウト直後で、まだ接続が残っている場合は自動ログインをスキップ
-      const isLoggedOut = localStorage.getItem('userLoggedOut') === 'true';
-      if (isLoggedOut) return;
+  const handleWalletLogin = async (targetAddress?: string) => {
+    const activeAddress = targetAddress || address;
+    if (!activeAddress) return;
 
-      if (isConnected && address) {
-        setLoading(true);
-        try {
-          const res = await fetch("/api/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ walletAddress: address }),
-          });
+    setLoading(true);
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ walletAddress: activeAddress }),
+      });
 
-          if (res.ok) {
-            localStorage.removeItem('userLoggedOut');
-            toast.success(t('toast.login_success'));
-            const redirect = localStorage.getItem('redirectAfterLogin');
-            if (redirect) {
-              localStorage.removeItem('redirectAfterLogin');
-              router.push(redirect as any);
-            } else {
-              router.push("/mypage/nfts");
-            }
-          } else {
-            const data = await res.json();
-            toast.error(data.error || t('toast.login_failed'));
-          }
-        } catch (e) {
-          console.error(e);
-        } finally {
-          setLoading(false);
+      if (res.ok) {
+        localStorage.removeItem('userLoggedOut');
+        toast.success(t('toast.login_success'));
+        const redirect = localStorage.getItem('redirectAfterLogin');
+        if (redirect) {
+          localStorage.removeItem('redirectAfterLogin');
+          router.push(redirect as any);
+        } else {
+          router.push("/mypage/nfts");
         }
+      } else {
+        const data = await res.json();
+        toast.error(data.error || t('toast.login_failed'));
       }
+    } catch (e) {
+      console.error(e);
+      toast.error(t('toast.network_error'));
+    } finally {
+      setLoading(false);
     }
+  };
 
-    loginWithWallet();
-  }, [isConnected, address, router, t]);
+  useEffect(() => {
+    // ページ読み込み時の自動ログイン試行: ログアウト済みフラグがある場合はスキップ
+    const isLoggedOut = localStorage.getItem('userLoggedOut') === 'true';
+    if (isLoggedOut) return;
+
+    if (isConnected && address) {
+      handleWalletLogin(address);
+    }
+  }, [isConnected, address]);
 
   // Handle LINE LIFF Initialization
   useEffect(() => {
@@ -154,6 +158,9 @@ export default function LoginPage() {
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim()) return;
+
+    // ユーザーが明示的に入力を開始したのでログアウトフラグを解除
+    localStorage.removeItem('userLoggedOut');
 
     setLoading(true);
     try {
@@ -350,7 +357,16 @@ export default function LoginPage() {
                 <div className="flex flex-col gap-2">
                   <Button
                     variant="outline"
-                    onClick={() => open()}
+                    onClick={() => {
+                      if (isConnected && address) {
+                        // すでに接続済みの場合は、フラグを無視して直接ログインを試行
+                        handleWalletLogin(address);
+                      } else {
+                        // 未接続の場合は、ユーザーの意思で接続を開始するのでフラグをクリア
+                        localStorage.removeItem('userLoggedOut');
+                        open();
+                      }
+                    }}
                     className="w-full h-10 gap-2 border-border/50 text-sm"
                   >
                     <Wallet className="w-4 h-4" />
