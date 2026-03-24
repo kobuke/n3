@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { getShopifyRestClient } from '@/lib/shopify'
 
 // Mock data for now as we don't have real Shopify credentials in this environment
 // In production, this would fetch from Shopify Admin API
@@ -31,25 +32,19 @@ const MOCK_PRODUCTS = [
 
 export async function GET() {
     const shopDomain = process.env.SHOPIFY_SHOP_DOMAIN
-    const accessToken = process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN
+    const clientId = process.env.SHOPIFY_CLIENT_ID
+    const clientSecret = process.env.SHOPIFY_CLIENT_SECRET
 
-    if (shopDomain && accessToken) {
+    if (shopDomain && clientId && clientSecret) {
         try {
-            const response = await fetch(`https://${shopDomain}/admin/api/2024-01/products.json?status=active`, {
-                headers: {
-                    'X-Shopify-Access-Token': accessToken,
-                    'Content-Type': 'application/json',
-                },
-                next: { revalidate: 0 } // Disable cache for sync
+            const client = await getShopifyRestClient()
+
+            const response = await client.get({
+                path: 'products',
+                query: { status: 'active' },
             })
 
-            if (!response.ok) {
-                console.error('Shopify API Error:', await response.text())
-                // 画面（配列を期待している）をクラッシュさせないため、エラー情報を含めつつ空の配列を返す
-                return NextResponse.json({ error: 'Failed to fetch from Shopify', data: [] }, { status: response.status })
-            }
-
-            const data = await response.json()
+            const data = response.body as any
             const products = data.products.map((p: any) => ({
                 id: String(p.id),
                 title: p.title,
@@ -60,9 +55,10 @@ export async function GET() {
             }))
 
             return NextResponse.json(products)
-        } catch (error) {
-            console.error('Shopify Fetch Error:', error)
-            return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+        } catch (error: any) {
+            console.error('Shopify Fetch Error:', error?.message || error)
+            // 画面（配列を期待している）をクラッシュさせないため、エラー情報を含めつつ空の配列を返す
+            return NextResponse.json({ error: 'Failed to fetch from Shopify', data: [] }, { status: 500 })
         }
     }
 
