@@ -279,17 +279,17 @@ export function MappingList() {
       {orphanedProductIds.length > 0 && (
         <div className="mt-8 pt-6 border-t border-destructive/20">
           <div className="flex items-center gap-2 mb-4">
-             <div className="size-2 rounded-full bg-destructive animate-pulse" />
-             <h3 className="text-md font-semibold text-destructive">Shopifyから削除された商品の紐付け（幽霊マッピング）</h3>
+            <div className="size-2 rounded-full bg-destructive animate-pulse" />
+            <h3 className="text-md font-semibold text-destructive">Shopifyから削除された商品の紐付け（幽霊マッピング）</h3>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
-            Shopify側で商品が削除されましたが、N3側に紐付けデータだけが残っています。これが原因でテンプレートが削除できない場合があります。以下のチェックを外して保存し、紐付けを解除してください。
+            Shopify側で商品が削除されましたが、本システム側に紐付けデータだけが残っています。これが原因でテンプレートが削除できない場合があります。以下のチェックを外して保存し、紐付けを解除してください。
           </p>
           <div className="flex flex-col gap-4">
             {orphanedProductIds.map((productId) => {
               const currentTemplateIds = pendingChanges[productId] !== undefined ? pendingChanges[productId] : (mappings[productId] || [])
               const selectedTemplates = templates.filter(t => currentTemplateIds.includes(t.id))
-              
+
               if (currentTemplateIds.length === 0) return null; // Already unlinked
 
               return (
@@ -303,7 +303,7 @@ export function MappingList() {
                         存在しない商品
                       </div>
                     </div>
-                    
+
                     <div className="flex flex-col gap-1">
                       <span className="text-xs font-medium text-muted-foreground">
                         該当テンプレート ({currentTemplateIds.length} 個)

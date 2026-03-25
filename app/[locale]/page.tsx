@@ -277,7 +277,7 @@ export default function LoginPage() {
             <div className="text-sm text-muted-foreground">
               {otpSent
                 ? t.rich('login_card.otp_description', {
-                  email: (chunks) => <span className="font-medium text-foreground">{email}</span>,
+                  email: email,
                   br: () => <br />
                 })
                 : t('login_card.description')

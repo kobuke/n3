@@ -205,7 +205,7 @@ function TicketDetailContent({
         <div className="mb-4">
           <h1 className="text-2xl font-bold text-slate-900 leading-tight">{name}</h1>
           {description && (
-            <p className="text-sm text-slate-500 mt-2 leading-relaxed">{description}</p>
+            <p className="text-sm text-slate-500 mt-2 leading-relaxed whitespace-pre-wrap">{description}</p>
           )}
         </div>
 

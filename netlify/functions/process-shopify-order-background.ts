@@ -336,6 +336,15 @@ const handler: Handler = async (event) => {
                     console.log(`[BG] ✅ Mint SUCCESS for order ${orderId}, template ${templateId}`);
                 }
 
+                // current_supply をアトミックにインクリメント
+                if (templateId) {
+                    const { error: supplyError } = await supabase
+                        .rpc("increment_nft_template_supply", { p_template_id: templateId });
+                    if (supplyError) {
+                        console.error("[BG] ⚠️ Failed to increment current_supply:", supplyError.message);
+                    }
+                }
+
                 // ✉️ メール送信はon-chain確定後（Engine Webhook）に行うため、ここでは送らない
             } catch (error: any) {
                 console.error("[BG] ❌ Minting FAILED:", error.message);

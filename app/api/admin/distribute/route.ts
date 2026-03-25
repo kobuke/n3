@@ -125,6 +125,9 @@ export async function POST(req: NextRequest) {
                     template_id: templateId,
                 })
 
+                // Increment current_supply
+                await supabase.rpc("increment_nft_template_supply", { p_template_id: templateId })
+
 
                 results.push({
                     email: rawInput,

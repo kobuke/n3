@@ -14,7 +14,7 @@ export default function RulesPage() {
 
           <div className="space-y-6 text-sm text-slate-700 leading-relaxed">
             <p>
-              本規定は、N3システム内で流通する地域トークン「MORE MORE」（以下「本トークン」）の取扱いを定めるものです。
+              本規定は、なんじょうNFTポータルのシステム内で流通する地域トークン「MORE MORE」（以下「本トークン」）の取扱いを定めるものです。
             </p>
 
             <section>
