@@ -101,7 +101,7 @@ export interface MintLogEntry {
   contract_address: string;
   token_id?: string | null;
   template_id?: string | null;
-  status: "success" | "error" | "processing" | "skipped";
+  status: "success" | "error" | "pending";
   metadata?: any;
   transaction_hash?: string | null;
   shopify_order_id?: string;

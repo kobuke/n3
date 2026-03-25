@@ -123,13 +123,13 @@ async function processTemplateMint(params: {
 
     if (existingLogs && existingLogs.length > 0) {
         const status = existingLogs[0].status;
-        if (["success", "processing", "skipped"].includes(status)) {
+        if (["success", "pending"].includes(status)) {
             console.log(`[BG] Skip: Already exists (status: ${status}) for template ${templateId}, order ${orderId}`);
             return;
         }
     }
 
-    // 3. 処理開始ロック（processingステータスで先行挿入）
+    // 3. 処理開始ロック（pendingステータスで先行挿入）
     const logEntry = buildMintLogEntry({
         walletAddress: recipientWallet,
         contractAddress: contractAddressToUse,
@@ -139,11 +139,11 @@ async function processTemplateMint(params: {
         email: customerEmail,
     });
     (logEntry as any).shopify_product_id = productId;
-    logEntry.status = "processing";
+    logEntry.status = "pending";
 
     const { data: lockRow, error: lockErr } = await supabase.from("mint_logs").insert(logEntry).select("id").single();
     if (lockErr) {
-        console.error("[BG] Failed to create processing lock:", lockErr.message);
+        console.error("[BG] Failed to create pending lock:", lockErr.message);
         // 他のプロセスが先に作成した可能性があるため、一応戻る
         return;
     }
@@ -260,7 +260,7 @@ async function handleSbtSkip(supabase: SupabaseClient, lockId: string, templateD
     console.log(`[BG] SBT already owned: ${templateData.id}, skipping.`);
     
     await supabase.from("mint_logs").update({
-        status: "skipped",
+        status: "success",
         metadata: { action: "skipped_duplicate_sbt" }
     }).eq("id", lockId);
 
