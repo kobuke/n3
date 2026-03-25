@@ -31,8 +31,8 @@ export async function sendNftDeliveryEmail({
             : 'https://n3-nanjo-nft.netlify.app'
     );
 
-    await resend.emails.send({
-        from: "なんじょうNFT <updates@resend.nomadresort.jp>",
+    const { data, error } = await resend.emails.send({
+        from: "なんじょうNFTポータル <updates@resend.nomadresort.jp>",
         to,
         subject: `【なんじょうNFT】NFTお受け取り準備完了 / NFT Ready for Collection`,
         html: `
@@ -91,4 +91,10 @@ export async function sendNftDeliveryEmail({
             </html>
         `,
     });
+
+    if (error) {
+        console.error(`[Email Error] Failed to send email to ${to}:`, error);
+    } else {
+        console.log(`[Email Success] Email sent to ${to}, ID: ${data?.id}`);
+    }
 }
