@@ -1,6 +1,6 @@
 import type { Handler } from "@netlify/functions";
 import { createClient } from "@supabase/supabase-js";
-import { sendNftDeliveryEmail } from "../../lib/email";
+import { sendNftDeliveryEmail, sendSbtDuplicateEmail } from "../../lib/email";
 import { mintTo, updateTokenMetadata } from "../../lib/thirdweb";
 import { buildMintLogEntry } from "../../lib/nft-helpers";
 import { computeMintExpiresAt } from "../../lib/sbt";
@@ -220,10 +220,11 @@ const handler: Handler = async (event) => {
 
             console.log(`[BG] Using contract: ${contractAddressToUse}, template: ${templateData?.name || "none"}`);
 
-            // --- SBT 再購入による有効期限延長 ---
-            // テンプレートがSBT（譲渡不可）かつ validity_days が設定されている場合、
-            // 既に同じテンプレートのNFTを持っていれば新規ミントせずに期限リセットを行う
-            if (templateData && !templateData.is_transferable && templateData.validity_days && templateId) {
+            // --- SBT 重複ミント防止 / 有効期限延長 ---
+            // テンプレートがSBT（譲渡不可）の場合、同一ウォレットへの再ミントを防ぐ
+            // - validity_days あり: 期限をリセット（更新）
+            // - validity_days なし: 既に所持している場合はスキップ
+            if (templateData && !templateData.is_transferable && templateId) {
                 const { data: existingMint } = await supabase
                     .from("mint_logs")
                     .select("id, token_id")
@@ -234,56 +235,68 @@ const handler: Handler = async (event) => {
                     .maybeSingle();
 
                 if (existingMint) {
-                    console.log(`[BG] SBT Renewal detected: template ${templateId}, existing mint ${existingMint.id}`);
+                    if (templateData.validity_days) {
+                        console.log(`[BG] SBT Renewal detected: template ${templateId}, existing mint ${existingMint.id}`);
 
-                    // mint_logs の created_at を現在日時に更新（期限リセット）
-                    const now = new Date();
-                    const newExpiresAt = new Date(now);
-                    newExpiresAt.setDate(newExpiresAt.getDate() + templateData.validity_days);
+                        // mint_logs の created_at を現在日時に更新（期限リセット）
+                        const now = new Date();
+                        const newExpiresAt = new Date(now);
+                        newExpiresAt.setDate(newExpiresAt.getDate() + templateData.validity_days);
 
-                    await supabase
-                        .from("mint_logs")
-                        .update({ created_at: now.toISOString() })
-                        .eq("id", existingMint.id);
+                        await supabase
+                            .from("mint_logs")
+                            .update({ created_at: now.toISOString() })
+                            .eq("id", existingMint.id);
 
-                    // オンチェーンメタデータの Expires_At を更新
-                    if (existingMint.token_id) {
-                        try {
-                            const chain = process.env.NEXT_PUBLIC_CHAIN_NAME || "polygon";
-                            await updateTokenMetadata(chain, contractAddressToUse, existingMint.token_id, {
-                                attributes: [
-                                    { trait_type: "Expires_At", value: newExpiresAt.toISOString() },
-                                ],
+                        // オンチェーンメタデータの Expires_At を更新
+                        if (existingMint.token_id) {
+                            try {
+                                const chain = process.env.NEXT_PUBLIC_CHAIN_NAME || "polygon";
+                                await updateTokenMetadata(chain, contractAddressToUse, existingMint.token_id, {
+                                    attributes: [
+                                        { trait_type: "Expires_At", value: newExpiresAt.toISOString() },
+                                    ],
+                                });
+                                console.log(`[BG] ✅ On-chain Expires_At updated to ${newExpiresAt.toISOString()}`);
+                            } catch (metaErr: any) {
+                                console.error(`[BG] ⚠️ Failed to update on-chain metadata:`, metaErr.message);
+                            }
+                        }
+
+                        // 更新ログを記録
+                        await supabase.from("mint_logs").insert({
+                            shopify_order_id: orderId,
+                            shopify_product_id: productId,
+                            product_name: templateData.name,
+                            status: "success",
+                            recipient_email: customerEmail,
+                            recipient_wallet: recipientWallet,
+                            token_id: existingMint.token_id,
+                            contract_address: contractAddressToUse,
+                            template_id: templateId,
+                            metadata: { action: "renewal", renewed_mint_id: existingMint.id, new_expires_at: newExpiresAt.toISOString() },
+                        });
+
+                        if (customerEmail) {
+                            await sendNftDeliveryEmail({
+                                to: customerEmail,
+                                nftName: `${templateData.name}（更新）`,
+                                recipientWallet,
                             });
-                            console.log(`[BG] ✅ On-chain Expires_At updated to ${newExpiresAt.toISOString()}`);
-                        } catch (metaErr: any) {
-                            console.error(`[BG] ⚠️ Failed to update on-chain metadata:`, metaErr.message);
+                        }
+
+                        console.log(`[BG] ✅ SBT Renewal SUCCESS: "${templateData.name}" for ${customerEmail}`);
+                    } else {
+                        // validity_days なしの永続SBT：既に所持しているためスキップ
+                        console.log(`[BG] SBT already owned: template ${templateId} for ${customerEmail}, skipping duplicate mint.`);
+                        if (customerEmail) {
+                            await sendSbtDuplicateEmail({
+                                to: customerEmail,
+                                nftName: templateData.name,
+                            });
                         }
                     }
 
-                    // 更新ログを記録
-                    await supabase.from("mint_logs").insert({
-                        shopify_order_id: orderId,
-                        shopify_product_id: productId,
-                        product_name: templateData.name,
-                        status: "success",
-                        recipient_email: customerEmail,
-                        recipient_wallet: recipientWallet,
-                        token_id: existingMint.token_id,
-                        contract_address: contractAddressToUse,
-                        template_id: templateId,
-                        metadata: { action: "renewal", renewed_mint_id: existingMint.id, new_expires_at: newExpiresAt.toISOString() },
-                    });
-
-                    if (customerEmail) {
-                        await sendNftDeliveryEmail({
-                            to: customerEmail,
-                            nftName: `${templateData.name}（更新）`,
-                            recipientWallet,
-                        });
-                    }
-
-                    console.log(`[BG] ✅ SBT Renewal SUCCESS: "${templateData.name}" for ${customerEmail}`);
                     continue; // 新規ミントをスキップ
                 }
             }
