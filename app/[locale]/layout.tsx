@@ -15,6 +15,9 @@ const notoSansJP = Noto_Sans_JP({ subsets: ["latin"], variable: "--font-noto-san
 export const metadata: Metadata = {
   title: 'なんじょうNFTポータル',
   description: 'なんじょうNFTポータル - 南城市のデジタルチケット・証明書サービス',
+  icons: {
+    icon: '/images/favicon.ico',
+  },
 }
 
 export const viewport: Viewport = {
