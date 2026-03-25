@@ -183,6 +183,7 @@ async function processTemplateMint(params: {
             image: templateData?.image_url || undefined,
             attributes: [
                 { trait_type: "Type", value: templateData?.type || "product" },
+                { trait_type: "Transferable", value: templateData?.is_transferable === false ? "No" : "Yes" },
                 { trait_type: "Order ID", value: orderId },
                 { trait_type: "TemplateID", value: templateId || undefined },
                 ...(expiresAtStr ? [{ trait_type: "Expires_At", value: expiresAtStr }] : [])

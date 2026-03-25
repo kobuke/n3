@@ -139,6 +139,8 @@ function TicketDetailContent({
   const typeAttr = attributes.find((a) => a.trait_type === "Type" || a.trait_type === "type");
   const categoryLabel = typeAttr ? (tTypes(NFT_TYPE_KEYS[typeAttr.value] || typeAttr.value)) : null;
   const isMogiriAllowed = typeAttr && ["experience", "asset", "more", "体験チケット", "デジタル資産", "モア"].includes(typeAttr.value);
+  const transferableAttr = attributes.find((a) => a.trait_type === "Transferable");
+  const isTransferable = transferableAttr?.value !== "No";
 
   const isExpired = nft?.isExpired === true;
   const expiresAt = nft?.expiresAt;
@@ -284,33 +286,35 @@ function TicketDetailContent({
               )
             )}
 
-            <div className="bg-white rounded-xl border border-slate-200 p-5 mb-5 shadow-sm">
-              <h3 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                <Send className="w-4 h-4 text-primary" />
-                {t('transfer_title')}
-              </h3>
-              <p className="text-sm text-slate-400 mb-4">{t('transfer_desc')}</p>
+            {isTransferable && (
+              <div className="bg-white rounded-xl border border-slate-200 p-5 mb-5 shadow-sm">
+                <h3 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                  <Send className="w-4 h-4 text-primary" />
+                  {t('transfer_title')}
+                </h3>
+                <p className="text-sm text-slate-400 mb-4">{t('transfer_desc')}</p>
 
-              {transferLink ? (
-                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
-                  <div className="flex justify-center p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
-                    <QRCodeSVG value={transferLink} size={150} level="Q" includeMargin bgColor="transparent" fgColor="#000000" />
+                {transferLink ? (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                    <div className="flex justify-center p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                      <QRCodeSVG value={transferLink} size={150} level="Q" includeMargin bgColor="transparent" fgColor="#000000" />
+                    </div>
+                    <div className="p-3 bg-slate-50 rounded-lg break-all text-[10px] font-mono text-slate-400 border border-slate-200 text-center">
+                      {transferLink}
+                    </div>
+                    <Button onClick={copyToClipboard} className="w-full flex items-center justify-center gap-2" variant={copied ? "secondary" : "default"}>
+                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      {copied ? tCommon('copied') : t('copy_link')}
+                    </Button>
                   </div>
-                  <div className="p-3 bg-slate-50 rounded-lg break-all text-[10px] font-mono text-slate-400 border border-slate-200 text-center">
-                    {transferLink}
-                  </div>
-                  <Button onClick={copyToClipboard} className="w-full flex items-center justify-center gap-2" variant={copied ? "secondary" : "default"}>
-                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    {copied ? tCommon('copied') : t('copy_link')}
+                ) : (
+                  <Button onClick={handleCreateTransferLink} disabled={isTransferring} className="w-full" variant="default">
+                    <Send className="w-4 h-4 mr-2" />
+                    {isTransferring ? t('transfer_link_issued') : t('issue_transfer_link')}
                   </Button>
-                </div>
-              ) : (
-                <Button onClick={handleCreateTransferLink} disabled={isTransferring} className="w-full" variant="default">
-                  <Send className="w-4 h-4 mr-2" />
-                  {isTransferring ? t('transfer_link_issued') : t('issue_transfer_link')}
-                </Button>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </>
         ) : (
           <div className="rounded-xl border border-slate-100 bg-slate-50 p-8 text-center flex flex-col items-center gap-3 mb-5">
@@ -370,19 +374,19 @@ function TicketDetailContent({
           <h2 className="text-sm font-bold text-slate-700 mb-4">{t('detail_info')}</h2>
           <div className="grid grid-cols-2 gap-3">
             {nft?.acquiredAt && (
-              <div className="rounded-xl bg-white border border-slate-100 p-4 flex flex-col items-center text-center shadow-sm">
+              <div className="rounded-xl bg-white border border-slate-100 p-4 flex flex-col items-center text-center shadow-sm overflow-hidden">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('acquired_at', { date: '' }).replace(': ', '')}</p>
-                <p className="text-sm font-bold text-slate-800">{formatDateTime(nft.acquiredAt)}</p>
+                <p className="text-sm font-bold text-slate-800 break-all">{formatDateTime(nft.acquiredAt)}</p>
               </div>
             )}
             {attributes
               .filter((attr) => !["Status", "Used_At", "TemplateID", "templateId"].includes(attr.trait_type))
               .map((attr) => (
-                <div key={attr.trait_type} className="rounded-xl bg-white border border-slate-100 p-4 flex flex-col items-center text-center shadow-sm">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                <div key={attr.trait_type} className="rounded-xl bg-white border border-slate-100 p-4 flex flex-col items-center text-center shadow-sm overflow-hidden">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 break-all">
                     {tAttrs(NFT_ATTR_LABEL_KEYS[attr.trait_type] || attr.trait_type)}
                   </p>
-                  <p className="text-sm font-bold text-slate-800">
+                  <p className="text-sm font-bold text-slate-800 break-all">
                     {tValues(NFT_ATTR_VALUE_KEYS[attr.value] || attr.value)}
                   </p>
                 </div>
