@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
     // 2. コントラクトアドレスの収集 + テンプレート情報の一括取得
     const { data: templates } = await supabase
       .from("nft_templates")
-      .select("id, contract_address, validity_days, shopify_product_url, is_transferable")
+      .select("id, name, contract_address, validity_days, shopify_product_url, is_transferable")
       .not("contract_address", "is", null)
       .not("contract_address", "eq", "");
 
@@ -89,11 +89,11 @@ export async function GET(req: NextRequest) {
           .from("user_quest_progress")
           .select(`
             token_id,
-            location_id, 
-            quest_id, 
+            location_id,
+            quest_id,
             quests (
-                base_nft_template_id, 
-                clear_metadata_uri, 
+                base_nft_template_id,
+                clear_metadata_uri,
                 quest_locations ( id, order_index, levelup_metadata_uri )
             )
           `)
@@ -211,6 +211,47 @@ export async function GET(req: NextRequest) {
           },
         });
       }
+    }
+
+    // 5. チェーン未反映のpendingミントをカードとして追加
+    // mintLogsResult から直近30分分をクライアント側でフィルタリング（別DBクエリ不要）
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    const recentMintLogs = (mintLogsResult.data || []).filter(
+      (ml) => ml.created_at >= thirtyMinutesAgo
+    );
+    const confirmedKeys = new Set(
+      allNfts.map((n) => `${n.contractAddress.toLowerCase()}-${n.tokenId}`)
+    );
+    for (const pending of recentMintLogs) {
+      // すでにチェーンで確認済みのトークンはスキップ
+      if (
+        pending.token_id &&
+        confirmedKeys.has(`${pending.contract_address.toLowerCase()}-${pending.token_id}`)
+      ) {
+        continue;
+      }
+      const tmpl = pending.template_id ? templateMap.get(pending.template_id) : null;
+      allNfts.push({
+        id: pending.token_id ?? `pending-${pending.created_at}`,
+        tokenId: pending.token_id ?? null,
+        contractAddress: pending.contract_address,
+        templateId: pending.template_id,
+        name: tmpl?.name ?? "処理中...",
+        description: "",
+        image: null,
+        acquiredAt: pending.created_at,
+        expiresAt: null,
+        isExpired: false,
+        shopifyProductUrl: null,
+        supply: 1,
+        isPending: true,
+        metadata: {
+          name: tmpl?.name ?? "処理中...",
+          description: "",
+          image: null,
+          attributes: [],
+        },
+      });
     }
 
     return NextResponse.json({ nfts: allNfts });

@@ -50,7 +50,12 @@ function MyNFTsContent() {
         mutate: mutateNfts,
     } = useSWR(
         session?.authenticated ? `/api/nfts?email=${session.email}` : null,
-        fetcher
+        fetcher,
+        {
+            // pending NFTが存在する間は15秒ごとに自動更新（案B）
+            refreshInterval: (data: any) =>
+                data?.nfts?.some((n: any) => n.isPending) ? 15000 : 0,
+        }
     );
 
     useEffect(() => {
@@ -105,10 +110,15 @@ function MyNFTsContent() {
 
     const filteredNfts = nfts
         .filter((nft) => {
+            // pending NFTは「すべて」フィルター時のみ表示（案A）
+            if (nft.isPending) return categoryFilter === "all";
             if (categoryFilter === "all") return true;
             return getCategory(nft) === categoryFilter;
         })
         .sort((a: any, b: any) => {
+            // pending NFTは常に先頭に表示
+            if (a.isPending && !b.isPending) return -1;
+            if (!a.isPending && b.isPending) return 1;
             const dateA = a.acquiredAt ? new Date(a.acquiredAt).getTime() : 0;
             const dateB = b.acquiredAt ? new Date(b.acquiredAt).getTime() : 0;
             return dateB - dateA; // 新しい順
@@ -222,6 +232,7 @@ function MyNFTsContent() {
                                     acquiredAt={nft.acquiredAt}
                                     expiresAt={nft.expiresAt}
                                     isExpired={nft.isExpired}
+                                    isPending={nft.isPending ?? false}
                                     rawNft={nft}
                                 />
                             );

@@ -22,6 +22,7 @@ interface TicketCardProps {
   acquiredAt?: string;
   expiresAt?: string | null;
   isExpired?: boolean;
+  isPending?: boolean;
   rawNft?: any;
 }
 
@@ -35,6 +36,7 @@ export function TicketCard({
   acquiredAt,
   expiresAt,
   isExpired = false,
+  isPending = false,
   rawNft,
 }: TicketCardProps) {
   const t = useTranslations('Common.status');
@@ -71,19 +73,19 @@ export function TicketCard({
     mutate(cacheKey, rawNft, { revalidate: true });
   };
 
-  return (
-    <Link
-      href={href}
-      className="flex flex-col gap-3 group"
-      onClick={handlePrefetch}
-      onMouseEnter={handlePrefetch}
-    >
+  const cardContent = (
+    <>
       <div
-        className={`relative p-1.5 bg-gradient-to-br from-[#1392ec] to-[#a5d8ff] rounded-[1.1rem] shadow-lg shadow-[#1392ec]/5 group-hover:shadow-[#1392ec]/20 transition-all ${isInactive ? "opacity-75 grayscale-[0.3]" : ""
-          }`}
+        className={`relative p-1.5 bg-gradient-to-br from-[#1392ec] to-[#a5d8ff] rounded-[1.1rem] shadow-lg shadow-[#1392ec]/5 transition-all ${
+          isPending ? "opacity-60" : isInactive ? "opacity-75 grayscale-[0.3]" : "group-hover:shadow-[#1392ec]/20"
+        }`}
       >
         <div className="w-full aspect-square relative rounded-lg overflow-hidden bg-slate-100">
-          {image ? (
+          {isPending ? (
+            <div className="w-full h-full animate-pulse bg-slate-200 flex items-center justify-center">
+              <Ticket className="w-10 h-10 text-slate-300" />
+            </div>
+          ) : image ? (
             <Image
               src={image}
               alt={name}
@@ -103,7 +105,9 @@ export function TicketCard({
       <div className="px-1">
         <div className="flex justify-between items-start mb-1 gap-1">
           <p className="text-slate-900 text-sm font-bold truncate">{name}</p>
-          {isExpired ? (
+          {isPending ? (
+            <span className="shrink-0 bg-blue-100 text-blue-600 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">{t('pending')}</span>
+          ) : isExpired ? (
             <span className="shrink-0 bg-amber-100 text-amber-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">{t('expired')}</span>
           ) : isUsed ? (
             <span className="shrink-0 bg-slate-100 text-slate-500 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">{t('used')}</span>
@@ -115,6 +119,25 @@ export function TicketCard({
           {tNfts('acquired_at', { date: acquiredAt ? formatDate(acquiredAt) : "-" })}
         </p>
       </div>
+    </>
+  );
+
+  if (isPending) {
+    return (
+      <div className="flex flex-col gap-3 cursor-default">
+        {cardContent}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={href}
+      className="flex flex-col gap-3 group"
+      onClick={handlePrefetch}
+      onMouseEnter={handlePrefetch}
+    >
+      {cardContent}
     </Link>
   );
 }
