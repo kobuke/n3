@@ -153,10 +153,10 @@ function QuestScanInner() {
                                 className="flex items-center gap-4 p-4 rounded-xl border-2 border-gray-100 hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
                             >
                                 <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
-                                    <img src={nft.metadata?.image} alt={nft.metadata?.name} className="w-full h-full object-cover" />
+                                    <img src={nft.image} alt={nft.name} className="w-full h-full object-cover" />
                                 </div>
                                 <div>
-                                    <p className="font-bold text-gray-900">{nft.metadata?.name}</p>
+                                    <p className="font-bold text-gray-900">{nft.name}</p>
                                     <p className="text-xs text-gray-500">ID: {nft.tokenId}</p>
                                 </div>
                             </button>
