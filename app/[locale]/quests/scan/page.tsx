@@ -171,9 +171,18 @@ function QuestScanInner() {
                         <CheckCircle className="w-12 h-12 text-green-600" />
                     </div>
                     <p className="text-gray-700 font-medium whitespace-pre-wrap">{message}</p>
-                    <Button onClick={() => router.push("/mypage")} variant="outline" className="w-full h-12 rounded-xl">
-                        マイページに戻る
-                    </Button>
+                    {checkedInTokenId ? (
+                        <div className="space-y-2">
+                            <Button onClick={() => router.push(`/mypage/${checkedInTokenId}`)} className="w-full h-12 rounded-xl">
+                                NFTを確認する
+                            </Button>
+                            <p className="text-xs text-gray-400 text-center">反映まで少し時間がかかる場合があります</p>
+                        </div>
+                    ) : (
+                        <Button onClick={() => router.push("/mypage")} variant="outline" className="w-full h-12 rounded-xl">
+                            マイページに戻る
+                        </Button>
+                    )}
                 </div>
             )}
 
