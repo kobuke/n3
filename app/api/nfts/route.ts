@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getNFTsForWallet } from "@/lib/thirdweb";
+import { getNFTsForWallet, getNFTById } from "@/lib/thirdweb";
 import { createAdminClient } from "@/lib/supabase/server";
 import { getSession } from "@/lib/session";
 import {
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
           .eq("status", "CLAIMED"),
         supabase
           .from("mint_logs")
-          .select("token_id, contract_address, template_id, created_at, metadata")
+          .select("token_id, contract_address, template_id, created_at, transaction_hash")
           .ilike("recipient_wallet", walletAddress)
           .eq("status", "success"),
         supabase
@@ -213,18 +213,75 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 5. チェーン未反映のpendingミントをカードとして追加
+    // 5. getOwnedNFTs が取りこぼしたトークンをフォールバック個別取得
+    // mint_logsにtoken_idが確定済みなのにブロックチェーン取得結果にないケース
+    // (例: nextTokenIdToMintのタイミング問題で最新mintが範囲外になる) に対処
+    const confirmedKeys = new Set(
+      allNfts.map((n) => `${n.contractAddress.toLowerCase()}-${n.tokenId}`)
+    );
+    const missedLogs = (mintLogsResult.data || []).filter(
+      (ml) =>
+        ml.token_id &&
+        ml.contract_address &&
+        !hiddenTokenIds.has(ml.token_id) &&
+        !confirmedKeys.has(`${ml.contract_address.toLowerCase()}-${ml.token_id}`)
+    );
+    if (missedLogs.length > 0) {
+      const fallbackResults = await Promise.all(
+        missedLogs.map(async (ml) => {
+          try {
+            const nft = await getNFTById(ml.contract_address, ml.token_id!);
+            return { ml, nft };
+          } catch {
+            return null;
+          }
+        })
+      );
+      for (const result of fallbackResults) {
+        if (!result?.nft) continue;
+        const { ml, nft } = result;
+        const nftIdStr = ml.token_id!;
+        let metadata = nft.metadata || {};
+        metadata = computeDynamicMetadata(metadata, progressList as any, nftIdStr);
+        let attributes = ((metadata as any).attributes || []).map((a: any) => ({ ...a }));
+        const usageLog = usagesMap.get(`${ml.contract_address.toLowerCase()}-${nftIdStr}`);
+        attributes = mergeUsageStatus(attributes, usageLog);
+        const tmpl = ml.template_id ? templateMap.get(ml.template_id) : null;
+        const { expiresAt, isExpired, shopifyProductUrl } = computeExpiryInfo(ml.created_at, tmpl);
+        const imageUrl = resolveIpfsUrl((metadata as any).image);
+        allNfts.push({
+          id: nftIdStr,
+          tokenId: nftIdStr,
+          contractAddress: ml.contract_address,
+          templateId: ml.template_id,
+          name: (metadata as any).name || `Ticket #${nftIdStr}`,
+          description: (metadata as any).description || "",
+          image: imageUrl,
+          acquiredAt: ml.created_at,
+          expiresAt,
+          isExpired,
+          shopifyProductUrl,
+          supply: 1,
+          metadata: {
+            name: (metadata as any).name,
+            description: (metadata as any).description,
+            image: imageUrl,
+            attributes,
+          },
+        });
+        confirmedKeys.add(`${ml.contract_address.toLowerCase()}-${nftIdStr}`);
+      }
+    }
+
+    // 6. チェーン未反映のpendingミントをカードとして追加
     // mintLogsResult から直近30分分をクライアント側でフィルタリング（別DBクエリ不要）
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
     const recentMintLogs = (mintLogsResult.data || []).filter(
       (ml) => ml.created_at >= thirtyMinutesAgo
     );
-    const confirmedKeys = new Set(
-      allNfts.map((n) => `${n.contractAddress.toLowerCase()}-${n.tokenId}`)
-    );
     for (const pending of recentMintLogs) {
-      // SBT重複スキップエントリはpendingカードとして表示しない
-      if ((pending.metadata as any)?.action === "skipped_duplicate_sbt") continue;
+      // transaction_hashもtoken_idも無いエントリはSBT重複スキップなので表示しない
+      if (!pending.transaction_hash && !pending.token_id) continue;
       // すでにチェーンで確認済みのトークンはスキップ
       if (
         pending.token_id &&
