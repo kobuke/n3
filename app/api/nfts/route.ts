@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
           .eq("status", "CLAIMED"),
         supabase
           .from("mint_logs")
-          .select("token_id, contract_address, template_id, created_at")
+          .select("token_id, contract_address, template_id, created_at, metadata")
           .ilike("recipient_wallet", walletAddress)
           .eq("status", "success"),
         supabase
@@ -223,6 +223,8 @@ export async function GET(req: NextRequest) {
       allNfts.map((n) => `${n.contractAddress.toLowerCase()}-${n.tokenId}`)
     );
     for (const pending of recentMintLogs) {
+      // SBT重複スキップエントリはpendingカードとして表示しない
+      if ((pending.metadata as any)?.action === "skipped_duplicate_sbt") continue;
       // すでにチェーンで確認済みのトークンはスキップ
       if (
         pending.token_id &&

@@ -138,10 +138,62 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                     // 送信元メールは環境に合わせて
                     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://n3-nanjo-nft.netlify.app'
                     await resend.emails.send({
-                        from: "N3 NFT System <updates@resend.nomadresort.jp>",
+                        from: "なんじょうNFTポータル <updates@resend.nomadresort.jp>",
                         to: userEmail,
                         subject: `アンケートご回答完了＆NFT配布のお知らせ`,
-                        html: `<p>アンケートへのご協力ありがとうございました！</p><p>報酬のNFT（${templateData.name}）をあなたのウォレット（${userWallet}）へ配布しました。</p><p><a href="${appUrl}/mypage/nfts">確認する</a></p>`,
+                        html: `
+<!DOCTYPE html>
+<html lang="ja">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f4f7f9;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f7f9;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.08);max-width:600px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#1a73e8 0%,#0d47a1 100%);padding:40px 40px 32px;text-align:center;">
+              <p style="margin:0 0 8px;color:rgba(255,255,255,0.8);font-size:13px;letter-spacing:1px;text-transform:uppercase;">なんじょうNFTポータル</p>
+              <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;line-height:1.3;">アンケートご回答完了</h1>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding:40px;">
+              <p style="margin:0 0 20px;font-size:16px;color:#333333;line-height:1.7;">この度はアンケートにご協力いただき、<br>誠にありがとうございました。</p>
+              <!-- NFT Card -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f7ff;border:1px solid #d0e4ff;border-radius:10px;margin:24px 0;">
+                <tr>
+                  <td style="padding:24px;">
+                    <p style="margin:0 0 6px;font-size:12px;color:#1a73e8;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">配布されたNFT</p>
+                    <p style="margin:0;font-size:20px;color:#1a1a2e;font-weight:700;">${templateData.name}</p>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:0 0 32px;font-size:15px;color:#555555;line-height:1.7;">NFTはあなたのウォレットに配布されました。<br>マイページよりご確認いただけます。</p>
+              <!-- CTA Button -->
+              <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
+                <tr>
+                  <td style="background:linear-gradient(135deg,#1a73e8 0%,#0d47a1 100%);border-radius:8px;">
+                    <a href="${appUrl}/" style="display:block;padding:16px 48px;color:#ffffff;font-size:16px;font-weight:600;text-decoration:none;letter-spacing:0.3px;">NFTを確認する</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#f8f9fa;padding:24px 40px;border-top:1px solid #e9ecef;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#999999;line-height:1.6;">このメールは自動送信されています。心当たりがない場合はこのメールを無視してください。</p>
+              <p style="margin:8px 0 0;font-size:12px;color:#bbbbbb;">© なんじょうNFTポータル</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
                     })
 
                 } catch (mintError) {

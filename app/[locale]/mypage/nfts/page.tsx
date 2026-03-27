@@ -50,12 +50,7 @@ function MyNFTsContent() {
         mutate: mutateNfts,
     } = useSWR(
         session?.authenticated ? `/api/nfts?email=${session.email}` : null,
-        fetcher,
-        {
-            // pending NFTが存在する間は15秒ごとに自動更新（案B）
-            refreshInterval: (data: any) =>
-                data?.nfts?.some((n: any) => n.isPending) ? 15000 : 0,
-        }
+        fetcher
     );
 
     useEffect(() => {
