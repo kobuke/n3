@@ -30,11 +30,6 @@ export default function DropClaimPage({ params }: { params: Promise<{ templateId
 
 
     const handleClaim = async () => {
-        if (!session?.authenticated) {
-            router.push("/");
-            return;
-        }
-
         setIsClaiming(true);
         setClaimStatus("idle");
         setErrorMessage("");
@@ -140,7 +135,10 @@ export default function DropClaimPage({ params }: { params: Promise<{ templateId
                                         <Button
                                             className="w-full h-12 text-base font-bold"
                                             size="lg"
-                                            onClick={() => router.push("/")}
+                                            onClick={() => {
+                                                localStorage.setItem('redirectAfterLogin', `/drop/${templateId}`);
+                                                router.push("/");
+                                            }}
                                         >
                                             {tClaim('login_to_claim')}
                                         </Button>
