@@ -13,7 +13,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/admin/ui/table"
-import { Plus, Trash2, Edit, CheckCircle, XCircle, Copy } from "lucide-react"
+import { Plus, Trash2, Edit, CheckCircle, XCircle, Copy, BarChart2 } from "lucide-react"
 import { toast } from "sonner"
 
 export type Survey = {
@@ -109,6 +109,9 @@ export function SurveyList() {
                                     <TableCell className="text-right">
                                         <Button variant="ghost" size="icon" onClick={() => handleCopyUrl(s.id)} title="URLをコピー">
                                             <Copy className="w-4 h-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" onClick={() => router.push(`/staff/surveys/${s.id}/responses`)} title="回答を見る">
+                                            <BarChart2 className="w-4 h-4" />
                                         </Button>
                                         <Button variant="ghost" size="icon" onClick={() => router.push(`/staff/surveys/${s.id}`)} title="編集">
                                             <Edit className="w-4 h-4" />
