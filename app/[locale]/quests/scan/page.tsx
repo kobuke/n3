@@ -5,12 +5,13 @@ import { useSearchParams } from "next/navigation"
 import { useRouter } from "@/i18n/routing"
 import { useTranslations, useLocale } from "next-intl"
 import { toast } from "sonner"
-import { MapPin, CheckCircle, ShieldAlert, Loader2 } from "lucide-react"
+import { MapPin, CheckCircle, ShieldAlert, Loader2, Smartphone } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 function QuestScanInner() {
     const t = useTranslations('QuestPage.scan');
     const tCommon = useTranslations('Common');
+    const tGuide = useTranslations('LocationGuidePage');
     const locale = useLocale()
     const searchParams = useSearchParams()
     const router = useRouter()
@@ -21,6 +22,7 @@ function QuestScanInner() {
     const [checkedInTokenId, setCheckedInTokenId] = useState<string | null>(null)
     const [eligibleNfts, setEligibleNfts] = useState<any[]>([])
     const [requireNft, setRequireNft] = useState(false)
+    const [isGeoError, setIsGeoError] = useState(false)
 
     useEffect(() => {
         if (!locationId) {
@@ -47,10 +49,12 @@ function QuestScanInner() {
         if (!locationId) return
         setStatus("locating")
         setMessage(t('locating'))
+        setIsGeoError(false)
 
         if (!navigator.geolocation) {
             setStatus("error")
             setMessage(t('geo_not_supported'))
+            setIsGeoError(true)
             return
         }
 
@@ -63,6 +67,7 @@ function QuestScanInner() {
             (error) => {
                 console.error("GPS Error:", error)
                 setStatus("error")
+                setIsGeoError(true)
                 switch (error.code) {
                     case error.PERMISSION_DENIED:
                         setMessage(t('geo_denied'))
@@ -207,6 +212,36 @@ function QuestScanInner() {
                         <ShieldAlert className="w-12 h-12 text-red-600" />
                     </div>
                     <p className="text-red-600 font-medium">{message}</p>
+
+                    {isGeoError && (
+                        <div className="text-left space-y-3">
+                            <p className="text-xs text-gray-500 text-center">{tGuide('description')}</p>
+                            <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                                <p className="font-semibold text-sm text-gray-800 flex items-center gap-2">
+                                    <Smartphone className="w-4 h-4 shrink-0" />
+                                    {tGuide('steps.ios.title')}
+                                </p>
+                                <ol className="space-y-1 pl-1">
+                                    <li className="text-xs text-gray-600">{tGuide('steps.ios.step1')}</li>
+                                    <li className="text-xs text-gray-600">{tGuide('steps.ios.step2')}</li>
+                                    <li className="text-xs text-gray-600">{tGuide('steps.ios.step3')}</li>
+                                    <li className="text-xs text-gray-600">{tGuide('steps.ios.step4')}</li>
+                                </ol>
+                            </div>
+                            <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                                <p className="font-semibold text-sm text-gray-800 flex items-center gap-2">
+                                    <Smartphone className="w-4 h-4 shrink-0" />
+                                    {tGuide('steps.android.title')}
+                                </p>
+                                <ol className="space-y-1 pl-1">
+                                    <li className="text-xs text-gray-600">{tGuide('steps.android.step1')}</li>
+                                    <li className="text-xs text-gray-600">{tGuide('steps.android.step2')}</li>
+                                    <li className="text-xs text-gray-600">{tGuide('steps.android.step3')}</li>
+                                </ol>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="flex flex-col gap-2">
                         <Button onClick={handleCheckIn} className="w-full h-12 rounded-xl bg-gray-900">
                             {t('retry')}
