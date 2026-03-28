@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { useRouter } from "@/i18n/routing"
-import { useTranslations } from "next-intl"
+import { useTranslations, useLocale } from "next-intl"
 import { toast } from "sonner"
 import { MapPin, CheckCircle, ShieldAlert, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 function QuestScanInner() {
     const t = useTranslations('QuestPage.scan');
     const tCommon = useTranslations('Common');
+    const locale = useLocale()
     const searchParams = useSearchParams()
     const router = useRouter()
     const locationId = searchParams.get("locationId")
@@ -25,8 +26,22 @@ function QuestScanInner() {
         if (!locationId) {
             setStatus("error")
             setMessage(t('invalid_qr'))
+            return
         }
-    }, [locationId, t])
+        // Check session on mount; redirect to login if not authenticated
+        fetch("/api/session")
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                if (!data?.authenticated) {
+                    // Strip locale prefix so next-intl's router.push doesn't double it (e.g. /en/en/...)
+                    const pathWithoutLocale = window.location.pathname.replace(new RegExp(`^/${locale}`), '') || '/'
+                    localStorage.setItem('redirectAfterLogin', pathWithoutLocale + window.location.search)
+                    localStorage.setItem('redirectAfterLoginReason', 'quest_checkin')
+                    router.push("/")
+                }
+            })
+            .catch(() => {})
+    }, [locationId, locale, t, router])
 
     const handleCheckIn = () => {
         if (!locationId) return
@@ -143,7 +158,7 @@ function QuestScanInner() {
             {status === "selection" && (
                 <div className="space-y-4">
                     <p className="text-gray-600">
-                        チェックインに使用するNFTを選択してください。
+                        {t('select_nft')}
                     </p>
                     <div className="grid grid-cols-1 gap-3">
                         {eligibleNfts.map((nft) => (
@@ -174,13 +189,13 @@ function QuestScanInner() {
                     {checkedInTokenId ? (
                         <div className="space-y-2">
                             <Button onClick={() => router.push(`/mypage/${checkedInTokenId}`)} className="w-full h-12 rounded-xl">
-                                NFTを確認する
+                                {t('view_nft')}
                             </Button>
-                            <p className="text-xs text-gray-400 text-center">反映まで少し時間がかかる場合があります</p>
+                            <p className="text-xs text-gray-400 text-center">{t('update_delay')}</p>
                         </div>
                     ) : (
                         <Button onClick={() => router.push("/mypage")} variant="outline" className="w-full h-12 rounded-xl">
-                            マイページに戻る
+                            {t('back_to_mypage')}
                         </Button>
                     )}
                 </div>
@@ -194,10 +209,10 @@ function QuestScanInner() {
                     <p className="text-red-600 font-medium">{message}</p>
                     <div className="flex flex-col gap-2">
                         <Button onClick={handleCheckIn} className="w-full h-12 rounded-xl bg-gray-900">
-                            再試行
+                            {t('retry')}
                         </Button>
                         <Button onClick={() => router.push("/")} variant="ghost" className="w-full h-12 rounded-xl">
-                            トップに戻る
+                            {t('back_to_top')}
                         </Button>
                     </div>
                 </div>

@@ -27,6 +27,10 @@
       "wallet_connect": "ウォレットで接続（上級者向け）",
       "footer": "※ NFTを取得した際（Shopify等）と同じメールアドレスでログインしてください。取得したNFTはお使いのメールアドレスに紐づいて管理されます。"
     },
+    "redirect_reason": {
+      "quest_checkin_title": "チェックインにはログインが必要です",
+      "quest_checkin_desc": "ログイン後、自動的にチェックイン画面に戻ります。"
+    },
     "toast": {
       "login_success": "ログインしました！",
       "login_failed": "ログインに失敗しました",
@@ -144,7 +148,13 @@
       "complete": "🏆 全てのクエストをクリアしました！",
       "reward": "🎁 追加の報酬NFTがウォレットに付与されました！",
       "desc": "現在地を送信して地点への到達を記録します。",
-      "submit": "チェックインする"
+      "submit": "チェックインする",
+      "select_nft": "チェックインに使用するNFTを選択してください。",
+      "view_nft": "NFTを確認する",
+      "update_delay": "反映まで少し時間がかかる場合があります",
+      "back_to_mypage": "マイページに戻る",
+      "retry": "再試行",
+      "back_to_top": "トップに戻る"
     }
   },
   "SbtCard": {

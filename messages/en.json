@@ -27,6 +27,10 @@
       "wallet_connect": "Connect with Wallet (Advanced)",
       "footer": "* Please log in using the same email address you used when obtaining your NFT (e.g., via Shopify). Your NFTs are tied to that email address."
     },
+    "redirect_reason": {
+      "quest_checkin_title": "Login required to check in",
+      "quest_checkin_desc": "You will be automatically redirected to the check-in screen after logging in."
+    },
     "toast": {
       "login_success": "Logged in successfully!",
       "login_failed": "Login failed",
@@ -144,7 +148,13 @@
       "complete": "🏆 All quests cleared!",
       "reward": "🎁 Additional reward NFT has been granted to your wallet!",
       "desc": "Submit your location to record your visit.",
-      "submit": "Check-in Now"
+      "submit": "Check-in Now",
+      "select_nft": "Please select the NFT to use for check-in.",
+      "view_nft": "View NFT",
+      "update_delay": "It may take a moment to reflect.",
+      "back_to_mypage": "Back to My Page",
+      "retry": "Retry",
+      "back_to_top": "Back to Top"
     }
   },
   "SbtCard": {

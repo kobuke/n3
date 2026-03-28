@@ -93,6 +93,7 @@ export async function POST(request: Request) {
                 const tid = extractTemplateId(attributes);
                 return tid === quest.base_nft_template_id;
             });
+            console.log(`[QuestScan] ownedNfts=${ownedNfts.length}, eligible=${eligibleNfts.length} (base_template=${quest.base_nft_template_id})`);
 
             if (eligibleNfts.length === 0) {
                 return NextResponse.json({

@@ -24,6 +24,15 @@ export default function LoginPage() {
   const router = useRouter();
   const { open } = useAppKit();
   const { address, isConnected } = useAppKitAccount();
+  const [redirectReason, setRedirectReason] = useState<string | null>(null);
+
+  useEffect(() => {
+    const reason = localStorage.getItem('redirectAfterLoginReason');
+    if (reason) {
+      setRedirectReason(reason);
+      localStorage.removeItem('redirectAfterLoginReason');
+    }
+  }, []);
 
   // Handle wallet connection success
   const handleWalletLogin = async (targetAddress?: string) => {
@@ -238,6 +247,17 @@ export default function LoginPage() {
       </div>
 
       <div className="relative z-10 w-full max-w-md flex flex-col items-center gap-8">
+        {/* Redirect reason banner */}
+        {redirectReason === 'quest_checkin' && (
+          <div className="w-full flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+            <QrCode className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-blue-800">{t('redirect_reason.quest_checkin_title')}</p>
+              <p className="text-xs text-blue-600 mt-0.5">{t('redirect_reason.quest_checkin_desc')}</p>
+            </div>
+          </div>
+        )}
+
         {/* Logo and branding */}
         <div className="flex flex-col items-center gap-3">
           <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center shadow-lg">

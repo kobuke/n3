@@ -159,13 +159,9 @@ export async function getNFTsForWallet(
     address: contractAddress as `0x${string}`,
   });
 
-  // Since thirdweb v5 is modular, you might typically use `getOwnedNFTs` from the ERC1155 extension.
   try {
     const { getOwnedNFTs } = await import("thirdweb/extensions/erc1155");
-    const nfts = await getOwnedNFTs({
-      contract,
-      address: walletAddress,
-    });
+    const nfts = await getOwnedNFTs({ contract, address: walletAddress });
     return nfts;
   } catch (error) {
     console.error("Error fetching NFTs via thirdweb:", error);
