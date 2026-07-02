@@ -4,9 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { KeyRound } from "lucide-react";
-import { startRegistration } from "@simplewebauthn/browser";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { usePasskeyRegistration } from "@/hooks/use-passkey-registration";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -29,6 +28,7 @@ export function PasskeySetupPrompt() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const registerPasskey = usePasskeyRegistration();
 
   const { data: session, mutate } = useSWR("/api/session", fetcher, {
     revalidateOnFocus: false,
@@ -49,15 +49,6 @@ export function PasskeySetupPrompt() {
     setOpen(true);
   }, [session?.email, shouldPrompt]);
 
-  function authErrorMessage(errorCode: unknown, fallbackKey: string) {
-    if (typeof errorCode !== "string") return t(fallbackKey as any);
-    try {
-      return t(`auth_errors.${errorCode}` as any);
-    } catch {
-      return t(fallbackKey as any);
-    }
-  }
-
   function dismissPrompt() {
     if (session?.email) {
       localStorage.setItem(`passkeyPromptDismissed:${session.email}`, "true");
@@ -68,34 +59,13 @@ export function PasskeySetupPrompt() {
   async function handleRegisterPasskey() {
     setLoading(true);
     try {
-      const optionsRes = await fetch("/api/auth/passkey/register/options", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const registered = await registerPasskey({
+        onSuccess: async () => {
+          setOpen(false);
+          await mutate();
+        },
       });
-      const options = await optionsRes.json();
-      if (!optionsRes.ok) {
-        toast.error(authErrorMessage(options.errorCode, "passkey_setup_failed"));
-        return;
-      }
-
-      const attestation = await startRegistration({ optionsJSON: options });
-      const verifyRes = await fetch("/api/auth/passkey/register/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(attestation),
-      });
-      const verifyData = await verifyRes.json();
-      if (!verifyRes.ok) {
-        toast.error(authErrorMessage(verifyData.errorCode, "passkey_setup_failed"));
-        return;
-      }
-
-      toast.success(t("passkey_setup_success"));
-      setOpen(false);
-      await mutate();
-    } catch (error) {
-      console.error(error);
-      toast.error(t("passkey_setup_failed"));
+      if (!registered) return;
     } finally {
       setLoading(false);
     }

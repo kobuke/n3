@@ -11,9 +11,11 @@ import { toast } from "sonner";
 import { useAppKit, useAppKitAccount } from '@reown/appkit/react';
 import liff from "@line/liff";
 import { startAuthentication } from "@simplewebauthn/browser";
+import { useAuthErrorMessage } from "@/hooks/use-auth-error-message";
 
 export default function LoginPage() {
   const t = useTranslations('LoginPage');
+  const authErrorMessage = useAuthErrorMessage("LoginPage");
   const [email, setEmail] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [otpSent, setOtpSent] = useState(false);
@@ -205,15 +207,6 @@ export default function LoginPage() {
       toast.error(t('login_card.passkey_fallback_hint'));
     } finally {
       setLoading(false);
-    }
-  }
-
-  function authErrorMessage(errorCode: unknown, fallbackKey: string) {
-    if (typeof errorCode !== "string") return t(fallbackKey as any);
-    try {
-      return t(`auth_errors.${errorCode}` as any);
-    } catch {
-      return t(fallbackKey as any);
     }
   }
 

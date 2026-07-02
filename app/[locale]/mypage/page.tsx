@@ -7,7 +7,6 @@ import { useTranslations } from "next-intl";
 import useSWR from "swr";
 import { KeyRound, LogOut } from "lucide-react";
 import { useDisconnect } from "wagmi";
-import { startRegistration } from "@simplewebauthn/browser";
 import { AppHeader } from "@/components/app-header";
 import { BottomNav } from "@/components/bottom-nav";
 import { Button } from "@/components/ui/button";
@@ -21,6 +20,7 @@ import { WalletInfoCard } from "@/components/mypage/wallet-info-card";
 import { ActivityHistoryModal } from "@/components/mypage/activity-history-modal";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { LegalLinksCard } from "@/components/mypage/legal-links-card";
+import { usePasskeyRegistration } from "@/hooks/use-passkey-registration";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -45,6 +45,7 @@ function MyPageContent() {
   const tCommon = useTranslations('Common');
   const router = useRouter();
   const { disconnectAsync } = useDisconnect();
+  const registerPasskey = usePasskeyRegistration();
   const searchParams = useSearchParams();
   const [showAllActivities, setShowAllActivities] = useState(false);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
@@ -204,44 +205,9 @@ function MyPageContent() {
   async function handleRegisterPasskey() {
     setPasskeyLoading(true);
     try {
-      const optionsRes = await fetch("/api/auth/passkey/register/options", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      const options = await optionsRes.json();
-      if (!optionsRes.ok) {
-        toast.error(authErrorMessage(options.errorCode, 'passkey_setup_failed'));
-        return;
-      }
-
-      const attestation = await startRegistration({ optionsJSON: options });
-      const verifyRes = await fetch("/api/auth/passkey/register/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(attestation),
-      });
-      const verifyData = await verifyRes.json();
-      if (!verifyRes.ok) {
-        toast.error(authErrorMessage(verifyData.errorCode, 'passkey_setup_failed'));
-        return;
-      }
-
-      toast.success(t('passkey_setup_success'));
-      await mutateSession();
-    } catch (error) {
-      console.error(error);
-      toast.error(t('passkey_setup_failed'));
+      await registerPasskey({ onSuccess: mutateSession });
     } finally {
       setPasskeyLoading(false);
-    }
-  }
-
-  function authErrorMessage(errorCode: unknown, fallbackKey: string) {
-    if (typeof errorCode !== "string") return t(fallbackKey as any);
-    try {
-      return t(`auth_errors.${errorCode}` as any);
-    } catch {
-      return t(fallbackKey as any);
     }
   }
 
