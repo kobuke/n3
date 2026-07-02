@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session?.authenticated || !session.email || !session.webauthnChallenge) {
-    return NextResponse.json({ error: "Registration session expired" }, { status: 400 });
+    return NextResponse.json({ error: "Registration session expired", errorCode: "passkey_registration_session_expired" }, { status: 400 });
   }
 
   const body = await req.json();
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (!verification.verified || !verification.registrationInfo) {
-    return NextResponse.json({ error: "Passkey registration failed" }, { status: 400 });
+    return NextResponse.json({ error: "Passkey registration failed", errorCode: "passkey_registration_failed" }, { status: 400 });
   }
 
   const email = session.email.trim().toLowerCase();
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     console.error("Failed to save passkey:", error.message);
-    return NextResponse.json({ error: "Failed to save passkey" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to save passkey", errorCode: "passkey_save_failed" }, { status: 500 });
   }
 
   await setSession({

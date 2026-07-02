@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useAppKit, useAppKitAccount } from '@reown/appkit/react';
 import liff from "@line/liff";
-import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
+import { startAuthentication } from "@simplewebauthn/browser";
 
 export default function LoginPage() {
   const t = useTranslations('LoginPage');
@@ -18,7 +18,7 @@ export default function LoginPage() {
   const [otpCode, setOtpCode] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showPasskeySetup, setShowPasskeySetup] = useState(false);
+  const [useEmailFallbackNext, setUseEmailFallbackNext] = useState(false);
 
   const [lineId, setLineId] = useState<string | null>(null);
   const [liffLoading, setLiffLoading] = useState(true);
@@ -163,6 +163,11 @@ export default function LoginPage() {
     localStorage.removeItem('userLoggedOut');
     setLoading(true);
     try {
+      if (useEmailFallbackNext) {
+        await sendOtpCode();
+        return;
+      }
+
       const optionsRes = await fetch("/api/auth/passkey/login/options", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -170,7 +175,12 @@ export default function LoginPage() {
       });
       const options = await optionsRes.json();
       if (!optionsRes.ok) {
-        toast.error(options.error || t('login_card.passkey_not_found'));
+        if (options.errorCode === "passkey_not_registered" || optionsRes.status === 404) {
+          await sendOtpCode();
+          return;
+        }
+
+        toast.error(authErrorMessage(options.errorCode, 'login_card.passkey_failed'));
         return;
       }
 
@@ -182,7 +192,8 @@ export default function LoginPage() {
       });
       const verifyData = await verifyRes.json();
       if (!verifyRes.ok) {
-        toast.error(verifyData.error || t('login_card.passkey_failed'));
+        setUseEmailFallbackNext(true);
+        toast.error(authErrorMessage(verifyData.errorCode, 'login_card.passkey_failed'));
         return;
       }
 
@@ -190,57 +201,23 @@ export default function LoginPage() {
       redirectAfterLogin();
     } catch (error) {
       console.error(error);
-      toast.error(t('login_card.passkey_failed'));
+      setUseEmailFallbackNext(true);
+      toast.error(t('login_card.passkey_fallback_hint'));
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleRegisterPasskey() {
-    setLoading(true);
+  function authErrorMessage(errorCode: unknown, fallbackKey: string) {
+    if (typeof errorCode !== "string") return t(fallbackKey as any);
     try {
-      const optionsRes = await fetch("/api/auth/passkey/register/options", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      const options = await optionsRes.json();
-      if (!optionsRes.ok) {
-        toast.error(options.error || t('login_card.passkey_failed'));
-        return;
-      }
-
-      const attestation = await startRegistration({ optionsJSON: options });
-      const verifyRes = await fetch("/api/auth/passkey/register/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(attestation),
-      });
-      const verifyData = await verifyRes.json();
-      if (!verifyRes.ok) {
-        toast.error(verifyData.error || t('login_card.passkey_failed'));
-        return;
-      }
-
-      toast.success(t('login_card.passkey_registered'));
-      redirectAfterLogin();
-    } catch (error) {
-      console.error(error);
-      toast.error(t('login_card.passkey_failed'));
-    } finally {
-      setLoading(false);
+      return t(`auth_errors.${errorCode}` as any);
+    } catch {
+      return t(fallbackKey as any);
     }
   }
 
-
-  // Step 1: Send OTP
-  async function handleEmailSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email.trim()) return;
-
-    // ユーザーが明示的に入力を開始したのでログアウトフラグを解除
-    localStorage.removeItem('userLoggedOut');
-
-    setLoading(true);
+  async function sendOtpCode() {
     try {
       const res = await fetch("/api/auth/send-otp", {
         method: "POST",
@@ -250,16 +227,15 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || t('toast.otp_failed'));
+        toast.error(authErrorMessage(data.errorCode, 'toast.otp_failed'));
         return;
       }
 
       setOtpSent(true);
+      setUseEmailFallbackNext(false);
       toast.success(t('toast.otp_sent'));
     } catch {
       toast.error(t('toast.network_error'));
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -278,7 +254,7 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || t('toast.otp_invalid'));
+        toast.error(authErrorMessage(data.errorCode, 'toast.otp_invalid'));
         return;
       }
 
@@ -355,12 +331,10 @@ export default function LoginPage() {
         <Card className="w-full shadow-lg border-border/50 transition-all duration-300">
           <CardHeader className="pb-2 pt-6 px-6">
             <h2 className="text-lg font-semibold text-foreground">
-              {showPasskeySetup ? t('login_card.passkey_title') : otpSent ? t('login_card.otp_title') : t('login_card.title')}
+              {otpSent ? t('login_card.otp_title') : t('login_card.title')}
             </h2>
             <div className="text-sm text-muted-foreground">
-              {showPasskeySetup
-                ? t('login_card.passkey_desc')
-                : otpSent
+              {otpSent
                 ? t.rich('login_card.otp_description', {
                   email: email,
                   br: () => <br />
@@ -372,22 +346,7 @@ export default function LoginPage() {
           <CardContent className="px-6 pb-6">
 
             {/* OTP Verification Form */}
-            {showPasskeySetup ? (
-              <div className="flex flex-col gap-4">
-                <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-center">
-                  <KeyRound className="mx-auto mb-3 w-8 h-8 text-primary" />
-                  <h3 className="text-base font-bold text-foreground">{t('login_card.passkey_title')}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">{t('login_card.passkey_desc')}</p>
-                </div>
-                <Button onClick={handleRegisterPasskey} disabled={loading} className="h-12 w-full text-base font-bold gap-2">
-                  <KeyRound className="w-4 h-4" />
-                  {loading ? t('login_card.verifying') : t('login_card.passkey_setup_button')}
-                </Button>
-                <Button variant="ghost" onClick={redirectAfterLogin} className="h-10 w-full text-sm">
-                  {t('login_card.passkey_skip')}
-                </Button>
-              </div>
-            ) : otpSent ? (
+            {otpSent ? (
               <form onSubmit={handleVerifyOtp} className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
                   <Input
@@ -421,46 +380,29 @@ export default function LoginPage() {
               /* Initial Login Options */
               <div className="flex flex-col gap-5">
 
-                {/* Passkey Login Section - PRIMARY */}
-                <div className="flex flex-col gap-3">
-                  <form onSubmit={handlePasskeyLogin} className="flex flex-col gap-3">
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        type="email"
-                        placeholder={t('login_card.email_placeholder')}
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10 h-12 text-base"
-                        required
-                      />
-                    </div>
-                    <Button type="submit" disabled={loading || !email} className="h-12 w-full text-base font-bold gap-2">
-                      <KeyRound className="w-4 h-4" />
-                      {loading ? t('login_card.verifying') : t('login_card.passkey_button')}
-                    </Button>
-                  </form>
-                  <p className="text-[11px] text-muted-foreground text-center">
-                    {t('login_card.passkey_desc')}
-                  </p>
-                </div>
-
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-border/50" />
+                <form onSubmit={handlePasskeyLogin} className="flex flex-col gap-3">
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="email"
+                      placeholder={t('login_card.email_placeholder')}
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setUseEmailFallbackNext(false);
+                      }}
+                      className="pl-10 h-12 text-base"
+                      autoComplete="username webauthn"
+                      required
+                    />
                   </div>
-                  <div className="relative flex justify-center text-xs">
-                    <span className="bg-background px-3 text-muted-foreground">{t('login_card.recovery_section')}</span>
-                  </div>
-                </div>
-
-                <form onSubmit={handleEmailSubmit} className="flex flex-col gap-2">
-                  <Button type="submit" disabled={loading || !email} variant="secondary" className="h-11 w-full text-sm font-bold">
-                    {loading ? t('login_card.sending') : t('login_card.submit_email')}
+                  <Button type="submit" disabled={loading || !email} className="h-12 w-full text-base font-bold">
+                    {loading ? t('login_card.verifying') : t('login_card.submit_email')}
                   </Button>
-                  <p className="text-[11px] text-muted-foreground text-center">
-                    {t('login_card.email_recovery_hint')}
-                  </p>
+                  <div className="flex items-start gap-2 rounded-lg bg-muted/50 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+                    <KeyRound className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    <span>{t('login_card.unified_login_hint')}</span>
+                  </div>
                 </form>
 
                 <div className="relative">

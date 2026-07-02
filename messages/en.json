@@ -13,7 +13,7 @@
       "description": "Enter your email address to get started immediately.",
       "otp_description": "We've sent a 6-digit verification code to {email}.\nPlease check your inbox (including spam folder).",
       "email_placeholder": "Enter your email address",
-      "submit_email": "Continue with Email →",
+      "submit_email": "Continue",
       "passkey_title": "Sign in with passkey",
       "passkey_desc": "Use Face ID, Touch ID, fingerprint, or your device PIN.",
       "passkey_button": "Sign in with passkey",
@@ -21,9 +21,11 @@
       "passkey_skip": "Set up later",
       "recovery_section": "First time or recovery",
       "email_recovery_hint": "Use email verification for first-time access, a new device, or when passkeys are unavailable.",
+      "unified_login_hint": "If a passkey is registered, you will sign in with it. First-time users will receive an email verification code.",
       "passkey_not_found": "No passkey is registered for this email yet. Please use email verification.",
       "passkey_registered": "Passkey registered",
       "passkey_failed": "Passkey authentication failed",
+      "passkey_fallback_hint": "We could not verify your passkey. Press Continue again to switch to email verification.",
       "submit_line": "Login with LINE",
       "or_email_section": "or login with email address",
       "sending": "Sending...",
@@ -49,6 +51,20 @@
       "otp_failed": "Failed to send code",
       "otp_invalid": "Incorrect code. Please check and try again.",
       "network_error": "Network error. Please try again."
+    },
+    "auth_errors": {
+      "email_required": "Please enter your email address.",
+      "unauthorized": "We could not confirm your login session. Please sign in again.",
+      "passkey_login_session_expired": "Your passkey sign-in session expired. Please try again.",
+      "passkey_registration_session_expired": "Your passkey setup session expired. Please try again.",
+      "passkey_unknown": "We could not confirm this device's passkey. You can also use email verification.",
+      "passkey_verification_failed": "Passkey verification failed. You can also use email verification.",
+      "passkey_registration_failed": "We could not set up your passkey. Check your device settings and try again.",
+      "passkey_save_failed": "We could not save your passkey. Please try again later.",
+      "passkey_not_registered": "No passkey is registered for this email yet. We will send an email code.",
+      "otp_session_expired": "The verification session expired. Please request a new email code.",
+      "otp_expired": "The verification code expired. Please request a new email code.",
+      "otp_invalid": "The verification code is incorrect. Please check and try again."
     }
   },
   "Common": {
@@ -87,7 +103,16 @@
     "passkey_setup_desc": "Next time, sign in without an email code using Face ID, Touch ID, fingerprint, or your device PIN.",
     "passkey_setup_action": "Set up",
     "passkey_setup_success": "Passkey sign-in has been set up",
-    "passkey_setup_failed": "Failed to set up passkey sign-in"
+    "passkey_setup_failed": "Failed to set up passkey sign-in",
+    "passkey_prompt_title": "Sign in faster with a passkey next time",
+    "passkey_prompt_desc": "Set up a passkey on this device so you can sign in without entering a 6-digit email code next time.",
+    "passkey_prompt_later": "Later",
+    "auth_errors": {
+      "unauthorized": "We could not confirm your login session. Please sign in again.",
+      "passkey_registration_session_expired": "Your passkey setup session expired. Please try again.",
+      "passkey_registration_failed": "We could not set up your passkey. Check your device settings and try again.",
+      "passkey_save_failed": "We could not save your passkey. Please try again later."
+    }
   },
   "BottomNav": {
     "home": "Home",

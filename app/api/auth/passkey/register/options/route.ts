@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export async function POST() {
   const session = await getSession();
   if (!session?.authenticated || !session.email) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized", errorCode: "unauthorized" }, { status: 401 });
   }
 
   const email = session.email.trim().toLowerCase();

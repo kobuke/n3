@@ -11,6 +11,14 @@ import { startRegistration } from "@simplewebauthn/browser";
 import { AppHeader } from "@/components/app-header";
 import { BottomNav } from "@/components/bottom-nav";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { SbtCard } from "@/components/mypage/sbt-card";
@@ -48,6 +56,7 @@ function MyPageContent() {
   const searchParams = useSearchParams();
   const [showAllActivities, setShowAllActivities] = useState(false);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const [passkeyPromptOpen, setPasskeyPromptOpen] = useState(false);
   const lineAirdropTriggered = useRef(false);
 
   const {
@@ -164,6 +173,13 @@ function MyPageContent() {
     }
   }, [session, sessionError, sessionLoading, router]);
 
+  useEffect(() => {
+    if (!session?.authenticated || !session.email || session.passkeyEnabled) return;
+    const dismissedKey = `passkeyPromptDismissed:${session.email}`;
+    if (localStorage.getItem(dismissedKey) === "true") return;
+    setPasskeyPromptOpen(true);
+  }, [session?.authenticated, session?.email, session?.passkeyEnabled]);
+
   if (sessionLoading) {
     return (
       <div className="min-h-screen bg-slate-50">
@@ -210,7 +226,7 @@ function MyPageContent() {
       });
       const options = await optionsRes.json();
       if (!optionsRes.ok) {
-        toast.error(options.error || t('passkey_setup_failed'));
+        toast.error(authErrorMessage(options.errorCode, 'passkey_setup_failed'));
         return;
       }
 
@@ -222,11 +238,12 @@ function MyPageContent() {
       });
       const verifyData = await verifyRes.json();
       if (!verifyRes.ok) {
-        toast.error(verifyData.error || t('passkey_setup_failed'));
+        toast.error(authErrorMessage(verifyData.errorCode, 'passkey_setup_failed'));
         return;
       }
 
       toast.success(t('passkey_setup_success'));
+      setPasskeyPromptOpen(false);
       await mutateSession();
     } catch (error) {
       console.error(error);
@@ -234,6 +251,22 @@ function MyPageContent() {
     } finally {
       setPasskeyLoading(false);
     }
+  }
+
+  function authErrorMessage(errorCode: unknown, fallbackKey: string) {
+    if (typeof errorCode !== "string") return t(fallbackKey as any);
+    try {
+      return t(`auth_errors.${errorCode}` as any);
+    } catch {
+      return t(fallbackKey as any);
+    }
+  }
+
+  function dismissPasskeyPrompt() {
+    if (session?.email) {
+      localStorage.setItem(`passkeyPromptDismissed:${session.email}`, "true");
+    }
+    setPasskeyPromptOpen(false);
   }
 
   return (
@@ -320,6 +353,46 @@ function MyPageContent() {
 
         </div>
       </main>
+
+      {!session.passkeyEnabled && session.email && (
+        <Dialog open={passkeyPromptOpen} onOpenChange={(open) => {
+          if (open) {
+            setPasskeyPromptOpen(true);
+          } else {
+            dismissPasskeyPrompt();
+          }
+        }}>
+          <DialogContent className="max-w-[calc(100%-2rem)] rounded-xl sm:max-w-md">
+            <DialogHeader className="text-left">
+              <div className="mb-1 flex size-11 items-center justify-center rounded-full bg-primary/10">
+                <KeyRound className="h-5 w-5 text-primary" />
+              </div>
+              <DialogTitle>{t('passkey_prompt_title')}</DialogTitle>
+              <DialogDescription className="leading-relaxed">
+                {t('passkey_prompt_desc')}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:flex-col sm:justify-start">
+              <Button
+                onClick={handleRegisterPasskey}
+                disabled={passkeyLoading}
+                className="h-11 w-full font-bold"
+              >
+                {passkeyLoading ? tCommon('processing') : t('passkey_setup_action')}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={dismissPasskeyPrompt}
+                disabled={passkeyLoading}
+                className="h-10 w-full"
+              >
+                {t('passkey_prompt_later')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <BottomNav />
     </div>

@@ -10,13 +10,13 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session?.webauthnChallenge || !session.webauthnEmail) {
-    return NextResponse.json({ error: "Passkey login session expired" }, { status: 400 });
+    return NextResponse.json({ error: "Passkey login session expired", errorCode: "passkey_login_session_expired" }, { status: 400 });
   }
 
   const body = await req.json();
   const credentialId = body.id;
   if (!credentialId || !session.webauthnCredentialIds?.includes(credentialId)) {
-    return NextResponse.json({ error: "Unknown passkey" }, { status: 400 });
+    return NextResponse.json({ error: "Unknown passkey", errorCode: "passkey_unknown" }, { status: 400 });
   }
 
   const email = session.webauthnEmail;
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (!passkey) {
-    return NextResponse.json({ error: "Unknown passkey" }, { status: 400 });
+    return NextResponse.json({ error: "Unknown passkey", errorCode: "passkey_unknown" }, { status: 400 });
   }
 
   const { origin, rpID } = getWebAuthnRpConfig();
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (!verification.verified) {
-    return NextResponse.json({ error: "Passkey verification failed" }, { status: 400 });
+    return NextResponse.json({ error: "Passkey verification failed", errorCode: "passkey_verification_failed" }, { status: 400 });
   }
 
   const authUser = await resolveOrCreateUserForEmail(email, { supabase });

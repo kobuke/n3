@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   const { email: rawEmail } = await req.json();
   if (!rawEmail || typeof rawEmail !== "string") {
-    return NextResponse.json({ error: "Email is required" }, { status: 400 });
+    return NextResponse.json({ error: "Email is required", errorCode: "email_required" }, { status: 400 });
   }
 
   const email = rawEmail.trim().toLowerCase();
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     .eq("email", email);
 
   if (!passkeys || passkeys.length === 0) {
-    return NextResponse.json({ error: "No passkey registered" }, { status: 404 });
+    return NextResponse.json({ error: "No passkey registered", errorCode: "passkey_not_registered" }, { status: 404 });
   }
 
   const { rpID } = getWebAuthnRpConfig();

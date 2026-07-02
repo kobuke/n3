@@ -20,17 +20,17 @@ export async function POST(req: NextRequest) {
         const otpExpires = otpPayload?.otpExpires || session?.otpExpires;
 
         if (!pendingOtp || !pendingEmail || !otpExpires) {
-            return NextResponse.json({ error: "Session expired, please retry login." }, { status: 400 });
+            return NextResponse.json({ error: "Session expired, please retry login.", errorCode: "otp_session_expired" }, { status: 400 });
         }
 
         if (Date.now() > otpExpires) {
             clearSession();
             cookieStore.delete(OTP_COOKIE_KEY);
-            return NextResponse.json({ error: "OTP expired." }, { status: 400 });
+            return NextResponse.json({ error: "OTP expired.", errorCode: "otp_expired" }, { status: 400 });
         }
 
         if (pendingOtp !== userInputOtp) {
-            return NextResponse.json({ error: "Invalid OTP." }, { status: 400 });
+            return NextResponse.json({ error: "Invalid OTP.", errorCode: "otp_invalid" }, { status: 400 });
         }
 
         const email = pendingEmail;
