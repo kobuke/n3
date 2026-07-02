@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { getSessionSecret, parseSessionPayload, signSessionPayload } from "@/lib/session-token";
 
 const SESSION_KEY = "nanjo_session";
 
@@ -9,22 +10,25 @@ export interface SessionData {
   otp?: string;
   pendingEmail?: string;
   otpExpires?: number;
+  webauthnChallenge?: string;
+  webauthnUserId?: string;
+  webauthnEmail?: string;
+  webauthnCredentialIds?: string[];
 }
 
 export async function getSession(): Promise<SessionData | null> {
   const cookieStore = await cookies();
   const raw = cookieStore.get(SESSION_KEY)?.value;
   if (!raw) return null;
-  try {
-    const data = JSON.parse(raw) as SessionData;
-    // Auto-patch older sessions that are missing authenticated: true
-    if (data.walletAddress && data.authenticated === undefined) {
-      data.authenticated = true;
-    }
-    return data;
-  } catch {
-    return null;
+
+  const data = parseSessionPayload<SessionData>(raw, getSessionSecret());
+  if (!data) return null;
+
+  // Auto-patch older sessions that are missing authenticated: true
+  if (data.walletAddress && data.authenticated === undefined) {
+    data.authenticated = true;
   }
+  return data;
 }
 
 export async function setSession(data: Partial<SessionData>) {
@@ -32,7 +36,7 @@ export async function setSession(data: Partial<SessionData>) {
   const existing = await getSession();
   const newData = { ...existing, ...data };
 
-  cookieStore.set(SESSION_KEY, JSON.stringify(newData), {
+  cookieStore.set(SESSION_KEY, signSessionPayload(newData, getSessionSecret()), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
