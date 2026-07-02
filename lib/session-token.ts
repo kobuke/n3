@@ -1,7 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-export type SerializableSessionData = Record<string, unknown>;
-
 const SIGNED_SESSION_PREFIX = "v1";
 
 function base64urlEncode(value: string) {
@@ -31,13 +29,13 @@ export function getSessionSecret() {
   return secret;
 }
 
-export function signSessionPayload<T extends SerializableSessionData>(data: T, secret: string) {
+export function signSessionPayload<T extends object>(data: T, secret: string) {
   const payload = base64urlEncode(JSON.stringify(data));
   const signature = signatureFor(payload, secret);
   return `${SIGNED_SESSION_PREFIX}.${payload}.${signature}`;
 }
 
-export function parseSessionPayload<T extends SerializableSessionData>(raw: string, secret: string): T | null {
+export function parseSessionPayload<T extends object>(raw: string, secret: string): T | null {
   try {
     if (!raw.startsWith(`${SIGNED_SESSION_PREFIX}.`)) {
       return JSON.parse(raw) as T;
