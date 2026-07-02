@@ -284,11 +284,7 @@ export default function LoginPage() {
 
       localStorage.removeItem('userLoggedOut');
       toast.success(t('toast.login_success'));
-      if (data.passkeyEnabled) {
-        redirectAfterLogin();
-      } else {
-        setShowPasskeySetup(true);
-      }
+      redirectAfterLogin();
     } catch {
       toast.error(t('toast.network_error'));
     } finally {
