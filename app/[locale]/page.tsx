@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
-import { Mail, Waves, Wallet, ArrowLeft, Sparkles, QrCode, Shield } from "lucide-react";
+import { Mail, Waves, Wallet, ArrowLeft, Sparkles, QrCode, Shield, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useAppKit, useAppKitAccount } from '@reown/appkit/react';
 import liff from "@line/liff";
+import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
 
 export default function LoginPage() {
   const t = useTranslations('LoginPage');
@@ -17,6 +18,7 @@ export default function LoginPage() {
   const [otpCode, setOtpCode] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showPasskeySetup, setShowPasskeySetup] = useState(false);
 
   const [lineId, setLineId] = useState<string | null>(null);
   const [liffLoading, setLiffLoading] = useState(true);
@@ -25,6 +27,16 @@ export default function LoginPage() {
   const { open } = useAppKit();
   const { address, isConnected } = useAppKitAccount();
   const [redirectReason, setRedirectReason] = useState<string | null>(null);
+
+  const redirectAfterLogin = useCallback(() => {
+    const redirect = localStorage.getItem('redirectAfterLogin');
+    if (redirect) {
+      localStorage.removeItem('redirectAfterLogin');
+      router.push(redirect as any);
+    } else {
+      router.push("/mypage/nfts");
+    }
+  }, [router]);
 
   useEffect(() => {
     const reason = localStorage.getItem('redirectAfterLoginReason');
@@ -35,7 +47,7 @@ export default function LoginPage() {
   }, []);
 
   // Handle wallet connection success
-  const handleWalletLogin = async (targetAddress?: string) => {
+  const handleWalletLogin = useCallback(async (targetAddress?: string) => {
     const activeAddress = targetAddress || address;
     if (!activeAddress) return;
 
@@ -50,13 +62,7 @@ export default function LoginPage() {
       if (res.ok) {
         localStorage.removeItem('userLoggedOut');
         toast.success(t('toast.login_success'));
-        const redirect = localStorage.getItem('redirectAfterLogin');
-        if (redirect) {
-          localStorage.removeItem('redirectAfterLogin');
-          router.push(redirect as any);
-        } else {
-          router.push("/mypage/nfts");
-        }
+        redirectAfterLogin();
       } else {
         const data = await res.json();
         toast.error(data.error || t('toast.login_failed'));
@@ -67,7 +73,7 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [address, redirectAfterLogin, t]);
 
   useEffect(() => {
     // ページ読み込み時の自動ログイン試行: ログアウト済みフラグがある場合はスキップ
@@ -77,7 +83,7 @@ export default function LoginPage() {
     if (isConnected && address) {
       handleWalletLogin(address);
     }
-  }, [isConnected, address]);
+  }, [isConnected, address, handleWalletLogin]);
 
   // Handle LINE LIFF Initialization
   useEffect(() => {
@@ -87,13 +93,7 @@ export default function LoginPage() {
         if (sessionRes.ok) {
           const sessionData = await sessionRes.json();
           if (sessionData.authenticated) {
-            const redirect = localStorage.getItem('redirectAfterLogin');
-            if (redirect) {
-              localStorage.removeItem('redirectAfterLogin');
-              router.push(redirect as any);
-            } else {
-              router.push("/mypage/nfts");
-            }
+            redirectAfterLogin();
             return;
           }
         }
@@ -135,13 +135,7 @@ export default function LoginPage() {
           const data = await res.json();
           if (res.ok && data.linked) {
             toast.success(t('toast.line_login_success'));
-            const redirect = localStorage.getItem('redirectAfterLogin');
-            if (redirect) {
-              localStorage.removeItem('redirectAfterLogin');
-              router.push(redirect as any);
-            } else {
-              router.push("/mypage/nfts");
-            }
+            redirectAfterLogin();
           } else {
             setLiffLoading(false);
           }
@@ -160,7 +154,82 @@ export default function LoginPage() {
     }
 
     initLiff();
-  }, [router, t]);
+  }, [router, t, redirectAfterLogin]);
+
+  async function handlePasskeyLogin(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim()) return;
+
+    localStorage.removeItem('userLoggedOut');
+    setLoading(true);
+    try {
+      const optionsRes = await fetch("/api/auth/passkey/login/options", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const options = await optionsRes.json();
+      if (!optionsRes.ok) {
+        toast.error(options.error || t('login_card.passkey_not_found'));
+        return;
+      }
+
+      const assertion = await startAuthentication({ optionsJSON: options });
+      const verifyRes = await fetch("/api/auth/passkey/login/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(assertion),
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok) {
+        toast.error(verifyData.error || t('login_card.passkey_failed'));
+        return;
+      }
+
+      toast.success(t('toast.login_success'));
+      redirectAfterLogin();
+    } catch (error) {
+      console.error(error);
+      toast.error(t('login_card.passkey_failed'));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRegisterPasskey() {
+    setLoading(true);
+    try {
+      const optionsRes = await fetch("/api/auth/passkey/register/options", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const options = await optionsRes.json();
+      if (!optionsRes.ok) {
+        toast.error(options.error || t('login_card.passkey_failed'));
+        return;
+      }
+
+      const attestation = await startRegistration({ optionsJSON: options });
+      const verifyRes = await fetch("/api/auth/passkey/register/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(attestation),
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok) {
+        toast.error(verifyData.error || t('login_card.passkey_failed'));
+        return;
+      }
+
+      toast.success(t('login_card.passkey_registered'));
+      redirectAfterLogin();
+    } catch (error) {
+      console.error(error);
+      toast.error(t('login_card.passkey_failed'));
+    } finally {
+      setLoading(false);
+    }
+  }
 
 
   // Step 1: Send OTP
@@ -215,12 +284,10 @@ export default function LoginPage() {
 
       localStorage.removeItem('userLoggedOut');
       toast.success(t('toast.login_success'));
-      const redirect = localStorage.getItem('redirectAfterLogin');
-      if (redirect) {
-        localStorage.removeItem('redirectAfterLogin');
-        router.push(redirect as any);
+      if (data.passkeyEnabled) {
+        redirectAfterLogin();
       } else {
-        router.push("/mypage/nfts");
+        setShowPasskeySetup(true);
       }
     } catch {
       toast.error(t('toast.network_error'));
@@ -292,10 +359,12 @@ export default function LoginPage() {
         <Card className="w-full shadow-lg border-border/50 transition-all duration-300">
           <CardHeader className="pb-2 pt-6 px-6">
             <h2 className="text-lg font-semibold text-foreground">
-              {otpSent ? t('login_card.otp_title') : t('login_card.title')}
+              {showPasskeySetup ? t('login_card.passkey_title') : otpSent ? t('login_card.otp_title') : t('login_card.title')}
             </h2>
             <div className="text-sm text-muted-foreground">
-              {otpSent
+              {showPasskeySetup
+                ? t('login_card.passkey_desc')
+                : otpSent
                 ? t.rich('login_card.otp_description', {
                   email: email,
                   br: () => <br />
@@ -307,7 +376,22 @@ export default function LoginPage() {
           <CardContent className="px-6 pb-6">
 
             {/* OTP Verification Form */}
-            {otpSent ? (
+            {showPasskeySetup ? (
+              <div className="flex flex-col gap-4">
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-center">
+                  <KeyRound className="mx-auto mb-3 w-8 h-8 text-primary" />
+                  <h3 className="text-base font-bold text-foreground">{t('login_card.passkey_title')}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">{t('login_card.passkey_desc')}</p>
+                </div>
+                <Button onClick={handleRegisterPasskey} disabled={loading} className="h-12 w-full text-base font-bold gap-2">
+                  <KeyRound className="w-4 h-4" />
+                  {loading ? t('login_card.verifying') : t('login_card.passkey_setup_button')}
+                </Button>
+                <Button variant="ghost" onClick={redirectAfterLogin} className="h-10 w-full text-sm">
+                  {t('login_card.passkey_skip')}
+                </Button>
+              </div>
+            ) : otpSent ? (
               <form onSubmit={handleVerifyOtp} className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
                   <Input
@@ -341,9 +425,9 @@ export default function LoginPage() {
               /* Initial Login Options */
               <div className="flex flex-col gap-5">
 
-                {/* Email Login Section - PRIMARY */}
+                {/* Passkey Login Section - PRIMARY */}
                 <div className="flex flex-col gap-3">
-                  <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3">
+                  <form onSubmit={handlePasskeyLogin} className="flex flex-col gap-3">
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
@@ -355,14 +439,33 @@ export default function LoginPage() {
                         required
                       />
                     </div>
-                    <Button type="submit" disabled={loading || !email} className="h-12 w-full text-base font-bold">
-                      {loading ? t('login_card.sending') : t('login_card.submit_email')}
+                    <Button type="submit" disabled={loading || !email} className="h-12 w-full text-base font-bold gap-2">
+                      <KeyRound className="w-4 h-4" />
+                      {loading ? t('login_card.verifying') : t('login_card.passkey_button')}
                     </Button>
                   </form>
                   <p className="text-[11px] text-muted-foreground text-center">
-                    {t('login_card.email_hint')}
+                    {t('login_card.passkey_desc')}
                   </p>
                 </div>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-border/50" />
+                  </div>
+                  <div className="relative flex justify-center text-xs">
+                    <span className="bg-background px-3 text-muted-foreground">{t('login_card.recovery_section')}</span>
+                  </div>
+                </div>
+
+                <form onSubmit={handleEmailSubmit} className="flex flex-col gap-2">
+                  <Button type="submit" disabled={loading || !email} variant="secondary" className="h-11 w-full text-sm font-bold">
+                    {loading ? t('login_card.sending') : t('login_card.submit_email')}
+                  </Button>
+                  <p className="text-[11px] text-muted-foreground text-center">
+                    {t('login_card.email_recovery_hint')}
+                  </p>
+                </form>
 
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
