@@ -32,7 +32,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unknown passkey", errorCode: "passkey_unknown" }, { status: 400 });
   }
 
-  const { origin, rpID } = getWebAuthnRpConfig();
+  const fallbackConfig = getWebAuthnRpConfig(req);
+  const origin = session.webauthnOrigin || fallbackConfig.origin;
+  const rpID = session.webauthnRpID || fallbackConfig.rpID;
   const verification = await verifyAuthenticationResponse({
     response: body,
     expectedChallenge: session.webauthnChallenge,
@@ -62,6 +64,8 @@ export async function POST(req: NextRequest) {
     webauthnChallenge: undefined,
     webauthnEmail: undefined,
     webauthnCredentialIds: undefined,
+    webauthnOrigin: undefined,
+    webauthnRpID: undefined,
   });
 
   return NextResponse.json({ ok: true, walletAddress: authUser.walletAddress });

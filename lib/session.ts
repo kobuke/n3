@@ -14,6 +14,8 @@ export interface SessionData {
   webauthnUserId?: string;
   webauthnEmail?: string;
   webauthnCredentialIds?: string[];
+  webauthnOrigin?: string;
+  webauthnRpID?: string;
 }
 
 export async function getSession(): Promise<SessionData | null> {

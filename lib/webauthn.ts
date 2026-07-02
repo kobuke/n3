@@ -9,13 +9,20 @@ export type StoredPasskey = {
   transports: AuthenticatorTransportFuture[] | null;
 };
 
-export function getWebAuthnRpConfig() {
-  const appUrl =
+function isLocalWebAuthnHost(hostname: string) {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
+
+export function getWebAuthnRpConfig(request?: Request) {
+  const requestOrigin = request ? new URL(request.url).origin : null;
+  const requestHostname = requestOrigin ? new URL(requestOrigin).hostname : null;
+  const shouldUseRequestOrigin = requestOrigin && requestHostname && isLocalWebAuthnHost(requestHostname);
+  const appUrl = shouldUseRequestOrigin ? requestOrigin :
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.NEXT_PUBLIC_SITE_URL ||
     "http://localhost:3000";
   const origin = appUrl.replace(/\/$/, "");
-  const rpID = process.env.WEBAUTHN_RP_ID || new URL(origin).hostname;
+  const rpID = shouldUseRequestOrigin ? new URL(origin).hostname : process.env.WEBAUTHN_RP_ID || new URL(origin).hostname;
 
   return {
     rpName: "なんじょうNFTポータル",

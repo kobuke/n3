@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No passkey registered", errorCode: "passkey_not_registered" }, { status: 404 });
   }
 
-  const { rpID } = getWebAuthnRpConfig();
+  const { rpID, origin } = getWebAuthnRpConfig(req);
   const options = await generateAuthenticationOptions({
     rpID,
     userVerification: "required",
@@ -37,6 +37,8 @@ export async function POST(req: NextRequest) {
     webauthnChallenge: options.challenge,
     webauthnEmail: email,
     webauthnCredentialIds: passkeys.map((passkey) => passkey.credential_id),
+    webauthnOrigin: origin,
+    webauthnRpID: rpID,
   });
 
   return NextResponse.json(options);

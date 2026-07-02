@@ -13,7 +13,9 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { origin, rpID } = getWebAuthnRpConfig();
+  const fallbackConfig = getWebAuthnRpConfig(req);
+  const origin = session.webauthnOrigin || fallbackConfig.origin;
+  const rpID = session.webauthnRpID || fallbackConfig.rpID;
   const verification = await verifyRegistrationResponse({
     response: body,
     expectedChallenge: session.webauthnChallenge,
@@ -58,6 +60,8 @@ export async function POST(req: NextRequest) {
   await setSession({
     webauthnChallenge: undefined,
     webauthnEmail: undefined,
+    webauthnOrigin: undefined,
+    webauthnRpID: undefined,
   });
 
   return NextResponse.json({ ok: true });
