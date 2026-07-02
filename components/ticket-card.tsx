@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { mutate } from "swr";
 import Image from "next/image";
 import { Link } from "@/i18n/routing";
@@ -41,6 +42,13 @@ export function TicketCard({
 }: TicketCardProps) {
   const t = useTranslations('Common.status');
   const tNfts = useTranslations('MyNFTsPage');
+  const [isRectImage, setIsRectImage] = useState(false);
+
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { naturalWidth, naturalHeight } = e.currentTarget;
+    if (!naturalWidth || !naturalHeight) return;
+    setIsRectImage(Math.abs(naturalWidth / naturalHeight - 1) > 0.05);
+  };
   const statusAttr = attributes.find((a) => a.trait_type === "Status");
   const status = statusAttr?.value ?? "Unused";
   const isUsed = status === "Used";
@@ -86,15 +94,29 @@ export function TicketCard({
               <Ticket className="w-10 h-10 text-slate-300" />
             </div>
           ) : image ? (
-            <Image
-              src={image}
-              alt={name}
-              fill
-              className={`object-cover transition-transform duration-500 group-hover:scale-105 ${isInactive ? "grayscale" : ""
-                }`}
-              sizes="(max-width: 600px) 100vw, 600px"
-              unoptimized
-            />
+            <>
+              {isRectImage && (
+                <Image
+                  src={image}
+                  alt=""
+                  aria-hidden="true"
+                  fill
+                  className={`object-cover scale-110 blur-md opacity-90 ${isInactive ? "grayscale" : ""}`}
+                  sizes="(max-width: 600px) 100vw, 600px"
+                  unoptimized
+                />
+              )}
+              <Image
+                src={image}
+                alt={name}
+                fill
+                onLoad={handleImageLoad}
+                className={`transition-transform duration-500 group-hover:scale-105 ${isRectImage ? "object-contain" : "object-cover"
+                  } ${isInactive ? "grayscale" : ""}`}
+                sizes="(max-width: 600px) 100vw, 600px"
+                unoptimized
+              />
+            </>
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <Ticket className="w-10 h-10 text-slate-300" />
