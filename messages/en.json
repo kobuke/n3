@@ -219,6 +219,10 @@
     "contract_id": "Contract ID",
     "token_id": "Token ID",
     "uuid": "UUID",
+    "history_title": "History",
+    "history_latest": "Latest 10",
+    "history_empty": "No history yet",
+    "history_empty_desc": "Acquisition, usage, and transfer records will appear here.",
     "detail_info": "NFT Information",
     "unknown": "Unknown",
     "toast": {

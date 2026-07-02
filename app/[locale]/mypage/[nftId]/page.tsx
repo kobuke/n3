@@ -10,6 +10,7 @@ import Image from "next/image";
 import {
   Ticket,
   CheckCircle2,
+  XCircle,
   Clock,
   Copy,
   Check,
@@ -18,6 +19,10 @@ import {
   Send,
   RefreshCw,
   AlertTriangle,
+  Gift,
+  Undo2,
+  Activity as ActivityIcon,
+  Hash,
 } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
 import { BottomNav } from "@/components/bottom-nav";
@@ -105,6 +110,10 @@ function TicketDetailContent({
     nftId ? `/api/nfts/${nftId}${contract ? `?contract=${contract}` : ""}` : null,
     fetcher
   );
+  const { data: activityData, isLoading: activityLoading } = useSWR(
+    nftId ? `/api/nfts/${nftId}/activities${contract ? `?contract=${contract}` : ""}` : null,
+    fetcher
+  );
 
   useEffect(() => {
     if (!sessionLoading && !session?.authenticated) {
@@ -145,6 +154,7 @@ function TicketDetailContent({
   const isExpired = nft?.isExpired === true;
   const expiresAt = nft?.expiresAt;
   const shopifyProductUrl = nft?.shopifyProductUrl;
+  const activities: any[] = activityData?.activities ?? [];
 
   const formatDate = (dateStr: string, options?: Intl.DateTimeFormatOptions) => {
     try {
@@ -367,6 +377,98 @@ function TicketDetailContent({
               </div>
             )}
           </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-bold text-slate-700">{t('history_title')}</h2>
+            <span className="text-[10px] font-medium text-slate-400">
+              {t('history_latest')}
+            </span>
+          </div>
+
+          {activityLoading ? (
+            <div className="flex flex-col gap-3">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-20 w-full rounded-xl" />
+              ))}
+            </div>
+          ) : activities.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-xl bg-slate-50 px-4 py-8 text-center">
+              <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-white border border-slate-100">
+                <ActivityIcon className="w-6 h-6 text-slate-300" />
+              </div>
+              <p className="text-sm font-bold text-slate-700">{t('history_empty')}</p>
+              <p className="mt-1 text-xs text-slate-400">{t('history_empty_desc')}</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {activities.map((activity) => {
+                let IconComp = CheckCircle2;
+                let iconBg = "bg-green-500/10";
+                let iconColor = "text-green-500";
+
+                if (activity.type === "received" || activity.type === "mint") {
+                  IconComp = Gift;
+                  iconBg = activity.type === "received" ? "bg-sky-500/10" : "bg-blue-500/10";
+                  iconColor = activity.type === "received" ? "text-sky-500" : "text-blue-500";
+                } else if (activity.type === "transfer") {
+                  IconComp = activity.status === "failed" ? XCircle : Undo2;
+                  iconBg = activity.status === "failed" ? "bg-slate-100" : "bg-orange-500/10";
+                  iconColor = activity.status === "failed" ? "text-slate-400" : "text-orange-500";
+                } else if (activity.type === "use") {
+                  IconComp = Check;
+                  iconBg = "bg-red-500/10";
+                  iconColor = "text-red-500";
+                }
+
+                return (
+                  <div
+                    key={activity.id}
+                    className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/60 p-3"
+                  >
+                    <div className={`flex size-9 shrink-0 items-center justify-center rounded-full ${iconBg}`}>
+                      <IconComp className={`w-4.5 h-4.5 ${iconColor}`} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-0.5 flex items-start justify-between gap-2">
+                        <h3 className="text-[13px] font-bold text-slate-900">{activity.title}</h3>
+                        <span className="shrink-0 text-[10px] font-medium text-slate-400">
+                          {formatDateTime(activity.date)}
+                        </span>
+                      </div>
+                      <p className="truncate text-[11px] text-slate-500">{activity.description}</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            activity.status === "pending"
+                              ? "bg-amber-50 text-amber-600"
+                              : activity.status === "failed"
+                                ? "bg-slate-100 text-slate-500"
+                                : "bg-emerald-50 text-emerald-600"
+                          }`}
+                        >
+                          {activity.status === "pending"
+                            ? tStatus('pending')
+                            : activity.status === "failed"
+                              ? tCommon('error')
+                              : tCommon('success')}
+                        </span>
+                        {activity.txHash && (
+                          <span className="inline-flex min-w-0 items-center gap-1 text-[10px] text-slate-400">
+                            <Hash className="w-3 h-3 shrink-0" />
+                            <span className="max-w-[132px] truncate font-mono">
+                              {activity.txHash}
+                            </span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <div>

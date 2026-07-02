@@ -219,6 +219,10 @@
     "contract_id": "コントラクトID",
     "token_id": "トークンID",
     "uuid": "UUID",
+    "history_title": "履歴",
+    "history_latest": "最新10件",
+    "history_empty": "履歴がありません",
+    "history_empty_desc": "取得・使用・譲渡の記録がここに表示されます。",
     "detail_info": "チケット詳細情報",
     "unknown": "不明",
     "toast": {
