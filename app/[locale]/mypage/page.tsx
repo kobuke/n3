@@ -5,10 +5,12 @@ import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 import useSWR from "swr";
-import { LogOut } from "lucide-react";
+import { KeyRound, LogOut } from "lucide-react";
 import { useDisconnect } from "wagmi";
+import { startRegistration } from "@simplewebauthn/browser";
 import { AppHeader } from "@/components/app-header";
 import { BottomNav } from "@/components/bottom-nav";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { SbtCard } from "@/components/mypage/sbt-card";
@@ -45,12 +47,14 @@ function MyPageContent() {
   const { disconnectAsync } = useDisconnect();
   const searchParams = useSearchParams();
   const [showAllActivities, setShowAllActivities] = useState(false);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
   const lineAirdropTriggered = useRef(false);
 
   const {
     data: session,
     error: sessionError,
     isLoading: sessionLoading,
+    mutate: mutateSession,
   } = useSWR("/api/session", fetcher);
 
   const { data: discordStatus } = useSWR(
@@ -197,6 +201,41 @@ function MyPageContent() {
     router.push("/");
   }
 
+  async function handleRegisterPasskey() {
+    setPasskeyLoading(true);
+    try {
+      const optionsRes = await fetch("/api/auth/passkey/register/options", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const options = await optionsRes.json();
+      if (!optionsRes.ok) {
+        toast.error(options.error || t('passkey_setup_failed'));
+        return;
+      }
+
+      const attestation = await startRegistration({ optionsJSON: options });
+      const verifyRes = await fetch("/api/auth/passkey/register/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(attestation),
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok) {
+        toast.error(verifyData.error || t('passkey_setup_failed'));
+        return;
+      }
+
+      toast.success(t('passkey_setup_success'));
+      await mutateSession();
+    } catch (error) {
+      console.error(error);
+      toast.error(t('passkey_setup_failed'));
+    } finally {
+      setPasskeyLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 pb-28">
       <AppHeader
@@ -221,6 +260,27 @@ function MyPageContent() {
             nftsCount={nfts.length}
             onShowActivities={() => setShowAllActivities(true)}
           />
+
+          {!session.passkeyEnabled && session.email && (
+            <div className="rounded-xl border border-primary/20 bg-white p-4 shadow-sm">
+              <div className="flex items-start gap-3">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <KeyRound className="h-5 w-5 text-primary" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-sm font-bold text-slate-900">{t('passkey_setup_title')}</h2>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-500">{t('passkey_setup_desc')}</p>
+                </div>
+              </div>
+              <Button
+                onClick={handleRegisterPasskey}
+                disabled={passkeyLoading}
+                className="mt-3 h-10 w-full text-sm font-bold"
+              >
+                {passkeyLoading ? tCommon('processing') : t('passkey_setup_action')}
+              </Button>
+            </div>
+          )}
 
           {/* Level Progress */}
           <LevelProgressCard />

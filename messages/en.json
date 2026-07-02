@@ -82,7 +82,12 @@
     "logout_success": "Logged out successfully",
     "language_setting": "Language",
     "japanese": "Japanese",
-    "english": "English"
+    "english": "English",
+    "passkey_setup_title": "Set up passkey sign-in",
+    "passkey_setup_desc": "Next time, sign in without an email code using Face ID, Touch ID, fingerprint, or your device PIN.",
+    "passkey_setup_action": "Set up",
+    "passkey_setup_success": "Passkey sign-in has been set up",
+    "passkey_setup_failed": "Failed to set up passkey sign-in"
   },
   "BottomNav": {
     "home": "Home",

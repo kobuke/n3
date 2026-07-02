@@ -25,5 +25,17 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json({ authenticated: true, ...session, walletAddress });
+  let passkeyEnabled = false;
+  if (session.email) {
+    const { createAdminClient } = await import("@/lib/supabase/server");
+    const supabase = createAdminClient();
+    const { data: passkeys } = await supabase
+      .from("user_passkeys")
+      .select("id")
+      .eq("email", session.email.toLowerCase())
+      .limit(1);
+    passkeyEnabled = Boolean(passkeys && passkeys.length > 0);
+  }
+
+  return NextResponse.json({ authenticated: true, ...session, walletAddress, passkeyEnabled });
 }

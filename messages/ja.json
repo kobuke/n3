@@ -82,7 +82,12 @@
     "logout_success": "ログアウトしました",
     "language_setting": "言語設定",
     "japanese": "日本語",
-    "english": "English"
+    "english": "English",
+    "passkey_setup_title": "生体認証ログインを設定できます",
+    "passkey_setup_desc": "次回からメールコードなしで、この端末のFace ID・Touch ID・端末PINなどを使ってログインできます。",
+    "passkey_setup_action": "設定する",
+    "passkey_setup_success": "生体認証ログインを設定しました",
+    "passkey_setup_failed": "生体認証ログインの設定に失敗しました"
   },
   "BottomNav": {
     "home": "ホーム",
